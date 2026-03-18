@@ -1,0 +1,158 @@
+{
+  "menu": {
+    "tagline": "Your digital concierge",
+    "aria_label": "Main menu",
+    "weather":  "Weather",
+    "flights":  "Flights",
+    "map":      "Map",
+    "wellness": "Wellness",
+    "info":     "Useful info",
+    "events":   "Agenda",
+    "mobile":   "On my phone"
+  },
+  "common": {
+    "back":       "Back",
+    "loading":    "Loading…",
+    "error":      "An error occurred",
+    "retry":      "Retry",
+    "close":      "Close",
+    "more_info":  "Learn more",
+    "call":       "Call",
+    "website":    "Website",
+    "today":      "Today",
+    "offline_banner": "Offline mode — Cached data"
+  },
+  "weather": {
+    "title":         "Weather — Ouagadougou",
+    "current":       "Current weather",
+    "feels_like":    "Feels like",
+    "humidity":      "Humidity",
+    "wind":          "Wind",
+    "visibility":    "Visibility",
+    "pressure":      "Pressure",
+    "forecast_7days":"7-day forecast",
+    "today":         "Today",
+    "error":         "Weather unavailable",
+    "alert_title":   "Weather alert"
+  },
+  "flights": {
+    "title":       "Flight information",
+    "arrivals":    "Arrivals",
+    "departures":  "Departures",
+    "search_placeholder": "Flight number (e.g. AH 110)",
+    "search":      "Search",
+    "flight":      "Flight",
+    "airline":     "Airline",
+    "from":        "From",
+    "to":          "To",
+    "scheduled":   "Scheduled",
+    "estimated":   "Estimated",
+    "actual":      "Actual",
+    "terminal":    "Terminal",
+    "gate":        "Gate",
+    "delay":       "Delay",
+    "delay_min":   "min delay",
+    "status": {
+      "scheduled": "Scheduled",
+      "active":    "In flight",
+      "landed":    "Landed",
+      "cancelled": "Cancelled",
+      "delayed":   "Delayed"
+    },
+    "airport":     "Ouagadougou International Airport",
+    "no_results":  "No flights found",
+    "error":       "Flight information unavailable"
+  },
+  "map": {
+    "title":         "Map & Points of interest",
+    "categories": {
+      "all":        "Show all",
+      "restaurant": "Restaurants",
+      "museum":     "Museums",
+      "pharmacy":   "Pharmacies",
+      "taxi":       "Taxis",
+      "hospital":   "Hospitals",
+      "attraction": "Attractions",
+      "market":     "Markets"
+    },
+    "hotel_location": "Our hotel",
+    "directions":     "Directions",
+    "open_maps":      "Open in Maps",
+    "distance":       "Distance",
+    "rating":         "Rating"
+  },
+  "wellness": {
+    "title":          "Wellness Services",
+    "subtitle":       "Take care of yourself",
+    "duration":       "Duration",
+    "price":          "Price",
+    "minutes":        "min",
+    "fcfa":           "FCFA",
+    "available_hours":"Hours",
+    "available_days": "Available",
+    "how_to_book":    "How to book",
+    "contact":        "Contact the spa",
+    "benefits":       "Benefits",
+    "more_services":  "Other services",
+    "book_info_title":"Booking information"
+  },
+  "info": {
+    "title":       "Useful information",
+    "categories": {
+      "taxi":      "Taxis",
+      "doctor":    "Doctors",
+      "pharmacy":  "Pharmacies",
+      "shuttle":   "Shuttles",
+      "emergency": "Emergency",
+      "embassy":   "Embassies",
+      "bank":      "Banks"
+    },
+    "available_24h": "Available 24/7",
+    "call_now":      "Call now",
+    "whatsapp":      "WhatsApp"
+  },
+  "events": {
+    "title":        "Events Agenda",
+    "subtitle":     "Not to be missed in Ouagadougou",
+    "categories": {
+      "all":         "All",
+      "culture":     "Culture",
+      "music":       "Music",
+      "sport":       "Sport",
+      "gastronomy":  "Gastronomy",
+      "festival":    "Festivals",
+      "exhibition":  "Exhibitions",
+      "hotel":       "At the hotel"
+    },
+    "free":          "Free",
+    "price":         "Entry",
+    "from":          "From",
+    "to":            "to",
+    "on":            "On",
+    "at":            "at",
+    "location":      "Location",
+    "featured":      "Featured",
+    "hotel_event":   "Hotel event",
+    "no_events":     "No upcoming events",
+    "error":         "Agenda unavailable",
+    "detail_back":   "Back to agenda",
+    "all_day":       "All day",
+    "multiday":      "Multi-day event",
+    "tags":          "Tags",
+    "share_qr":      "Share on my phone"
+  },
+  "mobile": {
+    "title":       "Take it on your phone",
+    "subtitle":    "Scan the QR code to access this section on your smartphone",
+    "sections": {
+      "weather":  "Weather",
+      "flights":  "Flights",
+      "map":      "Map & POI",
+      "wellness": "Wellness",
+      "info":     "Useful info",
+      "events":   "Agenda"
+    },
+    "scan_instruction": "Point your phone camera at this code",
+    "valid_for":        "Link valid for 24h"
+  }
+}

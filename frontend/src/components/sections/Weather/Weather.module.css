@@ -1,0 +1,154 @@
+.page {
+  width: 100vw;
+  height: 100vh;
+  padding: clamp(80px, 10vh, 120px) clamp(24px, 5vw, 80px) clamp(24px, 4vh, 48px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.5vh, 28px);
+  overflow-y: auto;
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vh, 2.2rem);
+  color: var(--c-primary);
+  text-align: center;
+}
+
+/* ── Météo actuelle ──────────────────────────────── */
+.current {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: clamp(20px, 3vh, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.5vh, 24px);
+}
+
+.mainBlock {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 36px);
+}
+
+.mainIcon {
+  width: clamp(80px, 12vh, 140px);
+  height: clamp(80px, 12vh, 140px);
+  filter: drop-shadow(0 0 12px rgba(212, 168, 67, 0.6));
+}
+
+.temp {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 8vh, 6rem);
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1;
+}
+
+.description {
+  font-size: clamp(1rem, 1.8vh, 1.4rem);
+  color: var(--c-text-muted);
+  text-transform: capitalize;
+  margin-top: 4px;
+}
+
+.feelsLike {
+  font-size: clamp(0.8rem, 1.3vh, 1rem);
+  color: var(--c-text-dim);
+  margin-top: 6px;
+}
+
+/* Métriques secondaires */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(8px, 1.5vw, 16px);
+}
+
+.metric {
+  background: var(--c-bg-secondary, var(--c-bg));
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(10px, 1.8vh, 18px) clamp(8px, 1.2vw, 14px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.metricIcon  { font-size: clamp(1.2rem, 2.2vh, 1.8rem); }
+.metricValue { font-size: clamp(0.9rem, 1.5vh, 1.1rem); font-weight: 700; color: var(--c-secondary); }
+.metricLabel { font-size: clamp(0.65rem, 1vh, 0.8rem); color: var(--c-text-muted); }
+
+/* ── Alertes ─────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(232, 82, 26, 0.15);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  font-size: clamp(0.8rem, 1.3vh, 1rem);
+}
+.alert span { font-size: 1.5rem; }
+.alert strong { display: block; margin-bottom: 4px; }
+
+/* ── Prévisions ──────────────────────────────────── */
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.8vh, 1.4rem);
+  color: var(--c-text-muted);
+  margin-bottom: 8px;
+}
+
+.forecastGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: clamp(6px, 1vw, 12px);
+}
+
+.forecastCard {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(10px, 1.5vh, 16px) clamp(6px, 0.8vw, 10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform var(--duration-fast);
+}
+
+.forecastCard.todayCard {
+  border-color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 12%, var(--c-surface));
+}
+
+.dayLabel    { font-size: clamp(0.7rem, 1.1vh, 0.85rem); font-weight: 600; color: var(--c-text-muted); }
+.forecastIcon { width: clamp(36px, 5vh, 52px); height: clamp(36px, 5vh, 52px); }
+.temps        { display: flex; gap: 6px; align-items: baseline; }
+.maxT         { font-size: clamp(0.9rem, 1.4vh, 1.1rem); font-weight: 700; color: var(--c-text); }
+.minT         { font-size: clamp(0.75rem, 1.1vh, 0.9rem); color: var(--c-text-muted); }
+.precip       { font-size: clamp(0.65rem, 0.95vh, 0.78rem); color: #60A5FA; }
+
+/* ── États ───────────────────────────────────────── */
+.center {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offlineTag {
+  background: rgba(232, 82, 26, 0.2);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--c-accent);
+  align-self: center;
+}

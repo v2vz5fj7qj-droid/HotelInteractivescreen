@@ -1,0 +1,174 @@
+.container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  /* Fond dégradé chaud Burkina */
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 50%,
+      color-mix(in srgb, var(--c-primary) 12%, transparent) 0%,
+      transparent 70%),
+    var(--c-bg);
+}
+
+/* ── Hub central ──────────────────────────────────────── */
+.hub {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.hubRing {
+  position: absolute;
+  width: clamp(180px, 22vh, 260px);
+  height: clamp(180px, 22vh, 260px);
+  border-radius: 50%;
+  border: 2px solid var(--c-border);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.hubContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px;
+}
+
+.logo {
+  width: clamp(60px, 9vh, 110px);
+  height: clamp(60px, 9vh, 110px);
+  object-fit: contain;
+}
+
+.hotelName {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 2vh, 1.6rem);
+  font-weight: 700;
+  color: var(--c-primary);
+  text-align: center;
+}
+
+.tagline {
+  font-size: clamp(0.65rem, 1.2vh, 0.9rem);
+  color: var(--c-text-muted);
+  text-align: center;
+}
+
+/* ── Items du menu ────────────────────────────────────── */
+.item {
+  position: absolute;
+  transform: translate(var(--x), var(--y));
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  width:  clamp(96px, 13vh, 148px);
+  height: clamp(96px, 13vh, 148px);
+  border-radius: 50%;
+
+  background: var(--c-surface);
+  color: var(--c-text);
+
+  /* Entrée animée */
+  animation: popIn 0.45s var(--ease-spring) var(--delay) both;
+  transition:
+    transform   var(--duration-base) var(--ease-spring),
+    box-shadow  var(--duration-base) var(--ease-smooth),
+    background  var(--duration-fast);
+}
+
+/* Anneau coloré */
+.ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2.5px solid var(--color);
+  opacity: 0.6;
+  transition: opacity var(--duration-fast), inset var(--duration-base) var(--ease-spring);
+}
+
+/* Glow au hover */
+.glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color) 25%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--duration-base);
+}
+
+.item:hover .glow,
+.item:focus-visible .glow { opacity: 1; }
+
+.item:hover,
+.item:focus-visible {
+  transform: translate(var(--x), var(--y)) scale(1.13);
+  box-shadow: 0 0 35px color-mix(in srgb, var(--color) 55%, transparent);
+  background: color-mix(in srgb, var(--color) 15%, var(--c-surface));
+  outline: none;
+}
+
+.item:hover .ring,
+.item:focus-visible .ring { opacity: 1; inset: -5px; }
+
+.item.pressed {
+  transform: translate(var(--x), var(--y)) scale(0.9);
+  opacity: 0.7;
+}
+
+.icon  { font-size: clamp(1.8rem, 3.5vh, 3rem); line-height: 1; }
+.label {
+  font-size: clamp(0.65rem, 1.1vh, 0.85rem);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 80%;
+}
+
+/* ── Horloge ──────────────────────────────────────────── */
+.clock {
+  position: absolute;
+  bottom: clamp(20px, 4vh, 48px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.clockTime {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vh, 3.5rem);
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+
+.clockDate {
+  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
+  color: var(--c-text-muted);
+  text-transform: capitalize;
+}
+
+/* ── Animations ──────────────────────────────────────── */
+@keyframes popIn {
+  from { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.3); }
+  to   { opacity: 1; transform: translate(var(--x), var(--y)) scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(1.04); }
+}

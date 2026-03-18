@@ -1,0 +1,145 @@
+.page {
+  width: 100vw;
+  height: 100vh;
+  padding: clamp(80px, 10vh, 120px) clamp(24px, 5vw, 64px) clamp(24px, 4vh, 40px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 18px);
+  overflow: hidden;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vh, 2rem);
+  color: var(--c-primary);
+  text-align: center;
+}
+
+.airport {
+  font-size: clamp(0.8rem, 1.2vh, 0.95rem);
+  color: var(--c-text-muted);
+  text-align: center;
+}
+
+/* Recherche */
+.searchBar {
+  display: flex;
+  gap: 10px;
+  max-width: 600px;
+  align-self: center;
+  width: 100%;
+}
+
+.searchInput {
+  flex: 1;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  padding: 14px 20px;
+  font-size: clamp(0.9rem, 1.4vh, 1.05rem);
+  color: var(--c-text);
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: border-color var(--duration-fast);
+}
+.searchInput:focus {
+  outline: none;
+  border-color: var(--c-primary);
+}
+.searchInput::placeholder { color: var(--c-text-dim); font-weight: 400; letter-spacing: 0; }
+
+.searchBtn {
+  background: var(--c-primary);
+  color: #fff;
+  border-radius: var(--radius-full);
+  padding: 14px 28px;
+  font-size: clamp(0.85rem, 1.3vh, 1rem);
+  font-weight: 700;
+  transition: background var(--duration-fast);
+}
+.searchBtn:disabled { opacity: 0.5; }
+.searchBtn:not(:disabled):hover { background: var(--c-primary-dark); }
+
+.clearBtn {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  padding: 14px 18px;
+  font-size: 1rem;
+  color: var(--c-text-muted);
+}
+
+/* Onglets */
+.tabs {
+  display: flex;
+  gap: 10px;
+  align-self: center;
+}
+
+.tab {
+  padding: 12px 28px;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  font-size: clamp(0.85rem, 1.3vh, 1rem);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  transition: all var(--duration-fast);
+}
+
+.activeTab {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+
+/* Liste */
+.flightList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vh, 12px);
+  padding-right: 4px;
+}
+
+.flightRow {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(12px, 1.8vh, 18px) clamp(16px, 2.5vw, 28px);
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+  transition: border-color var(--duration-fast);
+}
+
+.flightRow:hover { border-color: var(--c-primary); }
+
+/* Gauche */
+.flightLeft  { display: flex; flex-direction: column; gap: 4px; }
+.flightNum   { font-size: clamp(1rem, 1.8vh, 1.3rem); font-weight: 800; color: var(--c-text); letter-spacing: 0.04em; }
+.airline     { font-size: clamp(0.75rem, 1.1vh, 0.9rem); color: var(--c-text-muted); }
+
+/* Centre — Route */
+.flightCenter { display: flex; align-items: center; gap: clamp(10px, 1.5vw, 20px); }
+.routePoint   { display: flex; flex-direction: column; }
+.routeIata    { font-size: clamp(1.2rem, 2.2vh, 1.8rem); font-weight: 800; color: var(--c-secondary); }
+.routeAirport { font-size: clamp(0.65rem, 0.95vh, 0.8rem); color: var(--c-text-muted); max-width: 140px; }
+.routeArrow   { font-size: clamp(1rem, 1.8vh, 1.5rem); color: var(--c-primary); opacity: 0.6; }
+
+/* Droite — Horaires */
+.flightRight   { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.timeBlock     { display: flex; flex-direction: column; align-items: flex-end; }
+.timeLabel     { font-size: clamp(0.62rem, 0.9vh, 0.75rem); color: var(--c-text-dim); text-transform: uppercase; }
+.timeValue     { font-size: clamp(0.9rem, 1.5vh, 1.15rem); font-weight: 700; color: var(--c-text); }
+.timeValue.delayed { color: #FCD34D; }
+.delayBadge    { font-size: clamp(0.65rem, 0.95vh, 0.8rem); color: #FCD34D; font-weight: 600; }
+.gateInfo      { display: flex; gap: 8px; font-size: clamp(0.7rem, 1vh, 0.85rem); color: var(--c-text-muted); }
+.gate          { font-weight: 700; color: var(--c-secondary); }
+
+/* États */
+.center { display: flex; align-items: center; justify-content: center; padding: 40px; }
+.empty  { text-align: center; padding: 40px; color: var(--c-text-muted); font-size: 1rem; }

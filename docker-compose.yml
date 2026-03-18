@@ -1,0 +1,89 @@
+version: "3.9"
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: connectbe_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${DB_NAME}
+      MYSQL_USER:          ${DB_USER}
+      MYSQL_PASSWORD:      ${DB_PASSWORD}
+    ports:
+      - "3307:3306"    # 3306 déjà utilisé par un autre conteneur MySQL
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./database/seeds/wellness.sql:/docker-entrypoint-initdb.d/02_wellness.sql
+      - ./database/seeds/poi.sql:/docker-entrypoint-initdb.d/03_poi.sql
+      - ./database/seeds/events.sql:/docker-entrypoint-initdb.d/04_events.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - connectbe_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: connectbe_redis
+    restart: unless-stopped
+    # Port non exposé à l'hôte — 6379 déjà pris par un autre conteneur
+    # Les autres conteneurs y accèdent via le réseau Docker interne
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - connectbe_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: connectbe_backend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "4001:4000"    # 4000 déjà utilisé
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - connectbe_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: connectbe_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:3000"    # 3000, 3001 et 8080 déjà utilisés
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:4001
+      - VITE_HOTEL_LAT=${HOTEL_LAT}
+      - VITE_HOTEL_LNG=${HOTEL_LNG}
+      - VITE_HOTEL_NAME=${HOTEL_NAME}
+      - VITE_IDLE_TIMEOUT_MS=${IDLE_TIMEOUT_MS}
+      - VITE_KIOSK_PUBLIC_URL=${KIOSK_PUBLIC_URL}
+      - VITE_GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+    networks:
+      - connectbe_net
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  connectbe_net:
+    driver: bridge

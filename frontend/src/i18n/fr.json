@@ -1,0 +1,158 @@
+{
+  "menu": {
+    "tagline": "Votre concierge numérique",
+    "aria_label": "Menu principal",
+    "weather":  "Météo",
+    "flights":  "Vols",
+    "map":      "Carte",
+    "wellness": "Bien-être",
+    "info":     "Infos utiles",
+    "events":   "Agenda",
+    "mobile":   "Sur mon mobile"
+  },
+  "common": {
+    "back":       "Retour",
+    "loading":    "Chargement…",
+    "error":      "Une erreur est survenue",
+    "retry":      "Réessayer",
+    "close":      "Fermer",
+    "more_info":  "En savoir plus",
+    "call":       "Appeler",
+    "website":    "Site web",
+    "today":      "Aujourd'hui",
+    "offline_banner": "Mode hors-ligne — Données en cache"
+  },
+  "weather": {
+    "title":         "Météo — Ouagadougou",
+    "current":       "Météo actuelle",
+    "feels_like":    "Ressenti",
+    "humidity":      "Humidité",
+    "wind":          "Vent",
+    "visibility":    "Visibilité",
+    "pressure":      "Pression",
+    "forecast_7days":"Prévisions 7 jours",
+    "today":         "Aujourd'hui",
+    "error":         "Météo indisponible",
+    "alert_title":   "Alerte météo"
+  },
+  "flights": {
+    "title":       "Informations de vols",
+    "arrivals":    "Arrivées",
+    "departures":  "Départs",
+    "search_placeholder": "Numéro de vol (ex: AH 110)",
+    "search":      "Rechercher",
+    "flight":      "Vol",
+    "airline":     "Compagnie",
+    "from":        "De",
+    "to":          "Vers",
+    "scheduled":   "Prévu",
+    "estimated":   "Estimé",
+    "actual":      "Réel",
+    "terminal":    "Terminal",
+    "gate":        "Porte",
+    "delay":       "Retard",
+    "delay_min":   "min de retard",
+    "status": {
+      "scheduled": "Prévu",
+      "active":    "En vol",
+      "landed":    "Atterri",
+      "cancelled": "Annulé",
+      "delayed":   "Retardé"
+    },
+    "airport":     "Aéroport International de Ouagadougou",
+    "no_results":  "Aucun vol trouvé",
+    "error":       "Informations de vols indisponibles"
+  },
+  "map": {
+    "title":         "Carte & Points d'intérêt",
+    "categories": {
+      "all":        "Tout afficher",
+      "restaurant": "Restaurants",
+      "museum":     "Musées",
+      "pharmacy":   "Pharmacies",
+      "taxi":       "Taxis",
+      "hospital":   "Hôpitaux",
+      "attraction": "Attractions",
+      "market":     "Marchés"
+    },
+    "hotel_location": "Notre hôtel",
+    "directions":     "Itinéraire",
+    "open_maps":      "Ouvrir dans Maps",
+    "distance":       "Distance",
+    "rating":         "Note"
+  },
+  "wellness": {
+    "title":          "Services Bien-être",
+    "subtitle":       "Prenez soin de vous",
+    "duration":       "Durée",
+    "price":          "Tarif",
+    "minutes":        "min",
+    "fcfa":           "F CFA",
+    "available_hours":"Horaires",
+    "available_days": "Disponible",
+    "how_to_book":    "Comment réserver",
+    "contact":        "Contacter le spa",
+    "benefits":       "Bienfaits",
+    "more_services":  "Autres services",
+    "book_info_title":"Informations de réservation"
+  },
+  "info": {
+    "title":       "Infos utiles",
+    "categories": {
+      "taxi":      "Taxis",
+      "doctor":    "Médecins",
+      "pharmacy":  "Pharmacies",
+      "shuttle":   "Navettes",
+      "emergency": "Urgences",
+      "embassy":   "Ambassades",
+      "bank":      "Banques"
+    },
+    "available_24h": "Disponible 24h/24",
+    "call_now":      "Appeler maintenant",
+    "whatsapp":      "WhatsApp"
+  },
+  "events": {
+    "title":        "Agenda des Événements",
+    "subtitle":     "À ne pas manquer à Ouagadougou",
+    "categories": {
+      "all":         "Tous",
+      "culture":     "Culture",
+      "music":       "Musique",
+      "sport":       "Sport",
+      "gastronomy":  "Gastronomie",
+      "festival":    "Festivals",
+      "exhibition":  "Expositions",
+      "hotel":       "À l'hôtel"
+    },
+    "free":          "Gratuit",
+    "price":         "Entrée",
+    "from":          "Du",
+    "to":            "au",
+    "on":            "Le",
+    "at":            "à",
+    "location":      "Lieu",
+    "featured":      "À la une",
+    "hotel_event":   "Événement hôtel",
+    "no_events":     "Aucun événement à venir",
+    "error":         "Agenda indisponible",
+    "detail_back":   "Retour à l'agenda",
+    "all_day":       "Toute la journée",
+    "multiday":      "Événement sur plusieurs jours",
+    "tags":          "Tags",
+    "share_qr":      "Partager sur mon mobile"
+  },
+  "mobile": {
+    "title":       "Emportez sur votre mobile",
+    "subtitle":    "Scannez le QR code pour accéder à cette section sur votre smartphone",
+    "sections": {
+      "weather":  "Météo",
+      "flights":  "Vols",
+      "map":      "Carte & POI",
+      "wellness": "Services Bien-être",
+      "info":     "Infos utiles",
+      "events":   "Agenda"
+    },
+    "scan_instruction": "Pointez l'appareil photo de votre téléphone vers ce code",
+    "valid_for":        "Lien valable 24h"
+  }
+}

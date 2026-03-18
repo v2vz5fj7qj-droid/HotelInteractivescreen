@@ -1,0 +1,20 @@
+.btn {
+  position: absolute;
+  bottom: clamp(16px, 3vw, 32px);
+  right: clamp(16px, 3vw, 32px);
+  z-index: 100;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--duration-base) var(--ease-spring),
+              background var(--duration-fast);
+}
+
+.btn:hover { transform: rotate(20deg) scale(1.1); }
+.btn:active { transform: scale(0.9); }
