@@ -197,6 +197,33 @@ sudo systemctl start connectbe-kiosk
 
 ---
 
+## Workflow Git — Pousser ses modifications sur GitHub
+
+À faire après chaque session de travail :
+
+```bash
+# 1. Voir ce qui a changé
+git status
+
+# 2. Ajouter tous les fichiers modifiés
+git add -A
+
+# 3. Créer un commit avec un message descriptif
+git commit -m "feat: description de ce que tu as fait"
+
+# 4. Envoyer sur GitHub
+git push origin main
+```
+
+> **En cas d'erreur "Author identity unknown"** (première utilisation) :
+> ```bash
+> git config --global user.email "akientega@icloud.com"
+> git config --global user.name "v2vz5fj7qj-droid"
+> ```
+> Puis relance `git commit` et `git push`.
+
+---
+
 ## Sections développées
 
 | Section              | Statut      |
