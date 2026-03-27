@@ -1,14 +1,15 @@
 const express = require('express');
 const axios   = require('axios');
 const cache   = require('../services/cacheService');
+const { addCredits } = require('../services/creditTracker');
 const router  = express.Router();
 
-const FLIGHT_KEY   = process.env.AVIATIONSTACK_API_KEY;
-const DEF_AIRPORT  = process.env.HOTEL_AIRPORT_IATA || 'OUA';
-const CACHE_TTL    = 120; // 2 min (données vols plus volatiles)
+const DEF_AIRPORT = process.env.HOTEL_AIRPORT_IATA || 'OUA';
+const CACHE_TTL   = 120; // 2 min (données vols plus volatiles)
 
 // GET /api/flights?airport=OUA&type=arrivals|departures
 router.get('/', async (req, res) => {
+  const FLIGHT_KEY = process.env.FLIGHTAPI_KEY;
   const airport = (req.query.airport || DEF_AIRPORT).toUpperCase();
   const type    = req.query.type === 'departures' ? 'departures' : 'arrivals';
 
@@ -21,22 +22,22 @@ router.get('/', async (req, res) => {
   }
 
   try {
-    const response = await axios.get('http://api.aviationstack.com/v1/flights', {
-      params: {
-        access_key: FLIGHT_KEY,
-        [type === 'arrivals' ? 'arr_iata' : 'dep_iata']: airport,
-        limit: 20,
-      },
-      timeout: 8000,
+    const response = await axios.get(`https://api.flightapi.io/compschedule/${FLIGHT_KEY}`, {
+      params: { mode: type, iata: airport, day: 0 },
+      timeout: 10000,
     });
+
+    // Réponse : tableau, airport en [0], vols sous .pluginData.schedule[type].data
+    const raw = response.data?.[0]?.airport?.pluginData?.schedule?.[type]?.data || [];
 
     const payload = {
       airport,
       type,
-      flights: (response.data.data || []).map(normalizeFlightData),
+      flights: raw.map(normalizeFlightData),
     };
 
     await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTL);
+    addCredits(2).catch(() => {}); // 2 crédits par appel schedule
     res.json(payload);
   } catch (err) {
     console.error('[Flights]', err.message);
@@ -46,55 +47,96 @@ router.get('/', async (req, res) => {
 
 // GET /api/flights/search?flight=AH110
 router.get('/search', async (req, res) => {
+  const FLIGHT_KEY = process.env.FLIGHTAPI_KEY;
   const flightNum = (req.query.flight || '').toUpperCase().trim();
   if (!flightNum) return res.status(400).json({ error: 'Numéro de vol requis' });
 
   if (!FLIGHT_KEY) return res.json({ flights: [getMockSingleFlight(flightNum)] });
 
+  // Découpage du numéro de vol : "AH110" → name="AH", num="110"
+  const match = flightNum.match(/^([A-Z]{2})(\d+)$/);
+  if (!match) return res.status(400).json({ error: 'Format invalide (ex: AH110)' });
+
+  const [, airlineCode, num] = match;
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+
   try {
-    const response = await axios.get('http://api.aviationstack.com/v1/flights', {
-      params: { access_key: FLIGHT_KEY, flight_iata: flightNum },
+    const response = await axios.get('https://api.flightapi.io/airline', {
+      params: { api_key: FLIGHT_KEY, num, name: airlineCode, date },
       timeout: 8000,
     });
-    res.json({ flights: (response.data.data || []).map(normalizeFlightData) });
+    addCredits(2).catch(() => {}); // 2 crédits par appel airline
+    res.json({ flights: (response.data || []).map(normalizeTrackingData) });
   } catch (err) {
     console.error('[Flights search]', err.message);
     res.json({ flights: [getMockSingleFlight(flightNum)] });
   }
 });
 
+// Normalisation réponse Schedule API (/schedule)
+// Timestamps Unix → ISO, structure imbriquée FlightAPI
 function normalizeFlightData(f) {
+  const fl    = f?.flight || {};
+  const toISO = (ts) => ts ? new Date(ts * 1000).toISOString() : null;
+
   return {
-    flight_number: f.flight?.iata || 'N/A',
-    airline:       f.airline?.name || 'Compagnie inconnue',
-    status:        f.flight_status || 'scheduled',
-    // Arrivée
-    arrival: {
-      airport:   f.arrival?.airport || '',
-      iata:      f.arrival?.iata    || '',
-      scheduled: f.arrival?.scheduled,
-      estimated: f.arrival?.estimated,
-      actual:    f.arrival?.actual,
-      terminal:  f.arrival?.terminal || null,
-      gate:      f.arrival?.gate     || null,
-      delay:     f.arrival?.delay    || 0,
-    },
-    // Départ
+    flight_number: fl.identification?.number?.default || 'N/A',
+    airline:       fl.airline?.name || 'Compagnie inconnue',
+    status:        fl.status?.text  || 'scheduled',
     departure: {
-      airport:   f.departure?.airport    || '',
-      iata:      f.departure?.iata       || '',
-      scheduled: f.departure?.scheduled,
-      estimated: f.departure?.estimated,
-      actual:    f.departure?.actual,
-      terminal:  f.departure?.terminal   || null,
-      gate:      f.departure?.gate       || null,
-      delay:     f.departure?.delay      || 0,
+      airport:   fl.airport?.origin?.name           || '',
+      iata:      fl.airport?.origin?.code?.iata     || '',
+      scheduled: toISO(fl.time?.scheduled?.departure),
+      estimated: toISO(fl.time?.estimated?.departure),
+      actual:    toISO(fl.time?.real?.departure),
+      terminal:  fl.airport?.origin?.info?.terminal || null,
+      gate:      fl.airport?.origin?.info?.gate     || null,
+      delay:     0,
+    },
+    arrival: {
+      airport:   fl.airport?.destination?.name           || '',
+      iata:      fl.airport?.destination?.code?.iata     || '',
+      scheduled: toISO(fl.time?.scheduled?.arrival),
+      estimated: toISO(fl.time?.estimated?.arrival),
+      actual:    toISO(fl.time?.real?.arrival),
+      terminal:  fl.airport?.destination?.info?.terminal || null,
+      gate:      fl.airport?.destination?.info?.gate     || null,
+      delay:     0,
+    },
+  };
+}
+
+// Normalisation réponse Tracking API (/airline)
+function normalizeTrackingData(f) {
+  return {
+    flight_number: (f.airline?.iata || '') + (f.flight?.number || ''),
+    airline:       f.airline?.name  || 'Compagnie inconnue',
+    status:        f.status         || 'scheduled',
+    departure: {
+      airport:   f.departure?.airport       || '',
+      iata:      f.departure?.airportCode   || '',
+      scheduled: f.departure?.scheduledTime || null,
+      estimated: f.departure?.estimatedTime || null,
+      actual:    f.departure?.outGateTime   || null,
+      terminal:  f.departure?.terminal      || null,
+      gate:      f.departure?.gate          || null,
+      delay:     0,
+    },
+    arrival: {
+      airport:   f.arrival?.airport       || '',
+      iata:      f.arrival?.airportCode   || '',
+      scheduled: f.arrival?.scheduledTime || null,
+      estimated: f.arrival?.estimatedTime || null,
+      actual:    f.arrival?.inGateTime    || null,
+      terminal:  f.arrival?.terminal      || null,
+      gate:      f.arrival?.gate          || null,
+      delay:     0,
     },
   };
 }
 
 function getMockFlights(airport, type) {
-  const now = new Date();
+  const now  = new Date();
   const soon = (h) => new Date(now.getTime() + h * 3600000).toISOString();
 
   return {

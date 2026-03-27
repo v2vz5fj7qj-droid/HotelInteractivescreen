@@ -1,14 +1,30 @@
 {
   "menu": {
-    "tagline": "Votre concierge numérique",
-    "aria_label": "Menu principal",
-    "weather":  "Météo",
-    "flights":  "Vols",
-    "map":      "Carte",
-    "wellness": "Bien-être",
-    "info":     "Infos utiles",
-    "events":   "Agenda",
-    "mobile":   "Sur mon mobile"
+    "tagline":              "Votre concierge numérique",
+    "aria_label":           "Menu principal",
+    "home":                 "Accueil",
+    "weather":              "Météo",
+    "flights":              "Vols",
+    "map":                  "Carte",
+    "wellness":             "Bien-être",
+    "info":                 "Infos utiles",
+    "events":               "Agenda",
+    "mobile":               "Mobile",
+    "search_placeholder":   "Rechercher un service…",
+    "welcome":              "Bienvenue",
+    "live_badge":           "En direct",
+    "banner_line1":         "Votre séjour",
+    "banner_line2":         "est",
+    "banner_accent":        "connecté",
+    "services":             "Nos services",
+    "wellness_sub":         "Massages & soins",
+    "flights_sub":          "Horaires & statuts",
+    "events_sub":           "Agenda local",
+    "map_sub":              "Explorer la ville",
+    "notif_title":          "Bon à savoir",
+    "notif_msg":            "Cocktail de bienvenue ce soir à 18h",
+    "weather_widget_label": "Météo locale",
+    "weather_widget_desc":  "Ciel dégagé"
   },
   "common": {
     "back":       "Retour",
@@ -20,20 +36,28 @@
     "call":       "Appeler",
     "website":    "Site web",
     "today":      "Aujourd'hui",
-    "offline_banner": "Mode hors-ligne — Données en cache"
+    "offline_banner": "Mode hors-ligne — Données en cache",
+    "change_language": "Changer de langue"
   },
   "weather": {
-    "title":         "Météo — Ouagadougou",
-    "current":       "Météo actuelle",
-    "feels_like":    "Ressenti",
-    "humidity":      "Humidité",
-    "wind":          "Vent",
-    "visibility":    "Visibilité",
-    "pressure":      "Pression",
-    "forecast_7days":"Prévisions 7 jours",
-    "today":         "Aujourd'hui",
-    "error":         "Météo indisponible",
-    "alert_title":   "Alerte météo"
+    "title":          "Météo",
+    "current":        "Météo actuelle",
+    "feels_like":     "Ressenti",
+    "humidity":       "Humidité",
+    "wind":           "Vent",
+    "visibility":     "Visibilité",
+    "pressure":       "Pression",
+    "uvi":            "Indice UV",
+    "sunrise":        "Lever",
+    "sunset":         "Coucher",
+    "hourly":         "Prévisions heure par heure",
+    "forecast_7days": "Prévisions 5 jours",
+    "today":          "Aujourd'hui",
+    "error":          "Météo indisponible",
+    "alert_title":    "Alerte météo",
+    "season_rainy":   "Saison des pluies",
+    "season_dry":     "Saison sèche",
+    "season_harmattan":"Harmattan"
   },
   "flights": {
     "title":       "Informations de vols",
@@ -99,6 +123,7 @@
   "info": {
     "title":       "Infos utiles",
     "categories": {
+      "all":       "Tous",
       "taxi":      "Taxis",
       "doctor":    "Médecins",
       "pharmacy":  "Pharmacies",
@@ -107,6 +132,8 @@
       "embassy":   "Ambassades",
       "bank":      "Banques"
     },
+    "no_results": "Aucun contact pour cette catégorie",
+    "error":      "Impossible de charger les contacts",
     "available_24h": "Disponible 24h/24",
     "call_now":      "Appeler maintenant",
     "whatsapp":      "WhatsApp"
@@ -140,6 +167,12 @@
     "multiday":      "Événement sur plusieurs jours",
     "tags":          "Tags",
     "share_qr":      "Partager sur mon mobile"
+  },
+  "attract": {
+    "tagline":   "Votre concierge numérique",
+    "cta_main":  "Touchez l'écran",
+    "cta_sub":   "pour accéder à tous nos services",
+    "dismiss":   "Toucher pour continuer"
   },
   "mobile": {
     "title":       "Emportez sur votre mobile",

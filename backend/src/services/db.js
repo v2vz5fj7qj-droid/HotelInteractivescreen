@@ -8,7 +8,12 @@ const pool = mysql.createPool({
   password:        process.env.DB_PASSWORD || '',
   waitForConnections: true,
   connectionLimit:    10,
-  charset: 'utf8mb4',
+  charset:            'UTF8MB4_UNICODE_CI',
+});
+
+// Force SET NAMES utf8mb4 sur chaque nouvelle connexion du pool
+pool.pool.on('connection', conn => {
+  conn.query("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
 });
 
 module.exports = pool;

@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 -- Seeds : Événements locaux — Ouagadougou
 CREATE TABLE IF NOT EXISTS events (
     id           INT AUTO_INCREMENT PRIMARY KEY,

@@ -19,6 +19,7 @@ services:
       - ./database/seeds/wellness.sql:/docker-entrypoint-initdb.d/02_wellness.sql
       - ./database/seeds/poi.sql:/docker-entrypoint-initdb.d/03_poi.sql
       - ./database/seeds/events.sql:/docker-entrypoint-initdb.d/04_events.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -31,8 +32,8 @@ services:
     image: redis:7-alpine
     container_name: connectbe_redis
     restart: unless-stopped
-    # Port non exposé à l'hôte — 6379 déjà pris par un autre conteneur
-    # Les autres conteneurs y accèdent via le réseau Docker interne
+    ports:
+      - "6380:6379"    # 6379 déjà pris — exposé sur 6380 pour le dev local
     command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
@@ -54,8 +55,11 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ./backend:/app
+      - ./backend/src:/app/src
       - /app/node_modules
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - connectbe_net
 
@@ -66,11 +70,16 @@ services:
     container_name: connectbe_frontend
     restart: unless-stopped
     ports:
-      - "5173:3000"    # 3000, 3001 et 8080 déjà utilisés
+      - "5173:5173"    # Vite écoute sur 5173 dans le conteneur
     depends_on:
       - backend
+    volumes:
+      - ./frontend/src:/app/src          # hot-reload du code source
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - /app/node_modules                # préserve les node_modules du container
     environment:
-      - VITE_API_BASE_URL=http://localhost:4001
+      - VITE_API_PROXY=http://backend:4000
       - VITE_HOTEL_LAT=${HOTEL_LAT}
       - VITE_HOTEL_LNG=${HOTEL_LNG}
       - VITE_HOTEL_NAME=${HOTEL_NAME}

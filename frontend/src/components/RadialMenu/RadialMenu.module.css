@@ -1,174 +1,574 @@
-.container {
-  position: relative;
-  width: 100vw;
+/* ════════════════════════════════════════════════════════
+   ConnectBé — Dashboard principal
+   Layout 3 zones : Header / Grid / Nav basse
+   ════════════════════════════════════════════════════════ */
+
+/* ── Shell global ──────────────────────────────────────── */
+.shell {
+  display: flex;
+  flex-direction: column;
   height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100vw;
+  background: var(--c-bg);
+  padding: var(--gap);
+  gap: var(--gap);
   overflow: hidden;
-
-  /* Fond dégradé chaud Burkina */
-  background:
-    radial-gradient(ellipse 60% 70% at 50% 50%,
-      color-mix(in srgb, var(--c-primary) 12%, transparent) 0%,
-      transparent 70%),
-    var(--c-bg);
 }
 
-/* ── Hub central ──────────────────────────────────────── */
-.hub {
-  position: absolute;
+/* ══════════════════════════════════════════════════════════
+   HEADER
+   ══════════════════════════════════════════════════════════ */
+.header {
+  flex-shrink: 0;
+  height: clamp(72px, 12vh, 110px);
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-
-.hubRing {
-  position: absolute;
-  width: clamp(180px, 22vh, 260px);
-  height: clamp(180px, 22vh, 260px);
-  border-radius: 50%;
-  border: 2px solid var(--c-border);
-  animation: pulse 3s ease-in-out infinite;
-}
-
-.hubContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 20px;
-}
-
-.logo {
-  width: clamp(60px, 9vh, 110px);
-  height: clamp(60px, 9vh, 110px);
-  object-fit: contain;
-}
-
-.hotelName {
-  font-family: var(--font-display);
-  font-size: clamp(1rem, 2vh, 1.6rem);
-  font-weight: 700;
-  color: var(--c-primary);
-  text-align: center;
-}
-
-.tagline {
-  font-size: clamp(0.65rem, 1.2vh, 0.9rem);
-  color: var(--c-text-muted);
-  text-align: center;
-}
-
-/* ── Items du menu ────────────────────────────────────── */
-.item {
-  position: absolute;
-  transform: translate(var(--x), var(--y));
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-
-  width:  clamp(96px, 13vh, 148px);
-  height: clamp(96px, 13vh, 148px);
-  border-radius: 50%;
-
+  justify-content: space-between;
+  gap: var(--gap);
   background: var(--c-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: 0 var(--pad-header);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.5vw, 22px);
+  flex-shrink: 0;
+}
+
+.brandIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(48px, 5.5vw, 72px);
+  height: clamp(48px, 5.5vw, 72px);
+  background: var(--c-primary);
+  border-radius: var(--radius-lg);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(194, 120, 42, 0.4);
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: clamp(1.6rem, 2.8vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
   color: var(--c-text);
-
-  /* Entrée animée */
-  animation: popIn 0.45s var(--ease-spring) var(--delay) both;
-  transition:
-    transform   var(--duration-base) var(--ease-spring),
-    box-shadow  var(--duration-base) var(--ease-smooth),
-    background  var(--duration-fast);
+  line-height: 1;
 }
 
-/* Anneau coloré */
-.ring {
+.brandTime {
+  font-size: clamp(0.65rem, 1vw, 0.85rem);
+  font-weight: 600;
+  color: var(--c-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+}
+
+.searchWrap {
+  position: relative;
+  width: clamp(220px, 28vw, 420px);
+}
+
+.searchIcon {
   position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 2.5px solid var(--color);
-  opacity: 0.6;
-  transition: opacity var(--duration-fast), inset var(--duration-base) var(--ease-spring);
+  left: clamp(14px, 1.5vw, 20px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-text-muted);
+  pointer-events: none;
 }
 
-/* Glow au hover */
-.glow {
+.searchInput {
+  width: 100%;
+  height: clamp(48px, 5.5vh, 64px);
+  background: var(--c-bg);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-full);
+  padding: 0 clamp(50px, 5vw, 64px) 0 clamp(42px, 4.5vw, 56px);
+  font-family: var(--font-body);
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  color: var(--c-text);
+  outline: none;
+  cursor: default;
+  transition: border-color var(--duration-base) var(--ease-smooth);
+}
+.searchInput::placeholder { color: var(--c-text-muted); }
+.searchInput:focus { border-color: var(--c-primary); }
+
+.micBtn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: unset;
+  min-height: unset;
+  background: var(--c-surface-solid);
+  border-radius: var(--radius-md);
+  color: var(--c-text-muted);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.micBtn:hover { background: var(--c-primary); color: #fff; }
+
+/* ══════════════════════════════════════════════════════════
+   GRILLE PRINCIPALE  (12 cols × 6 rows)
+   ══════════════════════════════════════════════════════════ */
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: var(--gap);
+  min-height: 0;
+}
+
+/* A — Bannière immersive (8 cols × 4 rows) */
+.banner {
+  grid-column: 1 / 9;
+  grid-row: 1 / 5;
+  position: relative;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+}
+
+.bannerImg {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--color) 25%, transparent), transparent 70%);
-  opacity: 0;
-  transition: opacity var(--duration-base);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.item:hover .glow,
-.item:focus-visible .glow { opacity: 1; }
-
-.item:hover,
-.item:focus-visible {
-  transform: translate(var(--x), var(--y)) scale(1.13);
-  box-shadow: 0 0 35px color-mix(in srgb, var(--color) 55%, transparent);
-  background: color-mix(in srgb, var(--color) 15%, var(--c-surface));
-  outline: none;
-}
-
-.item:hover .ring,
-.item:focus-visible .ring { opacity: 1; inset: -5px; }
-
-.item.pressed {
-  transform: translate(var(--x), var(--y)) scale(0.9);
-  opacity: 0.7;
-}
-
-.icon  { font-size: clamp(1.8rem, 3.5vh, 3rem); line-height: 1; }
-.label {
-  font-size: clamp(0.65rem, 1.1vh, 0.85rem);
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.2;
-  max-width: 80%;
-}
-
-/* ── Horloge ──────────────────────────────────────────── */
-.clock {
+.bannerOverlay {
   position: absolute;
-  bottom: clamp(20px, 4vh, 48px);
+  inset: 0;
+  background: linear-gradient(to top,
+    rgba(0,0,0,0.88) 0%,
+    rgba(0,0,0,0.18) 55%,
+    transparent 100%);
+}
+
+.bannerContent {
+  position: absolute;
+  bottom: clamp(16px, 2.5vh, 36px);
+  left: clamp(16px, 2.5vw, 36px);
+  right: clamp(16px, 2.5vw, 36px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.bannerBadge {
+  display: inline-block;
+  background: var(--c-primary);
+  color: #fff;
+  padding: 4px 16px;
+  border-radius: var(--radius-full);
+  font-size: clamp(0.6rem, 0.85vw, 0.78rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+
+.bannerTitle {
+  font-size: clamp(1.4rem, 3.2vw, 3.8rem);
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.bannerAccent { color: var(--c-secondary); }
+
+.bannerWeatherCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: var(--radius-xl);
+  padding: clamp(10px, 1.5vh, 18px) clamp(14px, 2vw, 24px);
+  cursor: pointer;
+  transition: background var(--duration-base);
+  flex-shrink: 0;
+  min-height: var(--touch-target);
+}
+.bannerWeatherCard:hover { background: rgba(194,120,42,0.25); }
+
+.bannerWeatherIcon { color: var(--c-secondary); }
+.bannerWeatherLabel {
+  font-size: clamp(0.6rem, 0.8vw, 0.75rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-secondary);
+}
+.bannerWeatherTemp {
+  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-weight: 800;
+  color: #fff;
+}
+.bannerChevron { color: rgba(255,255,255,0.45); margin-left: 4px; }
+
+/* B — Colonne cartes services (4 cols × 6 rows) */
+.serviceCol {
+  grid-column: 9 / 13;
+  grid-row: 1 / 7;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: var(--gap);
+}
+
+.serviceCard {
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) var(--ease-smooth),
+    transform var(--duration-fast) var(--ease-smooth);
+  text-align: left;
+  min-height: var(--touch-target);
+  background: transparent;
+}
+.serviceCard:hover {
+  border-color: var(--c-border-hover);
+  transform: scale(1.015);
+}
+.serviceCard:hover .serviceCardImg { transform: scale(1.08); opacity: 0.5; }
+.serviceCard:hover .serviceCardOverlay {
+  background: linear-gradient(135deg, rgba(194,120,42,0.18) 0%, rgba(8,5,2,0.5) 100%);
+}
+.serviceCard:hover .serviceCardChevron {
+  color: var(--c-primary);
+  transform: translateX(4px);
+}
+.serviceCardActive { transform: scale(0.96) !important; opacity: 0.7; }
+
+.serviceCardImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.32;
+  transition: transform 0.7s var(--ease-smooth), opacity var(--duration-base);
+}
+
+.serviceCardOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(8,5,2,0.78) 0%, rgba(8,5,2,0.42) 100%);
+  transition: background var(--duration-base);
+}
+
+.serviceCardBody {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: clamp(10px, 1.5vw, 20px) clamp(12px, 1.8vw, 24px);
+  gap: clamp(8px, 1.2vw, 16px);
+}
+
+.serviceCardIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(40px, 4.5vw, 58px);
+  height: clamp(40px, 4.5vw, 58px);
+  background: var(--card-color, var(--c-primary));
+  border-radius: var(--radius-md);
+  color: #fff;
+}
+
+.serviceCardText { flex: 1; min-width: 0; }
+
+.serviceCardName {
+  font-size: clamp(0.82rem, 1.3vw, 1.12rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serviceCardSub {
+  font-size: clamp(0.58rem, 0.8vw, 0.72rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}
+
+.serviceCardChevron {
+  flex-shrink: 0;
+  color: var(--c-text-dim);
+  transition: color var(--duration-base), transform var(--duration-base);
+}
+
+/* C — Carte notification (4 cols × 2 rows) */
+.notifCard {
+  grid-column: 1 / 5;
+  grid-row: 5 / 7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--c-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: clamp(14px, 2vw, 28px);
+  gap: 16px;
+}
+
+.notifLeft { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 22px); }
+.notifBellWrap { position: relative; flex-shrink: 0; }
+.notifBell { color: var(--c-primary); }
+
+.notifDot {
+  position: absolute;
+  top: -3px; right: -3px;
+  width: 12px; height: 12px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid var(--c-bg);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.notifTextWrap { flex: 1; min-width: 0; }
+
+.notifTitle {
+  font-size: clamp(0.82rem, 1.1vw, 1rem);
+  font-weight: 800;
+  color: var(--c-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Clip masquant le défilement */
+.notifMsgClip {
+  overflow: hidden;
+  height: clamp(1rem, 1.4vh, 1.2rem);
+  margin-top: 3px;
+}
+
+.notifMsg {
+  font-size: clamp(0.68rem, 0.9vw, 0.82rem);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: notifSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes notifSlideUp {
+  from {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Indicateurs dots */
+.notifDots {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.notifDotBar {
+  height: 3px;
+  width: 14px;
+  border-radius: 2px;
+  background: var(--c-border);
+  transition: background 0.3s, width 0.3s;
+}
+.notifDotBarActive {
+  background: var(--c-primary);
+  width: 22px;
+}
+
+/* Barre de progression temporelle */
+.notifProgressWrap {
+  flex-shrink: 0;
+  width: 3px;
+  height: clamp(32px, 5vh, 56px);
+  background: var(--c-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.notifProgressBar {
+  width: 100%;
+  height: 0%;
+  background: var(--c-primary);
+  border-radius: 2px;
+  animation: notifFillVert 5s linear forwards;
+}
+@keyframes notifFillVert {
+  from { height: 0%; }
+  to   { height: 100%; }
+}
+
+/* D — Widget météo (4 cols × 2 rows) */
+.weatherCard {
+  grid-column: 5 / 9;
+  grid-row: 5 / 7;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--c-primary-dark) 0%, var(--c-primary) 60%, var(--c-secondary) 100%);
+  border-radius: var(--radius-xl);
+  padding: clamp(14px, 2vw, 28px);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 8px 32px rgba(194, 120, 42, 0.3);
+  transition: transform var(--duration-fast), box-shadow var(--duration-base);
+  min-height: unset;
+}
+.weatherCard:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(194, 120, 42, 0.45);
+}
+
+.weatherCardLabel {
+  font-size: clamp(0.62rem, 0.85vw, 0.76rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.72);
+  margin-bottom: 4px;
+}
+.weatherCardTemp {
+  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+}
+.weatherCardDesc {
+  font-size: clamp(0.72rem, 1vw, 0.88rem);
+  font-weight: 600;
+  color: rgba(255,255,255,0.78);
+  margin-top: 4px;
+}
+.weatherCardIcon { color: rgba(255,255,255,0.28); flex-shrink: 0; }
+.weatherCardBody { flex: 1; }
+
+/* Dots localités dans le widget météo */
+.weatherDots {
+  position: absolute;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
+  gap: 6px;
   align-items: center;
-  gap: 2px;
+}
+.weatherDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  cursor: pointer;
+  transition: background 0.25s, width 0.25s, border-radius 0.25s;
+  flex-shrink: 0;
+}
+.weatherDotActive {
+  background: #fff;
+  width: 18px;
+  border-radius: 3px;
 }
 
-.clockTime {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vh, 3.5rem);
-  font-weight: 700;
-  color: var(--c-text);
-  line-height: 1;
-  letter-spacing: 0.05em;
+/* ══════════════════════════════════════════════════════════
+   NAVIGATION BASSE
+   ══════════════════════════════════════════════════════════ */
+.bottomNav {
+  flex-shrink: 0;
+  height: clamp(60px, 10vh, 88px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 0.6vw, 8px);
+  background: var(--c-surface-solid);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: 0 clamp(12px, 1.5vw, 20px);
 }
 
-.clockDate {
-  font-size: clamp(0.7rem, 1.2vh, 0.9rem);
+.navBtn {
+  display: flex;
+  align-items: center;
+  gap: clamp(5px, 0.7vw, 9px);
+  padding: clamp(7px, 0.9vh, 11px) clamp(10px, 1.3vw, 20px);
+  border-radius: var(--radius-lg);
   color: var(--c-text-muted);
-  text-transform: capitalize;
+  font-size: clamp(0.65rem, 0.85vw, 0.82rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
+  min-height: unset;
+  min-width: unset;
+  white-space: nowrap;
+}
+.navBtn:hover { color: var(--c-text); }
+
+.navBtnActive {
+  background: var(--c-primary);
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(194, 120, 42, 0.4);
+}
+.navBtnPressing { transform: scale(0.93); opacity: 0.65; }
+
+.navDivider {
+  width: 2px;
+  height: clamp(26px, 4vh, 42px);
+  background: var(--c-border);
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
-/* ── Animations ──────────────────────────────────────── */
-@keyframes popIn {
-  from { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.3); }
-  to   { opacity: 1; transform: translate(var(--x), var(--y)) scale(1); }
+.langBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: clamp(7px, 0.9vh, 11px) clamp(10px, 1.3vw, 18px);
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: clamp(0.65rem, 0.85vw, 0.82rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+  min-height: unset;
+  min-width: unset;
 }
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50%       { opacity: 0.6; transform: scale(1.04); }
-}
+.langBtn:hover { background: var(--c-primary); color: #fff; border-color: transparent; }
+.langCode { font-variant-numeric: tabular-nums; }

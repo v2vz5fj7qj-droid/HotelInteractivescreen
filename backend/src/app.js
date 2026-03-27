@@ -1,4 +1,7 @@
-require('dotenv').config();
+// Charge .env depuis backend/ en priorité, sinon remonte à la racine du projet
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 const express     = require('express');
 const cors        = require('cors');
 const helmet      = require('helmet');
@@ -12,7 +15,11 @@ const poiRoutes       = require('./routes/poi');
 const infoRoutes      = require('./routes/info');
 const analyticsRoutes = require('./routes/analytics');
 const qrRoutes        = require('./routes/qr');
-const themeRoutes     = require('./routes/theme');
+const themeRoutes         = require('./routes/theme');
+const notificationsRoutes = require('./routes/notifications');
+const adminRoutes         = require('./routes/admin');
+const { startWeatherScheduler } = require('./services/weatherRefresh');
+const { startFlightScheduler }  = require('./services/flightRefresh');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -34,7 +41,14 @@ app.use('/api/poi',       poiRoutes);
 app.use('/api/info',      infoRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/qr',        qrRoutes);
-app.use('/api/theme',     themeRoutes);
+app.use('/api/theme',         themeRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/admin',         adminRoutes);
+
+// Servir les uploads (logos)
+app.use('/uploads', require('express').static(
+  require('path').resolve(__dirname, '../../uploads')
+));
 
 // ── Health check ─────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({ status: 'ok', ts: Date.now() }));
@@ -50,4 +64,6 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`✅ ConnectBé API démarrée sur le port ${PORT}`);
+  startWeatherScheduler();
+  startFlightScheduler().catch(e => console.error('[Flights Scheduler]', e.message));
 });

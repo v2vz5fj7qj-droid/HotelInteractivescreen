@@ -39,9 +39,11 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // API calls → Network first, cache 10 min en fallback
+  // API calls → Network first, cache en fallback (GET uniquement)
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstApi(request));
+    if (request.method === 'GET') {
+      event.respondWith(networkFirstApi(request));
+    }
     return;
   }
 

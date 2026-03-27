@@ -1,0 +1,222 @@
+/* ════════════════════════════════════════════════════════
+   AttractScreen — Écran d'invitation tactile
+   Apparaît après 30s d'inactivité sur l'accueil
+   ════════════════════════════════════════════════════════ */
+
+/* ── Overlay plein écran ─────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 3, 1, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+
+  /* Caché par défaut — toujours dans le DOM */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s var(--ease-smooth);
+}
+
+/* Classe ajoutée dynamiquement quand visible=true */
+.overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* L'animation du contenu se déclenche via la classe .visible sur le parent */
+.overlay.visible .content {
+  animation: slideUp 0.9s var(--ease-spring) 0.2s both;
+}
+
+/* ── Particules flottantes en fond ───────────────────── */
+.particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  bottom: -20px;
+  width: clamp(4px, 0.8vw, 10px);
+  height: clamp(4px, 0.8vw, 10px);
+  border-radius: 50%;
+  background: var(--c-primary);
+  opacity: 0;
+
+  /* Position horizontale et timing décalé par variable CSS */
+  left:  calc(var(--i) * 8.5% + 2%);
+  animation: floatUp calc(4s + var(--i) * 0.6s) calc(var(--i) * 0.4s) ease-in infinite;
+}
+
+/* Variation de taille et couleur alternée */
+.particle:nth-child(even)  { background: var(--c-secondary); width: clamp(3px, 0.5vw, 7px); height: clamp(3px, 0.5vw, 7px); }
+.particle:nth-child(3n)    { background: var(--c-accent);    border-radius: 3px; }
+
+@keyframes floatUp {
+  0%   { transform: translateY(0)   scale(0.8); opacity: 0;   }
+  10%  { opacity: 0.7; }
+  90%  { opacity: 0.3; }
+  100% { transform: translateY(-105vh) scale(1.2); opacity: 0; }
+}
+
+/* ── Contenu central ─────────────────────────────────── */
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(28px, 5vh, 56px);
+  text-align: center;
+  animation: slideUp 0.9s var(--ease-spring) 0.2s both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Brand ───────────────────────────────────────────── */
+.brand { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
+.hotelName {
+  font-size: clamp(2.4rem, 5vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--c-text);
+  line-height: 1;
+}
+
+.tagline {
+  font-size: clamp(0.85rem, 1.4vw, 1.3rem);
+  font-weight: 600;
+  color: var(--c-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+/* ── Icône tactile + ondes ───────────────────────────── */
+.touchIconWrap {
+  position: relative;
+  width: clamp(120px, 18vw, 200px);
+  height: clamp(120px, 18vw, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ondes concentriques */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--c-primary);
+}
+
+.ring1 {
+  width: 100%; height: 100%;
+  animation: pulse 2.4s ease-out infinite;
+}
+.ring2 {
+  width: 72%; height: 72%;
+  animation: pulse 2.4s ease-out 0.5s infinite;
+}
+.ring3 {
+  width: 44%; height: 44%;
+  animation: pulse 2.4s ease-out 1s infinite;
+}
+
+@keyframes pulse {
+  0%   { transform: scale(0.85); opacity: 0.8; }
+  70%  { transform: scale(1.15); opacity: 0;   }
+  100% { transform: scale(1.15); opacity: 0;   }
+}
+
+/* Icône doigt */
+.touchIcon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(60px, 8vw, 90px);
+  height: clamp(60px, 8vw, 90px);
+  background: var(--c-primary);
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 0 40px rgba(194, 120, 42, 0.6);
+  animation: bounce 2s var(--ease-spring) infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0);    }
+  45%       { transform: translateY(-10px); }
+  60%       { transform: translateY(-6px);  }
+}
+
+/* ── Texte d'invitation ──────────────────────────────── */
+.cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.ctaMain {
+  font-size: clamp(1.6rem, 3.5vw, 3.8rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--c-text);
+
+  /* Effet shimmer */
+  background: linear-gradient(
+    90deg,
+    var(--c-text) 0%,
+    var(--c-secondary) 40%,
+    var(--c-primary) 60%,
+    var(--c-text) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% center; }
+  to   { background-position: -200% center; }
+}
+
+.ctaSub {
+  font-size: clamp(0.85rem, 1.4vw, 1.2rem);
+  font-weight: 500;
+  color: var(--c-text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── Horloge ─────────────────────────────────────────── */
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.6;
+}
+
+.clockTime {
+  font-size: clamp(2rem, 4vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.clockDate {
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  font-weight: 500;
+  color: var(--c-text-muted);
+  text-transform: capitalize;
+  letter-spacing: 0.06em;
+}

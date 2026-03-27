@@ -1,0 +1,72 @@
+import React, { useState } from 'react';
+import { useNavigate }     from 'react-router-dom';
+import axios               from 'axios';
+import styles              from './Admin.module.css';
+
+export default function AdminLogin() {
+  const [form,    setForm]    = useState({ username: '', password: '' });
+  const [error,   setError]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate              = useNavigate();
+
+  const submit = async e => {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try {
+      const { data } = await axios.post('/api/admin/login', form);
+      sessionStorage.setItem('admin_token', data.token);
+      navigate('/admin');
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError('Identifiants incorrects. Vérifiez votre nom d\'utilisateur et mot de passe.');
+      } else {
+        setError('Impossible de joindre le serveur. Vérifiez que le backend est démarré.');
+      }
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className={styles.loginPage}>
+      <div className={styles.loginCard}>
+        <div className={styles.loginLogo}>
+          <span className={styles.loginLogoIcon}>🏨</span>
+          <h1 className={styles.loginTitle}>ConnectBé</h1>
+          <p className={styles.loginSub}>Administration</p>
+        </div>
+
+        <form onSubmit={submit} className={styles.loginForm}>
+          <div className={styles.field}>
+            <label className={styles.label}>Identifiant</label>
+            <input
+              className={styles.input}
+              type="text"
+              value={form.username}
+              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+              autoComplete="username"
+              required
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Mot de passe</label>
+            <input
+              className={styles.input}
+              type="password"
+              value={form.password}
+              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          {error && <p className={styles.loginError}>{error}</p>}
+          <button className={styles.loginBtn} type="submit" disabled={loading}>
+            {loading ? 'Connexion…' : 'Se connecter'}
+          </button>
+        </form>
+
+        <p className={styles.loginFooter}>
+          Accès réservé au personnel autorisé
+        </p>
+      </div>
+    </div>
+  );
+}

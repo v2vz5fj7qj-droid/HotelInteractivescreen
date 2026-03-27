@@ -3,6 +3,12 @@ import api from '../services/api';
 
 const ThemeContext = createContext(null);
 
+// Retourne true si l'heure actuelle est en période nocturne (20h–7h)
+function isNightTime() {
+  const h = new Date().getHours();
+  return h >= 20 || h < 7;
+}
+
 // Thème par défaut — sera écrasé par les données de l'API /theme
 const DEFAULT_THEME = {
   hotel_name:          'ConnectBé',
@@ -25,8 +31,18 @@ const DEFAULT_THEME = {
 
 export function ThemeProvider({ children }) {
   const [config,    setConfig]    = useState(DEFAULT_THEME);
-  const [darkMode,  setDarkMode]  = useState(true);   // Borne = sombre par défaut
+  const [darkMode,  setDarkMode]  = useState(isNightTime()); // Auto selon heure
+  const [autoNight, setAutoNight] = useState(true);          // Mode auto activé
   const [loading,   setLoading]   = useState(true);
+
+  // ── Mode nuit automatique : vérification toutes les minutes ──
+  useEffect(() => {
+    if (!autoNight) return;
+    const check = () => setDarkMode(isNightTime());
+    check();
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  }, [autoNight]);
 
   // ── Chargement config thème depuis l'API ─────────────
   useEffect(() => {
@@ -54,7 +70,11 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--font-display',    `'${config.font_secondary}', serif`);
   }, [config, darkMode]);
 
-  const toggleDarkMode = useCallback(() => setDarkMode(d => !d), []);
+  // Bascule manuelle : désactive le mode auto jusqu'au prochain rechargement
+  const toggleDarkMode = useCallback(() => {
+    setAutoNight(false);
+    setDarkMode(d => !d);
+  }, []);
 
   // Mise à jour d'une valeur de thème (appel API + local)
   const updateTheme = useCallback(async (updates) => {
@@ -67,7 +87,7 @@ export function ThemeProvider({ children }) {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ config, darkMode, toggleDarkMode, updateTheme, loading }}>
+    <ThemeContext.Provider value={{ config, darkMode, autoNight, toggleDarkMode, updateTheme, loading }}>
       {children}
     </ThemeContext.Provider>
   );

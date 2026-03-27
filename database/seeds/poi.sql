@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 -- Seeds : Points d'intérêt — Ouagadougou
 INSERT INTO points_of_interest (category, lat, lng, phone, rating, price_level, display_order) VALUES
 -- Restaurants

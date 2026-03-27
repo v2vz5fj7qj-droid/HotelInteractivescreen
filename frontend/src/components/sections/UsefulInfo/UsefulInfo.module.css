@@ -1,0 +1,216 @@
+.page {
+  width: 100vw;
+  height: 100vh;
+  padding: clamp(80px, 10vh, 115px) clamp(20px, 4vw, 56px) clamp(16px, 3vh, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.8vh, 18px);
+  overflow: hidden;
+}
+
+.header { text-align: center; }
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vh, 2.2rem);
+  color: var(--c-primary);
+}
+
+/* ── Filtres ──────────────────────────────────────────── */
+.filters {
+  display: flex;
+  gap: clamp(6px, 1vw, 10px);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.filterBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  font-size: clamp(0.72rem, 1.1vh, 0.85rem);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--duration-fast);
+}
+.filterBtn:hover  { border-color: var(--c-primary); color: var(--c-primary); }
+.filterActive     { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+
+/* ── Contenu scrollable ───────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.5vh, 28px);
+  padding-right: 4px;
+}
+
+/* ── Groupe de catégorie ──────────────────────────────── */
+.group { display: flex; flex-direction: column; gap: 10px; }
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--c-border);
+}
+.groupIcon { font-size: 1.3rem; }
+.groupTitle {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.6vh, 1.15rem);
+  color: var(--c-text);
+  font-weight: 700;
+}
+
+/* ── Grille de cartes ─────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 30vw, 380px), 1fr));
+  gap: clamp(10px, 1.5vw, 16px);
+}
+
+/* ── Carte contact ────────────────────────────────────── */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--duration-base) var(--ease-spring),
+              box-shadow var(--duration-base);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,0,0,.10);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: clamp(12px, 1.8vh, 18px);
+  position: relative;
+}
+
+.cardAccent {
+  width: 4px;
+  align-self: stretch;
+  background: var(--cat-color, var(--c-primary));
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cardMain { flex: 1; min-width: 0; }
+
+.cardName {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.4vh, 1rem);
+  color: var(--c-text);
+  margin-bottom: 4px;
+}
+.cardDesc {
+  font-size: clamp(0.75rem, 1.15vh, 0.88rem);
+  color: var(--c-text-muted);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.cardAddress {
+  font-size: clamp(0.72rem, 1.1vh, 0.82rem);
+  color: var(--c-text-muted);
+}
+
+.badge24 {
+  flex-shrink: 0;
+  background: #10B98120;
+  color: #10B981;
+  border: 1px solid #10B98140;
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  font-size: clamp(0.62rem, 0.95vh, 0.72rem);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Actions ──────────────────────────────────────────── */
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px clamp(12px, 1.8vh, 18px) clamp(12px, 1.8vh, 18px);
+  border-top: 1px solid var(--c-border);
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--c-bg);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  font-size: clamp(0.72rem, 1.1vh, 0.82rem);
+  font-weight: 600;
+  color: var(--c-text);
+  text-decoration: none;
+  transition: all var(--duration-fast);
+}
+.actionBtn:hover      { border-color: var(--cat-color); color: var(--cat-color); }
+.actionWa:hover       { border-color: #25D366; color: #25D366; }
+.actionWeb:hover      { border-color: var(--c-primary); color: var(--c-primary); }
+
+/* ── États vides ──────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  color: var(--c-text-muted);
+  font-size: clamp(0.85rem, 1.3vh, 1rem);
+}
+.emptyIcon { font-size: 3rem; }
+.center { display: flex; justify-content: center; align-items: center; flex: 1; }
+
+/* ── Dots de navigation ───────────────────────────────── */
+.sliderDots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 0 2px;
+}
+.sliderDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s, width 0.25s, border-radius 0.25s;
+}
+.sliderDotActive {
+  background: var(--c-primary);
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* ── Animation slide entre catégories ────────────────── */
+@keyframes infoSlideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.slideIn { animation: infoSlideIn 0.3s ease; }

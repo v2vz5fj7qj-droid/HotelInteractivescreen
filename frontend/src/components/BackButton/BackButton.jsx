@@ -10,7 +10,7 @@ export default function BackButton({ to = '/', label }) {
   return (
     <button
       className={styles.btn}
-      onClick={() => navigate(to)}
+      onClick={() => navigate(to, { state: { direction: 'back' } })}
       aria-label={label || t('common.back')}
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">

@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 -- Seeds : Services Bien-Être ConnectBé
 INSERT INTO wellness_services
     (slug, duration_min, price_fcfa, contact_phone, booking_info, available_hours, available_days, display_order)

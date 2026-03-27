@@ -2,237 +2,188 @@
 
 Concierge numérique tactile pour hôtel — Ouagadougou, Burkina Faso.
 
-> **Racine du projet :** `/Users/macbookpro16/Documents/Projets dev/HotelInteractivescreen/`
+> Pour le démarrage rapide, voir [QUICKSTART.md](QUICKSTART.md).
 
 ---
 
-## Ports utilisés
+## Architecture
 
-| Service | Port hôte | Port interne |
-|---|---|---|
-| **Frontend (borne)** | **5173** | 3000 |
-| **Backend API** | **4001** | 4000 |
-| **MySQL** | **3307** | 3306 |
-| **Redis** | non exposé | 6379 |
+```
+HotelInteractivescreen/
+├── frontend/          React 18 + Vite 6 (borne kiosque + backoffice admin)
+├── backend/           Node.js / Express (API REST)
+├── database/          Schéma MySQL + seeds
+├── docker-compose.yml Stack complète (MySQL, Redis, backend, frontend)
+└── .env.example       Variables d'environnement à copier
+```
 
-> Ces ports ont été choisis pour éviter les conflits avec d'autres services déjà actifs sur la machine.
+## Ports
+
+| Service          | Port hôte | Port interne |
+|------------------|-----------|--------------|
+| Frontend (borne) | **5173**  | 5173         |
+| Backend API      | **4001**  | 4000         |
+| MySQL            | **3307**  | 3306         |
+| Redis            | **6380**  | 6379         |
 
 ---
 
-## Prérequis
+## Stack technique
 
-| Outil | Version minimale | Vérification |
-|---|---|---|
-| [Node.js](https://nodejs.org) | 20.x | `node -v` |
-| [Docker](https://www.docker.com) | 24.x | `docker -v` |
-| [Docker Compose](https://docs.docker.com/compose/) | 2.x | `docker compose version` |
-| npm | 10.x | `npm -v` |
-
----
-
-## 1. Configuration initiale
-
-```bash
-# Se placer dans le dossier du projet
-cd "HotelInteractivescreen"
-
-# Copier les variables d'environnement
-cp .env.example .env
-```
-
-Ouvrir `.env` et renseigner au minimum :
-
-```env
-# Clés API (laisser vide pour utiliser les données mock)
-OPENWEATHERMAP_API_KEY=votre_clé_ici
-AVIATIONSTACK_API_KEY=votre_clé_ici
-
-# Mots de passe base de données
-DB_ROOT_PASSWORD=un_mot_de_passe_fort
-DB_PASSWORD=un_autre_mot_de_passe
-```
-
-> **Sans clés API**, l'application fonctionne avec des **données de démonstration** (mock).
-> Aucune clé n'est obligatoire pour lancer et tester localement.
+| Couche    | Technologies                                              |
+|-----------|-----------------------------------------------------------|
+| Frontend  | React 18, Vite 6, React Router 6, CSS Modules, Lucide     |
+| Backend   | Node.js, Express, JWT (jsonwebtoken), multer              |
+| BDD       | MySQL 8, Redis (cache), ioredis                           |
+| Infra     | Docker Compose, Nginx (production)                        |
+| APIs      | OpenWeatherMap, FlightAPI.io                              |
 
 ---
 
-## 2. Lancement complet (Docker — recommandé)
+## Fonctionnalités de la borne
 
-Lance toute la stack en une commande :
+| Section          | Description                                               |
+|------------------|-----------------------------------------------------------|
+| Menu d'accueil   | Dashboard 3 zones, horloge live, notifications rotatives toutes les 5s |
+| Météo            | Météo actuelle + prévisions 7 jours (OWM)                 |
+| Vols             | Arrivées/départs OUA, recherche par numéro de vol         |
+| Bien-être        | Services spa/massage/piscine (info + horaires + tarifs)   |
+| Agenda           | Événements à Ouagadougou, filtres par catégorie           |
+| Carte & POI      | Carte Leaflet avec restaurants, pharmacies, taxis…        |
+| Infos utiles     | Contacts urgences, taxis, ambassades, pharmacies          |
+| Transfert mobile | QR code pour continuer sur smartphone                     |
 
-```bash
-docker compose up --build
-```
-
-| Service | URL locale |
-|---|---|
-| **Frontend (borne)** | http://localhost:5173 |
-| **Backend API** | http://localhost:4001 |
-| **MySQL** | localhost:3307 |
-| **Redis** | réseau interne Docker uniquement |
-
-Pour stopper :
-```bash
-docker compose down
-```
-
-Pour stopper et supprimer les données :
-```bash
-docker compose down -v
-```
+**Fonctionnalités transversales :**
+- Multilingue FR / EN
+- Mode offline (Service Worker + cache localStorage)
+- Mode nuit automatique (sombre 20h–7h, clair 7h–20h)
+- Attract screen après 30s d'inactivité sur l'accueil
+- Retour automatique à l'accueil après 30s d'inactivité sur toute autre page
+- Animations de transition entre pages
+- Badge météo flottant sur toutes les pages secondaires
+- Raccourci admin caché : 5 taps sur le logo → `/admin`
 
 ---
 
-## 3. Lancement en développement (sans Docker)
+## Backoffice admin
 
-### 3.1 Démarrer les dépendances (MySQL + Redis via Docker)
+Accessible sur `/admin` — interface séparée de la borne.
 
-```bash
-# Démarrer uniquement la base de données et le cache
-docker compose up mysql redis -d
-```
+| Page             | Fonctionnalité                                              |
+|------------------|-------------------------------------------------------------|
+| Tableau de bord  | Compteurs de contenu + graphique d'interactions 7 jours     |
+| Bien-être        | CRUD services (nom, description FR/EN, image, horaires, prix)|
+| Agenda           | CRUD événements (catégorie, dates, lieu, mise en avant)     |
+| Bon à savoir     | Notifications rotatives sur la borne (FR + EN, ordre)       |
+| Carte & POI      | CRUD points d'intérêt (catégorie, GPS, téléphone, statut)   |
+| Infos utiles     | CRUD contacts (taxi, médecin, urgences, ambassade — FR/EN)  |
+| Localités météo  | Villes affichées dans la météo, localité par défaut         |
+| Vols             | Config aéroport IATA, intervalle de rafraîchissement, scheduler auto, compteur crédits FlightAPI |
+| Thème            | Couleurs, logo (upload ou URL), nom hôtel — live sans redéploiement |
 
-Attendre que MySQL soit prêt (environ 20 secondes) :
-```bash
-docker compose logs mysql --follow
-# Attendre le message : "ready for connections"
-```
-
-### 3.2 Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Le serveur écoute sur **http://localhost:4001**.
-
-Vérifier que l'API répond :
-```bash
-curl http://localhost:4001/api/health
-# Attendu : {"status":"ok","ts":...}
-```
-
-### 3.3 Frontend
-
-Dans un **nouveau terminal** :
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-L'interface est disponible sur **http://localhost:5173**.
+**Sécurité :** Authentification JWT (8h), token en sessionStorage, route guard sur toutes les pages protégées.
 
 ---
 
-## 4. Structure des variables d'environnement
+## Variables d'environnement
 
-```
-.env                    ← Variables actives (ignoré par git)
-.env.example            ← Modèle à copier
-```
-
-| Variable | Description | Obligatoire |
-|---|---|---|
-| `OPENWEATHERMAP_API_KEY` | Clé OpenWeatherMap | Non (mock si absent) |
-| `AVIATIONSTACK_API_KEY` | Clé AviationStack | Non (mock si absent) |
-| `DB_ROOT_PASSWORD` | Mot de passe root MySQL | Oui |
-| `DB_PASSWORD` | Mot de passe utilisateur MySQL | Oui |
-| `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS de l'hôtel | Non (Ouaga par défaut) |
-| `KIOSK_PUBLIC_URL` | URL publique pour les QR codes | Non (localhost:5173) |
-| `IDLE_TIMEOUT_MS` | Délai inactivité en ms | Non (30000) |
+| Variable                | Description                              | Obligatoire |
+|-------------------------|------------------------------------------|-------------|
+| `DB_ROOT_PASSWORD`      | Mot de passe root MySQL                  | Oui         |
+| `DB_PASSWORD`           | Mot de passe utilisateur MySQL           | Oui         |
+| `OPENWEATHERMAP_API_KEY`| Clé OpenWeatherMap (météo)              | Non (mock)  |
+| `FLIGHTAPI_KEY`         | Clé FlightAPI.io (vols temps réel)       | Non (mock)  |
+| `HOTEL_AIRPORT_IATA`    | Code IATA aéroport par défaut (ex: OUA)  | Non (OUA)   |
+| `ADMIN_USERNAME`        | Login backoffice (défaut : `admin`)      | Non         |
+| `ADMIN_PASSWORD`        | Mot de passe backoffice                  | Non         |
+| `JWT_SECRET`            | Secret de signature JWT                  | Non (défaut dev) |
+| `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS de l'hôtel            | Non (Ouaga) |
+| `IDLE_TIMEOUT_MS`       | Délai inactivité avant retour accueil    | Non (30000) |
 
 ---
 
-## 5. Endpoints API principaux
+## Endpoints API
 
 ```
-GET  /api/health              → Santé du serveur
-GET  /api/weather/current     → Météo actuelle + prévisions 7 jours
-GET  /api/flights?type=arrivals|departures   → Liste vols OUA
-GET  /api/flights/search?flight=AH110        → Recherche vol
-GET  /api/wellness?locale=fr  → Services bien-être
-GET  /api/wellness/:id        → Détail d'un service
-GET  /api/events?locale=fr&category=music    → Agenda événements (upcoming par défaut)
-GET  /api/events/:id                         → Détail d'un événement
-GET  /api/poi?locale=fr&category=restaurant  → Points d'intérêt
-GET  /api/info?locale=fr      → Contacts utiles
-GET  /api/qr?section=weather  → QR code base64
-GET  /api/theme               → Configuration thème
-PUT  /api/theme               → Modifier le thème (body: { updates: {} })
-POST /api/analytics           → Enregistrer un événement
-GET  /api/analytics/summary   → Stats 24h
+GET  /api/health                         Santé du serveur
+GET  /api/weather/current                Météo actuelle + prévisions 7 jours
+GET  /api/flights?type=arrivals&airport=OUA  Vols (arrivals|departures)
+GET  /api/flights/search?flight=ET937        Recherche par numéro de vol
+GET  /api/wellness?locale=fr             Services bien-être
+GET  /api/events?locale=fr&category=...  Agenda événements
+GET  /api/poi?locale=fr&category=...     Points d'intérêt
+GET  /api/info?locale=fr                 Contacts utiles
+GET  /api/notifications                  Notifications actives (borne)
+GET  /api/theme                          Configuration thème
+GET  /api/analytics/summary              Stats interactions 24h
+POST /api/analytics                      Enregistrer une interaction
+GET  /api/qr?section=...                 QR code base64
+
+POST /api/admin/login                    Authentification admin
+GET  /api/admin/wellness                 Liste services (admin)
+POST /api/admin/wellness                 Créer service
+PUT  /api/admin/wellness/:id             Modifier service
+DELETE /api/admin/wellness/:id           Supprimer service
+[Idem pour /admin/events, /admin/notifications, /admin/poi, /admin/info]
+GET  /api/admin/theme                    Config thème (admin)
+PUT  /api/admin/theme                    Modifier thème
+POST /api/admin/theme/logo               Upload logo
+GET  /api/admin/analytics?days=7         Stats interactions (admin)
+GET  /api/admin/flights/config           Config vols (aéroport, intervalle, auto-refresh)
+PUT  /api/admin/flights/config           Modifier config vols + redémarrer scheduler
+POST /api/admin/flights/refresh          Rafraîchissement manuel des vols
+GET  /api/admin/flights/credits          Crédits FlightAPI utilisés/restants
+POST /api/admin/flights/credits/reset    Remettre le compteur de crédits à zéro
+GET  /api/admin/flights/debug            Diagnostic API FlightAPI (dev)
+POST /api/admin/weather/refresh          Rafraîchissement météo manuel
 ```
 
 ---
 
-## 6. Personnaliser le thème ConnectBé
+## Mode offline
 
-Le thème est modifiable sans redéploiement via l'API :
+L'application est **offline-first** :
+- Le **Service Worker** (`public/sw.js`) met en cache les assets statiques
+- L'**intercepteur Axios** lit le `localStorage` si le réseau est coupé
+- Le **backend** retourne des données mock si une API externe est indisponible
+- Une **bannière orange** s'affiche en cas de perte de connexion
+
+---
+
+## Personnaliser le thème sans redéploiement
 
 ```bash
-curl -X PUT http://localhost:4001/api/theme \
+curl -X PUT http://localhost:4001/api/admin/theme \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
   -d '{
     "updates": {
       "hotel_name":    "Mon Hôtel",
-      "color_primary": "#1A6B3C",
-      "color_secondary": "#A8D580",
-      "logo_url": "/images/mon-logo.png"
+      "color_primary": "#1A6B3C"
     }
   }'
 ```
 
-Clés modifiables : `hotel_name`, `color_primary`, `color_primary_dark`, `color_secondary`,
-`color_accent`, `color_bg_dark`, `color_bg_light`, `font_primary`, `font_secondary`,
-`logo_url`, `logo_url_dark`, `idle_timeout_ms`.
+Ou directement depuis le backoffice → **Thème**.
 
 ---
 
-## 7. Mode kiosque (borne physique)
+## Mode kiosque (borne physique)
 
-### Linux / Ubuntu (recommandé)
-
-```bash
-# Lancer Chromium en plein écran sur la borne
-chromium-browser \
-  --kiosk \
-  --noerrdialogs \
-  --disable-infobars \
-  --disable-session-crashed-bubble \
-  --no-first-run \
-  --start-fullscreen \
-  --app=http://localhost:5173
-```
-
-### Windows
-
-```batch
-"C:\Program Files\Google\Chrome\Application\chrome.exe" ^
-  --kiosk ^
-  --app=http://localhost:5173 ^
-  --disable-pinch ^
-  --overscroll-history-navigation=0
-```
-
-### Autostart au démarrage (Linux / systemd)
+### Autostart au démarrage — Linux / systemd
 
 Créer `/etc/systemd/system/connectbe-kiosk.service` :
 
 ```ini
 [Unit]
 Description=ConnectBé Kiosk
-After=network.target
+After=network.target docker.service
 
 [Service]
 Type=simple
 User=kiosk
 WorkingDirectory=/opt/connectbe
-ExecStart=docker compose up
+ExecStart=/usr/bin/docker compose up
 Restart=always
 
 [Install]
@@ -246,74 +197,21 @@ sudo systemctl start connectbe-kiosk
 
 ---
 
-## 8. Base de données — Accès direct
-
-```bash
-# Connexion MySQL via Docker (port hôte 3307)
-docker exec -it connectbe_mysql mysql -u connectbe_user -p connectbe_kiosk
-
-# Ou depuis un client externe (TablePlus, DBeaver…)
-# Host: 127.0.0.1  Port: 3307  User: connectbe_user  DB: connectbe_kiosk
-
-# Vérifier les services bien-être
-SELECT id, slug, price_fcfa, available_hours FROM wellness_services;
-
-# Ajouter un service bien-être
-INSERT INTO wellness_services (slug, duration_min, price_fcfa, available_hours, available_days)
-VALUES ('hammam', 60, 35000, '10:00-19:00', 'Lun-Sam');
-
-INSERT INTO wellness_service_translations (service_id, locale, name, description)
-VALUES (LAST_INSERT_ID(), 'fr', 'Hammam', 'Bain de vapeur traditionnel.');
-```
-
----
-
-## 9. Mode offline
-
-L'application est **offline-first** :
-
-- Le **Service Worker** (`public/sw.js`) met en cache les assets statiques et les réponses API.
-- L'**intercepteur Axios** (`services/api.js`) lit le `localStorage` si le réseau est coupé.
-- Le **backend** retourne des données mock si une API externe est indisponible.
-- Une **bannière orange** s'affiche automatiquement en cas de perte de connexion.
-
----
-
-## 10. Commandes utiles
-
-```bash
-# Voir les logs en temps réel
-docker compose logs -f backend
-docker compose logs -f frontend
-
-# Reconstruire après modification du code
-docker compose up --build backend
-
-# Vider le cache Redis
-docker exec -it connectbe_redis redis-cli FLUSHALL
-
-# Sauvegarder la base de données
-docker exec connectbe_mysql mysqldump -u connectbe_user -p connectbe_kiosk > backup.sql
-
-# Restaurer une sauvegarde
-docker exec -i connectbe_mysql mysql -u connectbe_user -p connectbe_kiosk < backup.sql
-```
-
----
-
 ## Sections développées
 
-| Section | Sprint | Statut |
-|---|---|---|
-| Menu radial animé | S1 | ✅ Complet |
-| Météo (7 jours + métriques) | S2 | ✅ Complet |
-| Vols (arrivées/départs/recherche) | S2 | ✅ Complet |
-| Services Bien-être (liste + détail infos résa) | S2 | ✅ Complet |
-| Transfert Mobile (QR code dynamique) | S2 | ✅ Complet |
-| Agenda Événements (filtres + détail) | S2 | ✅ Complet |
-| Carte Leaflet + POI | S3 | 🔜 À venir |
-| Infos utiles (contacts) | S3 | 🔜 À venir |
-| Multilingue FR/EN | S1-S2 | ✅ Complet |
-| Mode offline (SW + cache) | S2 | ✅ Complet |
-| Analytics interactions | S2 | ✅ Complet |
-| Thème personnalisable via API | S2 | ✅ Complet |
+| Section              | Statut      |
+|----------------------|-------------|
+| Menu d'accueil       | ✅ Complet  |
+| Météo                | ✅ Complet  |
+| Vols                 | ✅ Complet  |
+| Bien-être            | ✅ Complet  |
+| Agenda événements    | ✅ Complet  |
+| Carte & POI (Leaflet)| ✅ Complet  |
+| Infos utiles         | ✅ Complet  |
+| Transfert mobile     | ✅ Complet  |
+| Multilingue FR/EN    | ✅ Complet  |
+| Mode offline         | ✅ Complet  |
+| Analytics            | ✅ Complet  |
+| Backoffice admin     | ✅ Complet  |
+| Mode nuit auto       | ✅ Complet  |
+| Animations transitions| ✅ Complet |

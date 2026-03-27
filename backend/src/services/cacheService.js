@@ -26,4 +26,11 @@ module.exports = {
     try { await getClient().del(key); }
     catch {}
   },
+  async delPattern(pattern) {
+    try {
+      const client = getClient();
+      const keys = await client.keys(pattern);
+      if (keys.length) await client.del(...keys);
+    } catch {}
+  },
 };

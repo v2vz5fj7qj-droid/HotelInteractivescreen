@@ -32,7 +32,12 @@ INSERT INTO theme_config (config_key, config_value, label) VALUES
 ('font_secondary',      'Playfair Display',   'Police titres'),
 ('logo_url',            '/images/logo.png',   'URL du logo hôtel'),
 ('logo_url_dark',       '/images/logo-dark.png', 'Logo pour fond sombre'),
-('idle_timeout_ms',     '30000',              'Délai inactivité avant retour menu (ms)');
+('idle_timeout_ms',     '30000',              'Délai inactivité avant retour menu (ms)'),
+('flight_airport_iata',     'OUA',   'Code IATA aéroport des vols'),
+('flight_refresh_interval', '5',     'Intervalle rafraîchissement automatique vols (minutes)'),
+('flight_auto_refresh',     '0',     'Rafraîchissement automatique des vols activé (0/1)'),
+('flight_credits_used',     '0',    'Crédits FlightAPI consommés depuis la dernière remise à zéro'),
+('flight_credits_limit',    '30',   'Quota de crédits FlightAPI du plan souscrit');
 
 -- ─────────────────────────────────────────────────
 --  SERVICES BIEN-ÊTRE
@@ -121,6 +126,59 @@ CREATE TABLE IF NOT EXISTS useful_contact_translations (
 );
 
 -- ─────────────────────────────────────────────────
+--  ÉVÉNEMENTS
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS events (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    slug         VARCHAR(120) NOT NULL UNIQUE,
+    category     ENUM('culture','music','sport','gastronomy','festival','exhibition','hotel') NOT NULL,
+    start_date   DATE         NOT NULL,
+    end_date     DATE,
+    start_time   TIME,
+    end_time     TIME,
+    location     VARCHAR(200),
+    lat          DECIMAL(10,7),
+    lng          DECIMAL(10,7),
+    price_fcfa   INT DEFAULT 0,
+    image_url    VARCHAR(255),
+    is_featured  BOOLEAN DEFAULT FALSE,
+    is_active    BOOLEAN DEFAULT TRUE,
+    display_order INT DEFAULT 0,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_start_date (start_date),
+    INDEX idx_category   (category)
+);
+
+CREATE TABLE IF NOT EXISTS event_translations (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    event_id    INT        NOT NULL,
+    locale      VARCHAR(5) NOT NULL,
+    title       VARCHAR(200) NOT NULL,
+    description TEXT,
+    tags        VARCHAR(255),
+    FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_event_locale (event_id, locale)
+);
+
+-- ─────────────────────────────────────────────────
+--  NOTIFICATIONS (Bon à savoir — gérées en backoffice)
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS notifications (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    message_fr    VARCHAR(500) NOT NULL,
+    message_en    VARCHAR(500),
+    is_active     BOOLEAN DEFAULT TRUE,
+    display_order INT     DEFAULT 0,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_active (is_active)
+);
+
+INSERT INTO notifications (message_fr, message_en, display_order) VALUES
+('Cocktail de bienvenue ce soir à 18h au bar rooftop',   'Welcome cocktail tonight at 6pm at the rooftop bar', 1),
+('Navette aéroport disponible — Contactez la réception', 'Airport shuttle available — Contact reception',       2),
+('Petit-déjeuner servi de 6h30 à 10h30',                 'Breakfast served from 6:30am to 10:30am',            3);
+
+-- ─────────────────────────────────────────────────
 --  ANALYTICS
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS analytics_events (
@@ -136,3 +194,21 @@ CREATE TABLE IF NOT EXISTS analytics_events (
     INDEX idx_created (created_at),
     INDEX idx_section_date (section, created_at)
 );
+
+-- ── Localités météo ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS localities (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  name          VARCHAR(100) NOT NULL,
+  country       VARCHAR(60)  NOT NULL DEFAULT 'Burkina Faso',
+  owm_city_id   VARCHAR(20),
+  lat           DECIMAL(9,6),
+  lng           DECIMAL(9,6),
+  timezone      VARCHAR(50)  DEFAULT 'Africa/Ouagadougou',
+  is_active     BOOLEAN      DEFAULT TRUE,
+  is_default    BOOLEAN      DEFAULT FALSE,
+  display_order INT          DEFAULT 0,
+  created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO localities (id, name, country, owm_city_id, lat, lng, timezone, is_active, is_default, display_order)
+VALUES (1, 'Ouagadougou', 'Burkina Faso', '2355426', 12.3641, -1.5332, 'Africa/Ouagadougou', 1, 1, 0);
