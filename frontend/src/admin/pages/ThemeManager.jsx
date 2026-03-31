@@ -17,11 +17,13 @@ const TEXT_FIELDS = [
 ];
 
 export default function ThemeManager() {
-  const [config,  setConfig]  = useState({});
-  const [saving,  setSaving]  = useState(false);
-  const [msg,     setMsg]     = useState('');
-  const [logoFile,setLogoFile]= useState(null);
-  const [preview, setPreview] = useState(null);
+  const [config,      setConfig]      = useState({});
+  const [saving,      setSaving]      = useState(false);
+  const [msg,         setMsg]         = useState('');
+  const [logoFile,    setLogoFile]    = useState(null);
+  const [preview,     setPreview]     = useState(null);
+  const [bannerFile,  setBannerFile]  = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
 
   useEffect(() => {
     api.get('/theme').then(r => setConfig(r.data.config || {})).catch(() => {});
@@ -46,6 +48,17 @@ export default function ThemeManager() {
         setLogoFile(null);
       }
 
+      // Upload bannière si sélectionnée
+      if (bannerFile) {
+        const fd = new FormData();
+        fd.append('banner', bannerFile);
+        const { data } = await api.post('/theme/banner', fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        setConfig(c => ({ ...c, banner_image_url: data.url }));
+        setBannerFile(null);
+      }
+
       setMsg('✅ Thème mis à jour — rechargez la borne pour voir les changements');
     } catch { setMsg('❌ Erreur lors de la sauvegarde'); }
     finally { setSaving(false); setTimeout(() => setMsg(''), 5000); }
@@ -56,6 +69,13 @@ export default function ThemeManager() {
     if (!file) return;
     setLogoFile(file);
     setPreview(URL.createObjectURL(file));
+  };
+
+  const onBannerChange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
   };
 
   return (
@@ -121,6 +141,58 @@ export default function ThemeManager() {
             <div className={styles.field} style={{ width:'100%' }}>
               <label className={styles.label}>Ou entrer une URL directement</label>
               <input className={styles.input} value={config.logo_url || ''} onChange={e => set('logo_url', e.target.value)} placeholder="/images/logo.png" />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Image bannière ── */}
+        <div style={{ background:'#fff', borderRadius:14, border:'1px solid #E5E7EB', padding:24, gridColumn:'span 2' }}>
+          <h3 style={{ fontWeight:800, marginBottom:20, fontSize:'1rem' }}>🖼 Image de fond (bannière accueil)</h3>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, alignItems:'start' }}>
+            {/* Aperçu */}
+            <div>
+              <p style={{ fontSize:'0.78rem', color:'#6B7280', marginBottom:8 }}>Aperçu actuel</p>
+              <img
+                src={bannerPreview || config.banner_image_url || ''}
+                alt="Bannière"
+                style={{ width:'100%', height:140, objectFit:'cover', borderRadius:10, border:'1px solid #E5E7EB', background:'#F3F4F6' }}
+                onError={e => { e.target.style.display='none'; }}
+              />
+            </div>
+            {/* Contrôles */}
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <label className={styles.uploadZone}>
+                <input type="file" accept="image/*" style={{ display:'none' }} onChange={onBannerChange} />
+                {bannerFile ? (
+                  <p style={{ fontWeight:600, color:'#C2782A' }}>✅ {bannerFile.name} sélectionné</p>
+                ) : (
+                  <>
+                    <p style={{ fontSize:'1.4rem', marginBottom:6 }}>📁</p>
+                    <p style={{ fontSize:'0.88rem', color:'#6B7280' }}>Cliquez pour charger une image</p>
+                    <p style={{ fontSize:'0.75rem', color:'#9CA3AF', marginTop:4 }}>JPG, PNG, WebP — max 5 Mo</p>
+                  </>
+                )}
+              </label>
+              <div className={styles.field}>
+                <label className={styles.label}>Ou entrer un lien URL</label>
+                <input
+                  className={styles.input}
+                  value={config.banner_image_url || ''}
+                  onChange={e => set('banner_image_url', e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                style={{ fontSize:'0.78rem' }}
+                onClick={() => {
+                  set('banner_image_url', 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80');
+                  setBannerFile(null); setBannerPreview(null);
+                }}
+              >
+                ↺ Rétablir l'image par défaut
+              </button>
             </div>
           </div>
         </div>

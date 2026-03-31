@@ -27,11 +27,13 @@ async function getLocality(localityId) {
   };
 }
 
-// Agrège les intervalles 3h en journées
+// Agrège les intervalles 3h en journées (5 jours suivants, aujourd'hui exclu)
 function aggregateDaily(list) {
+  const today = new Date().toISOString().split('T')[0];
   const days = {};
   for (const entry of list) {
     const date = new Date(entry.dt * 1000).toISOString().split('T')[0];
+    if (date === today) continue; // aujourd'hui déjà couvert par la météo courante
     if (!days[date]) {
       days[date] = { dt: entry.dt, temps: [], icons: {}, humidity: [], pop: 0, desc: '' };
     }
@@ -41,9 +43,11 @@ function aggregateDaily(list) {
     days[date].icons[icon] = (days[date].icons[icon] || 0) + 1;
     days[date].humidity.push(entry.main.humidity);
     days[date].pop = Math.max(days[date].pop, (entry.pop || 0) * 100);
-    if (!days[date].desc) days[date].desc = entry.weather[0].description;
+    // Préférer la description de milieu de journée (12h–15h)
+    const hour = new Date(entry.dt * 1000).getUTCHours();
+    if (!days[date].desc || (hour >= 12 && hour <= 15)) days[date].desc = entry.weather[0].description;
   }
-  return Object.values(days).slice(0, 7).map(d => ({
+  return Object.values(days).slice(0, 5).map(d => ({
     dt:          d.dt,
     temp_max:    Math.round(Math.max(...d.temps)),
     temp_min:    Math.round(Math.min(...d.temps)),
@@ -72,6 +76,15 @@ function getSeasonInfo(month) {
   return                                { key: 'dry',        icon: '☀️' };
 }
 
+// Retourne les dernières vraies données (stale) ou null
+async function getStaleWeather(cacheKey) {
+  const raw = await cache.get(`${cacheKey}:stale`);
+  if (!raw) return null;
+  const payload = JSON.parse(raw);
+  payload._stale = true;
+  return payload;
+}
+
 // GET /api/weather/current?locality_id=
 router.get('/current', async (req, res) => {
   const locality   = await getLocality(req.query.locality_id);
@@ -79,20 +92,20 @@ router.get('/current', async (req, res) => {
   const cached     = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
 
-  if (!OWM_KEY) return res.json(getMockWeather(locality));
+  if (!OWM_KEY) {
+    const stale = await getStaleWeather(cacheKey);
+    if (stale) return res.json(stale);
+    return res.status(503).json({ error: 'Clé API météo non configurée', _unavailable: true });
+  }
 
   try {
-    const params = locality.owm_city_id
-      ? { id: locality.owm_city_id, appid: OWM_KEY, units: 'metric', lang: 'fr' }
-      : { lat: locality.lat, lon: locality.lng, appid: OWM_KEY, units: 'metric', lang: 'fr' };
+    const params = { lat: locality.lat, lon: locality.lng, appid: OWM_KEY, units: 'metric', lang: 'fr' };
 
     const [curr, forecast3h, uvRes] = await Promise.allSettled([
       axios.get('https://api.openweathermap.org/data/2.5/weather',   { params }),
       axios.get('https://api.openweathermap.org/data/2.5/forecast',  { params }),
       axios.get('https://api.openweathermap.org/data/2.5/uvi',       {
-        params: { lat: locality.lat || curr?.value?.data?.coord?.lat,
-                  lon: locality.lng || curr?.value?.data?.coord?.lon,
-                  appid: OWM_KEY },
+        params: { lat: locality.lat, lon: locality.lng, appid: OWM_KEY },
       }),
     ]);
 
@@ -100,6 +113,12 @@ router.get('/current', async (req, res) => {
     const f  = forecast3h.value?.data?.list || [];
     const uvi = uvRes.value?.data?.value ?? null;
     const month = new Date().getMonth(); // 0-indexed
+
+    if (!c?.main) {
+      const status = curr.value?.status ?? curr.reason?.response?.status;
+      const msg    = curr.reason?.response?.data?.message ?? curr.reason?.message ?? 'réponse vide';
+      throw new Error(`Réponse OWM invalide (HTTP ${status}) — ${msg}`);
+    }
 
     const payload = {
       locality: { name: locality.name, country: locality.country },
@@ -133,10 +152,14 @@ router.get('/current', async (req, res) => {
     };
 
     await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTL);
+    // Sauvegarde persistante (30 jours) pour le fallback stale
+    await cache.set(`${cacheKey}:stale`, JSON.stringify(payload), 30 * 24 * 3600);
     res.json(payload);
   } catch (err) {
     console.error('[Weather]', err.message);
-    res.json(getMockWeather(locality));
+    const stale = await getStaleWeather(cacheKey);
+    if (stale) return res.json(stale);
+    res.status(503).json({ error: 'Données météo indisponibles', _unavailable: true });
   }
 });
 
@@ -150,40 +173,5 @@ router.get('/localities', async (req, res) => {
   } catch { res.json([]); }
 });
 
-function getMockWeather(locality = {}) {
-  const now   = Math.floor(Date.now() / 1000);
-  const month = new Date().getMonth();
-  return {
-    _mock: true,
-    locality: { name: locality.name || 'Ouagadougou', country: locality.country || 'Burkina Faso' },
-    current: {
-      temp: 34, feels_like: 39, temp_min: 28, temp_max: 38,
-      humidity: 35, pressure: 1008,
-      wind_speed: 22, wind_deg: 45,
-      visibility: 8,
-      icon: '01d', description: 'Ciel dégagé',
-      sunrise: now - 3600 * 5, sunset: now + 3600 * 7,
-      uvi: 11, uvi_info: { level: 'Extrême', color: '#7C3AED' },
-      season: getSeasonInfo(month),
-      dt: now,
-    },
-    forecast: Array.from({ length: 5 }, (_, i) => ({
-      dt: now + i * 86400,
-      temp_max: 35 + Math.round(Math.random() * 4),
-      temp_min: 22 + Math.round(Math.random() * 3),
-      icon: ['01d','02d','10d','01d','02d'][i],
-      description: ['Ensoleillé','Partiellement nuageux','Averses','Ensoleillé','Nuageux'][i],
-      pop: [0, 10, 60, 5, 20][i],
-      humidity: 35 + Math.round(Math.random() * 20),
-    })),
-    hourly: Array.from({ length: 8 }, (_, i) => ({
-      dt:   now + i * 10800,
-      temp: 30 + Math.round(Math.random() * 8),
-      icon: i < 3 ? '01d' : '02d',
-      pop:  i === 5 ? 40 : 0,
-    })),
-    alerts: [],
-  };
-}
 
 module.exports = router;

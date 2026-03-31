@@ -81,7 +81,8 @@
       "active":    "In flight",
       "landed":    "Landed",
       "cancelled": "Cancelled",
-      "delayed":   "Delayed"
+      "delayed":   "Delayed",
+      "diverted":  "Diverted"
     },
     "airport":     "Ouagadougou International Airport",
     "no_results":  "No flights found",

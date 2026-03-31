@@ -11,8 +11,10 @@ export default function KioskLayout({ children }) {
   const { t }    = useLanguage();
   const location = useLocation();
 
-  // Badge météo visible sur toutes les pages sauf accueil et météo (qui ont déjà leur widget)
-  const showWeatherBadge = location.pathname !== '/' && location.pathname !== '/weather';
+  // Badge météo visible sur toutes les pages sauf accueil, météo et admin
+  const showWeatherBadge = !location.pathname.startsWith('/admin')
+    && location.pathname !== '/'
+    && location.pathname !== '/weather';
 
   return (
     <div className={styles.layout}>

@@ -366,3 +366,40 @@
   color: var(--c-text-muted);
 }
 .emptyIcon { font-size: 3rem; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Agenda / Événements
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Portrait : détail en colonne unique ──────────────── */
+@media (orientation: portrait) {
+  .page {
+    padding-top:   clamp(64px, 8vh, 100px);
+    padding-left:  clamp(16px, 3vw, 40px);
+    padding-right: clamp(16px, 3vw, 40px);
+  }
+
+  /* Détail : empiler image + infos */
+  .detailContent {
+    grid-template-columns: 1fr;
+    gap: clamp(16px, 2.5vh, 28px);
+  }
+
+  .detailImg,
+  .detailImgPlaceholder { max-height: 32vh; }
+
+  /* Cartes featured en colonne unique */
+  .featuredRow {
+    grid-template-columns: 1fr;
+  }
+
+  .cardFeatured {
+    grid-template-columns: clamp(100px, 30vw, 160px) 1fr;
+  }
+}
+
+/* ─── Très petits écrans (< 480px) ────────────────────── */
+@media (max-width: 480px) {
+  .cardFeatured { grid-template-columns: 1fr; }
+  .cardFeaturedImg { min-height: clamp(80px, 22vw, 120px); }
+}

@@ -1,7 +1,7 @@
 .badge {
   position: fixed;
   top: clamp(12px, 1.5vh, 20px);
-  right: clamp(12px, 1.5vw, 24px);
+  right: clamp(200px, 18vw, 260px); /* décalé pour ne pas couvrir le LanguageSwitcher */
   z-index: 200;
 
   display: flex;

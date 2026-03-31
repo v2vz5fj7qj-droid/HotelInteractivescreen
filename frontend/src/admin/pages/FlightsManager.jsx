@@ -3,13 +3,18 @@ import api    from '../useAdminApi';
 import styles from '../Admin.module.css';
 
 const INTERVALS = [
-  { value: 1,  label: '1 minute'   },
-  { value: 2,  label: '2 minutes'  },
-  { value: 5,  label: '5 minutes'  },
-  { value: 10, label: '10 minutes' },
-  { value: 15, label: '15 minutes' },
-  { value: 30, label: '30 minutes' },
-  { value: 60, label: '1 heure'    },
+  { value: 1,    label: '1 minute'    },
+  { value: 2,    label: '2 minutes'   },
+  { value: 5,    label: '5 minutes'   },
+  { value: 10,   label: '10 minutes'  },
+  { value: 15,   label: '15 minutes'  },
+  { value: 30,   label: '30 minutes'  },
+  { value: 60,   label: '1 heure'     },
+  { value: 120,  label: '2 heures'    },
+  { value: 240,  label: '4 heures'    },
+  { value: 360,  label: '6 heures'    },
+  { value: 720,  label: '12 heures'   },
+  { value: 1440, label: '24 heures'   },
 ];
 
 const PLANS = [
@@ -19,7 +24,28 @@ const PLANS = [
   { label: 'Plus (500 000 crédits)',   value: 500000 },
 ];
 
-const DEFAULT_CONFIG  = { airport_iata: 'OUA', refresh_interval: 5, auto_refresh: false };
+const TIMEZONES = [
+  { value: 'Africa/Abidjan',       label: 'Abidjan / Dakar / Ouagadougou (UTC+0)' },
+  { value: 'Africa/Lagos',         label: 'Lagos / Douala / Libreville (UTC+1)' },
+  { value: 'Africa/Cairo',         label: 'Le Caire / Khartoum (UTC+2)' },
+  { value: 'Africa/Johannesburg',  label: 'Johannesburg / Harare (UTC+2)' },
+  { value: 'Africa/Nairobi',       label: 'Nairobi / Addis-Abeba (UTC+3)' },
+  { value: 'Europe/London',        label: 'Londres (UTC+0/+1)' },
+  { value: 'Europe/Paris',         label: 'Paris / Bruxelles (UTC+1/+2)' },
+  { value: 'Europe/Moscow',        label: 'Moscou (UTC+3)' },
+  { value: 'Asia/Dubai',           label: 'Dubaï (UTC+4)' },
+  { value: 'Asia/Kolkata',         label: 'New Delhi (UTC+5:30)' },
+  { value: 'Asia/Singapore',       label: 'Singapour / Hong Kong (UTC+8)' },
+  { value: 'Asia/Tokyo',           label: 'Tokyo (UTC+9)' },
+  { value: 'America/New_York',     label: 'New York (UTC-5/-4)' },
+  { value: 'America/Chicago',      label: 'Chicago (UTC-6/-5)' },
+  { value: 'America/Los_Angeles',  label: 'Los Angeles (UTC-8/-7)' },
+  { value: 'UTC',                  label: 'UTC (référence universelle)' },
+];
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+const DEFAULT_CONFIG  = { airport_iata: 'OUA', refresh_interval: 5, auto_refresh: false, refresh_mode: 'interval', schedule_times: [], timezone: 'Africa/Abidjan' };
 const DEFAULT_CREDITS = { used: 0, limit: 30000, remaining: 30000 };
 
 export default function FlightsManager() {
@@ -221,24 +247,119 @@ export default function FlightsManager() {
 
         <div className={styles.settingsDivider} />
 
+        {/* Mode d'actualisation */}
         <div className={styles.settingsRow}>
           <div className={styles.settingsRowInfo}>
-            <span className={styles.settingsRowLabel}>Intervalle d'actualisation</span>
-            <span className={styles.settingsRowHint}>
-              Fréquence du rafraîchissement automatique · ~{Math.round((60 / config.refresh_interval) * 2 * 24 * 30).toLocaleString('fr-FR')} crédits/mois
-            </span>
+            <span className={styles.settingsRowLabel}>Mode d'actualisation</span>
+            <span className={styles.settingsRowHint}>Intervalle fixe ou heures spécifiques de la journée</span>
           </div>
           <div className={styles.settingsRowControl}>
-            <select
-              className={styles.select}
-              style={{ width: 160 }}
-              value={config.refresh_interval}
-              onChange={e => setConfig(p => ({ ...p, refresh_interval: +e.target.value }))}
-            >
-              {INTERVALS.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
-            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[{ value: 'interval', label: 'Intervalle fixe' }, { value: 'schedule', label: 'Heures spécifiques' }].map(m => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setConfig(p => ({ ...p, refresh_mode: m.value }))}
+                  style={{
+                    padding: '6px 14px', borderRadius: 6, border: '2px solid',
+                    borderColor: config.refresh_mode === m.value ? '#3B82F6' : '#D1D5DB',
+                    background: config.refresh_mode === m.value ? '#EFF6FF' : 'transparent',
+                    color: config.refresh_mode === m.value ? '#1D4ED8' : '#6B7280',
+                    fontWeight: config.refresh_mode === m.value ? 700 : 400,
+                    cursor: 'pointer', fontSize: '0.85rem',
+                  }}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+
+        <div className={styles.settingsDivider} />
+
+        {config.refresh_mode === 'interval' ? (
+          <div className={styles.settingsRow}>
+            <div className={styles.settingsRowInfo}>
+              <span className={styles.settingsRowLabel}>Intervalle d'actualisation</span>
+              <span className={styles.settingsRowHint}>
+                ~{Math.round((60 / config.refresh_interval) * 2 * 24 * 30).toLocaleString('fr-FR')} crédits/mois
+              </span>
+            </div>
+            <div className={styles.settingsRowControl}>
+              <select
+                className={styles.select}
+                style={{ width: 160 }}
+                value={config.refresh_interval}
+                onChange={e => setConfig(p => ({ ...p, refresh_interval: +e.target.value }))}
+              >
+                {INTERVALS.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className={styles.settingsRow}>
+              <div className={styles.settingsRowInfo}>
+                <span className={styles.settingsRowLabel}>Fuseau horaire</span>
+                <span className={styles.settingsRowHint}>Les heures ci-dessous seront interprétées dans ce fuseau</span>
+              </div>
+              <div className={styles.settingsRowControl}>
+                <select
+                  className={styles.select}
+                  style={{ width: '100%', maxWidth: 320 }}
+                  value={config.timezone}
+                  onChange={e => setConfig(p => ({ ...p, timezone: e.target.value }))}
+                >
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.settingsDivider} />
+
+            {/* Grille d'heures — layout vertical pleine largeur */}
+            <div style={{ padding: '14px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <span className={styles.settingsRowLabel}>Heures d'actualisation</span>
+                <span className={styles.settingsRowHint}>
+                  {config.schedule_times.length === 0
+                    ? 'Aucune heure sélectionnée'
+                    : `${config.schedule_times.length} heure(s) · ~${config.schedule_times.length * 2 * 30} crédits/mois`}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 8 }}>
+                {HOURS.map(h => {
+                  const active = config.schedule_times.includes(h);
+                  return (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setConfig(p => ({
+                        ...p,
+                        schedule_times: active
+                          ? p.schedule_times.filter(t => t !== h)
+                          : [...p.schedule_times, h].sort((a, b) => a - b),
+                      }))}
+                      style={{
+                        height: 38, borderRadius: 8, border: '2px solid',
+                        borderColor: active ? '#3B82F6' : '#D1D5DB',
+                        background: active ? '#3B82F6' : 'transparent',
+                        color: active ? '#fff' : '#6B7280',
+                        fontWeight: active ? 700 : 400,
+                        cursor: 'pointer', fontSize: '0.82rem',
+                      }}
+                    >
+                      {String(h).padStart(2, '0')}h
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className={styles.settingsDivider} />
 
@@ -246,7 +367,7 @@ export default function FlightsManager() {
           <div className={styles.settingsRowInfo}>
             <span className={styles.settingsRowLabel}>Actualisation automatique</span>
             <span className={styles.settingsRowHint}>
-              Le serveur appelle FlightAPI à l'intervalle défini
+              Active le scheduler selon le mode configuré ci-dessus
             </span>
           </div>
           <div className={styles.settingsRowControl}>
@@ -285,11 +406,27 @@ export default function FlightsManager() {
             <strong className={styles.statusValue}>{saved.airport_iata}</strong>
           </div>
           <div className={styles.statusItem}>
-            <span className={styles.statusLabel}>Intervalle</span>
+            <span className={styles.statusLabel}>Mode</span>
             <strong className={styles.statusValue}>
-              {INTERVALS.find(i => i.value === saved.refresh_interval)?.label || `${saved.refresh_interval} min`}
+              {saved.refresh_mode === 'schedule' ? 'Heures spécifiques' : 'Intervalle fixe'}
             </strong>
           </div>
+          <div className={styles.statusItem}>
+            <span className={styles.statusLabel}>{saved.refresh_mode === 'schedule' ? 'Heures programmées' : 'Intervalle'}</span>
+            <strong className={styles.statusValue}>
+              {saved.refresh_mode === 'schedule'
+                ? (saved.schedule_times?.length > 0
+                    ? saved.schedule_times.map(h => String(h).padStart(2, '0') + 'h').join(', ')
+                    : '—')
+                : (INTERVALS.find(i => i.value === saved.refresh_interval)?.label || `${saved.refresh_interval} min`)}
+            </strong>
+          </div>
+          {saved.refresh_mode === 'schedule' && (
+            <div className={styles.statusItem}>
+              <span className={styles.statusLabel}>Fuseau horaire</span>
+              <strong className={styles.statusValue}>{saved.timezone}</strong>
+            </div>
+          )}
           <div className={styles.statusItem}>
             <span className={styles.statusLabel}>Scheduler</span>
             <span className={saved.auto_refresh ? styles.badgeActive : styles.badgeInactive}>

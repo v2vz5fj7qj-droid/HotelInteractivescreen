@@ -22,6 +22,11 @@ module.exports = {
     try { await getClient().setex(key, ttlSeconds, value); }
     catch { /* Redis indisponible — on continue sans cache */ }
   },
+  // Stocke sans expiration — la clé reste jusqu'à suppression explicite
+  async setPersist(key, value) {
+    try { await getClient().set(key, value); }
+    catch { /* Redis indisponible */ }
+  },
   async del(key) {
     try { await getClient().del(key); }
     catch {}

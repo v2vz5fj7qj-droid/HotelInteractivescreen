@@ -24,6 +24,21 @@ const upload = multer({
   },
 });
 
+// ── Upload images POI ─────────────────────────────────
+const poiImgDir     = path.resolve(__dirname, '../../../uploads/poi');
+const poiImgStorage = multer.diskStorage({
+  destination: (req, file, cb) => { fs.mkdirSync(poiImgDir, { recursive: true }); cb(null, poiImgDir); },
+  filename:    (_, file, cb) => cb(null, `poi_${Date.now()}${path.extname(file.originalname)}`),
+});
+const uploadPoiImg = multer({
+  storage:    poiImgStorage,
+  limits:     { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    const ok = /image\/(png|jpeg|webp)/.test(file.mimetype);
+    cb(ok ? null : new Error('Format non supporté'), ok);
+  },
+});
+
 // ════════════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════════════
@@ -261,14 +276,30 @@ router.get('/poi', adminAuth, async (req, res) => {
   try {
     const [pois] = await db.query(`
       SELECT p.*,
-        JSON_OBJECTAGG(t.locale, JSON_OBJECT('name', t.name, 'address', t.address)) AS translations
+        JSON_OBJECTAGG(t.locale, JSON_OBJECT('name', t.name, 'address', t.address, 'description', t.description)) AS translations
       FROM points_of_interest p
       LEFT JOIN poi_translations t ON t.poi_id = p.id
       GROUP BY p.id ORDER BY p.category, p.id
     `);
+    const ids = pois.map(p => p.id);
+    let images = [];
+    try {
+      if (ids.length) {
+        [images] = await db.query(
+          'SELECT id, poi_id, url, display_order FROM poi_images WHERE poi_id IN (?) ORDER BY poi_id, display_order',
+          [ids]
+        );
+      }
+    } catch (_) { /* table poi_images absente — migration requise */ }
+    const imgMap = {};
+    for (const img of images) {
+      if (!imgMap[img.poi_id]) imgMap[img.poi_id] = [];
+      imgMap[img.poi_id].push(img);
+    }
     res.json(pois.map(p => ({
       ...p,
       translations: typeof p.translations === 'string' ? JSON.parse(p.translations) : p.translations,
+      images: imgMap[p.id] || [],
     })));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -285,8 +316,8 @@ router.post('/poi', adminAuth, async (req, res) => {
     const id = result.insertId;
     for (const [locale, tr] of Object.entries(translations || {})) {
       await conn.query(
-        'INSERT INTO poi_translations (poi_id, locale, name, address) VALUES (?,?,?,?)',
-        [id, locale, tr.name, tr.address || null]
+        'INSERT INTO poi_translations (poi_id, locale, name, address, description) VALUES (?,?,?,?,?)',
+        [id, locale, tr.name, tr.address || null, tr.description || null]
       );
     }
     await conn.commit();
@@ -309,9 +340,9 @@ router.put('/poi/:id', adminAuth, async (req, res) => {
     );
     for (const [locale, tr] of Object.entries(translations || {})) {
       await conn.query(
-        `INSERT INTO poi_translations (poi_id, locale, name, address) VALUES (?,?,?,?)
-         ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address)`,
-        [req.params.id, locale, tr.name, tr.address || null]
+        `INSERT INTO poi_translations (poi_id, locale, name, address, description) VALUES (?,?,?,?,?)
+         ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address), description=VALUES(description)`,
+        [req.params.id, locale, tr.name, tr.address || null, tr.description || null]
       );
     }
     await conn.commit();
@@ -321,6 +352,42 @@ router.put('/poi/:id', adminAuth, async (req, res) => {
     await conn.rollback();
     res.status(500).json({ error: err.message });
   } finally { conn.release(); }
+});
+
+// POST /api/admin/poi/:id/images — upload (max 3 par POI)
+router.post('/poi/:id/images', adminAuth, uploadPoiImg.single('image'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+  const poiId = req.params.id;
+  try {
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM poi_images WHERE poi_id=?', [poiId]);
+    if (count >= 3) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Maximum 3 images par point d\'intérêt' });
+    }
+    const url = `/uploads/poi/${req.file.filename}`;
+    const [r] = await db.query(
+      'INSERT INTO poi_images (poi_id, url, display_order) VALUES (?,?,?)',
+      [poiId, url, count]
+    );
+    await cache.delPattern('poi:*');
+    res.status(201).json({ id: r.insertId, url });
+  } catch (err) {
+    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/poi/images/:imageId
+router.delete('/poi/images/:imageId', adminAuth, async (req, res) => {
+  try {
+    const [[img]] = await db.query('SELECT * FROM poi_images WHERE id=?', [req.params.imageId]);
+    if (!img) return res.status(404).json({ error: 'Image non trouvée' });
+    const filePath = path.resolve(__dirname, '../../../', img.url.replace(/^\//, ''));
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    await db.query('DELETE FROM poi_images WHERE id=?', [req.params.imageId]);
+    await cache.delPattern('poi:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 router.delete('/poi/:id', adminAuth, async (req, res) => {
@@ -490,12 +557,19 @@ router.get('/flights/config', adminAuth, async (req, res) => {
 
 // PUT /api/admin/flights/config
 router.put('/flights/config', adminAuth, async (req, res) => {
-  const { airport_iata, refresh_interval, auto_refresh, credits_limit } = req.body;
+  const { airport_iata, refresh_interval, auto_refresh, credits_limit, refresh_mode, schedule_times, timezone } = req.body;
   try {
+    const validTimes = (Array.isArray(schedule_times) ? schedule_times : [])
+      .map(Number)
+      .filter(n => !isNaN(n) && n >= 0 && n <= 23);
+
     const updates = {
       flight_airport_iata:     (airport_iata || 'OUA').toUpperCase().trim(),
-      flight_refresh_interval: String(Math.max(1, parseInt(refresh_interval || '5', 10))),
+      flight_refresh_interval: String(Math.min(1440, Math.max(1, parseInt(refresh_interval || '5', 10)))),
       flight_auto_refresh:     auto_refresh ? '1' : '0',
+      flight_refresh_mode:     refresh_mode === 'schedule' ? 'schedule' : 'interval',
+      flight_schedule_times:   validTimes.join(','),
+      flight_timezone:         timezone || 'Africa/Ouagadougou',
       ...(credits_limit !== undefined && {
         flight_credits_limit: String(Math.max(1, parseInt(credits_limit, 10))),
       }),
@@ -635,6 +709,21 @@ router.post('/theme/logo', adminAuth, upload.single('logo'), async (req, res) =>
   try {
     await db.query(
       `INSERT INTO theme_config (config_key, config_value) VALUES ('logo_url', ?)
+       ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)`,
+      [publicPath]
+    );
+    await cache.del('theme:config');
+    res.json({ url: publicPath });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/admin/theme/banner — upload image de fond bannière
+router.post('/theme/banner', adminAuth, upload.single('banner'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+  const publicPath = `/uploads/${req.file.filename}`;
+  try {
+    await db.query(
+      `INSERT INTO theme_config (config_key, config_value) VALUES ('banner_image_url', ?)
        ON DUPLICATE KEY UPDATE config_value=VALUES(config_value)`,
       [publicPath]
     );

@@ -14,9 +14,11 @@ const CACHE_TTL = 600; // 10 min
 const REFRESH_HOURS = [0, 8, 16, 20];
 
 function aggregateDaily(list) {
+  const today = new Date().toISOString().split('T')[0];
   const days = {};
   for (const entry of list) {
     const date = new Date(entry.dt * 1000).toISOString().split('T')[0];
+    if (date === today) continue;
     if (!days[date]) {
       days[date] = { dt: entry.dt, temps: [], icons: {}, humidity: [], pop: 0, desc: '' };
     }
@@ -25,9 +27,10 @@ function aggregateDaily(list) {
     days[date].icons[icon] = (days[date].icons[icon] || 0) + 1;
     days[date].humidity.push(entry.main.humidity);
     days[date].pop = Math.max(days[date].pop, (entry.pop || 0) * 100);
-    if (!days[date].desc) days[date].desc = entry.weather[0].description;
+    const hour = new Date(entry.dt * 1000).getUTCHours();
+    if (!days[date].desc || (hour >= 12 && hour <= 15)) days[date].desc = entry.weather[0].description;
   }
-  return Object.values(days).slice(0, 7).map(d => ({
+  return Object.values(days).slice(0, 5).map(d => ({
     dt:          d.dt,
     temp_max:    Math.round(Math.max(...d.temps)),
     temp_min:    Math.round(Math.min(...d.temps)),
@@ -106,6 +109,8 @@ async function fetchAndCacheLocality(locality) {
   };
 
   await cache.set(cacheKey, JSON.stringify(payload), CACHE_TTL);
+  // Sauvegarde persistante (30 jours) pour le fallback stale
+  await cache.set(`${cacheKey}:stale`, JSON.stringify(payload), 30 * 24 * 3600);
   return true;
 }
 

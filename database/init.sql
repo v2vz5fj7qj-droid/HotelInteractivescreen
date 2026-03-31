@@ -32,12 +32,16 @@ INSERT INTO theme_config (config_key, config_value, label) VALUES
 ('font_secondary',      'Playfair Display',   'Police titres'),
 ('logo_url',            '/images/logo.png',   'URL du logo hôtel'),
 ('logo_url_dark',       '/images/logo-dark.png', 'Logo pour fond sombre'),
+('banner_image_url',    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80', 'Image de fond bannière accueil'),
 ('idle_timeout_ms',     '30000',              'Délai inactivité avant retour menu (ms)'),
 ('flight_airport_iata',     'OUA',   'Code IATA aéroport des vols'),
 ('flight_refresh_interval', '5',     'Intervalle rafraîchissement automatique vols (minutes)'),
 ('flight_auto_refresh',     '0',     'Rafraîchissement automatique des vols activé (0/1)'),
-('flight_credits_used',     '0',    'Crédits FlightAPI consommés depuis la dernière remise à zéro'),
-('flight_credits_limit',    '30',   'Quota de crédits FlightAPI du plan souscrit');
+('flight_credits_used',     '0',                    'Crédits FlightAPI consommés depuis la dernière remise à zéro'),
+('flight_credits_limit',    '30',                   'Quota de crédits FlightAPI du plan souscrit'),
+('flight_refresh_mode',     'interval',             'Mode actualisation vols : interval ou schedule'),
+('flight_schedule_times',   '',                     'Heures d\'actualisation programmées (virgule-séparées, ex: 6,12,18)'),
+('flight_timezone',         'Africa/Ouagadougou',   'Fuseau horaire pour les heures programmées');
 
 -- ─────────────────────────────────────────────────
 --  SERVICES BIEN-ÊTRE
@@ -97,6 +101,14 @@ CREATE TABLE IF NOT EXISTS poi_translations (
     description TEXT,
     FOREIGN KEY (poi_id) REFERENCES points_of_interest(id) ON DELETE CASCADE,
     UNIQUE KEY uq_poi_locale (poi_id, locale)
+);
+
+CREATE TABLE IF NOT EXISTS poi_images (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    poi_id        INT          NOT NULL,
+    url           VARCHAR(255) NOT NULL,
+    display_order TINYINT      DEFAULT 0,
+    FOREIGN KEY (poi_id) REFERENCES points_of_interest(id) ON DELETE CASCADE
 );
 
 -- ─────────────────────────────────────────────────

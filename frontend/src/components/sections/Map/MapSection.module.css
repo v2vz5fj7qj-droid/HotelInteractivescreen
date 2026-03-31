@@ -1,0 +1,325 @@
+/* ── Page ── */
+.page {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--c-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Offline ── */
+.offlineTag {
+  position: absolute;
+  top: clamp(1rem, 3vw, 1.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(232, 82, 26, 0.15);
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent);
+  padding: 0.4rem 1.2rem;
+  border-radius: 2rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.9rem);
+  z-index: 1000;
+  white-space: nowrap;
+}
+
+/* ── Filtres catégories ── */
+.categories {
+  position: absolute;
+  top: clamp(4.5rem, 8vh, 6rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  z-index: 1000;
+  padding: 0 1rem;
+  max-width: 90vw;
+}
+
+.catBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 2rem;
+  border: 1px solid var(--c-border);
+  background: rgba(8, 5, 2, 0.82);
+  color: var(--c-text-muted);
+  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+  font-family: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+.catBtn:hover { border-color: var(--c-primary); color: var(--c-text); }
+.catBtnActive {
+  background: color-mix(in srgb, var(--cat-color, #C2782A) 25%, transparent);
+  border-color: var(--cat-color, #C2782A);
+  color: var(--c-text);
+  font-weight: 600;
+}
+
+/* ── Carte ── */
+.mapWrapper { position: relative; flex: 1; width: 100%; }
+.map        { width: 100%; height: 100%; }
+.mapOverlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 5, 2, 0.55);
+  z-index: 999;
+}
+
+/* ── Légende ── */
+.legend {
+  position: absolute;
+  bottom: clamp(0.75rem, 2vh, 1.25rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8, 5, 2, 0.82);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-muted);
+  font-size: clamp(0.7rem, 1.3vw, 0.8rem);
+  padding: 0.35rem 1rem;
+  border-radius: 2rem;
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* ── Bulle ancrée sur le marqueur ── */
+.bubble {
+  position: absolute;
+  width: 300px;
+  max-height: 380px;
+  background: #ffffff;
+  border-radius: 16px;
+  border-top: 3px solid #C2782A;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.20),
+    0 2px 8px  rgba(0, 0, 0, 0.10);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 0.9rem 0.75rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: bubbleIn 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
+  pointer-events: all;
+}
+
+/* ── Queue : bulle AU-DESSUS du marqueur (queue en bas) ── */
+.arrowBottom::after {
+  content: '';
+  position: absolute;
+  bottom: -13px;
+  left: var(--arrow-left, 50%);
+  margin-left: -13px;
+  width: 0;
+  height: 0;
+  border-left:  13px solid transparent;
+  border-right: 13px solid transparent;
+  border-top:   13px solid #ffffff;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 2px rgba(0,0,0,0.08));
+}
+
+/* ── Queue : bulle EN-DESSOUS du marqueur (queue en haut) ── */
+.arrowTop {
+  border-top: none;
+  border-bottom: 3px solid #C2782A;
+}
+.arrowTop::after {
+  content: '';
+  position: absolute;
+  top: -13px;
+  left: var(--arrow-left, 50%);
+  margin-left: -13px;
+  width: 0;
+  height: 0;
+  border-left:  13px solid transparent;
+  border-right: 13px solid transparent;
+  border-bottom: 13px solid #ffffff;
+  pointer-events: none;
+  filter: drop-shadow(0 -3px 2px rgba(0,0,0,0.08));
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Bouton fermer */
+.bubbleClose {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.bubbleClose:hover { background: #C2782A; color: #fff; border-color: #C2782A; }
+
+/* En-tête */
+.bubbleHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding-right: 1.8rem;
+}
+.bubbleIcon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.bubbleTitles { min-width: 0; }
+.bubbleName {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #C2782A;
+  margin: 0 0 0.15rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bubbleAddr {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Méta */
+.bubbleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.74rem;
+  color: #374151;
+}
+
+/* Description */
+.bubbleDesc {
+  font-size: 0.78rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* ── Galerie ── */
+.gallery {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.4rem 0 0.1rem;
+  border-top: 1px solid #f0f0f0;
+  scrollbar-width: thin;
+  scrollbar-color: #C2782A #f5f5f5;
+}
+.gallery::-webkit-scrollbar       { height: 3px; }
+.gallery::-webkit-scrollbar-track { background: #f5f5f5; }
+.gallery::-webkit-scrollbar-thumb { background: #C2782A; border-radius: 2px; }
+
+.galleryThumb {
+  flex-shrink: 0;
+  width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #f3f4f6;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.galleryThumb:hover { border-color: #C2782A; transform: scale(1.05); }
+.galleryThumb img   { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── Lightbox ── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.lightboxClose {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightboxImg {
+  max-width: 88vw;
+  max-height: 80vh;
+  border-radius: 16px;
+  object-fit: contain;
+  box-shadow: 0 24px 80px rgba(0,0,0,.8);
+}
+
+.lightboxNav {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+.lightboxDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,.3);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+.lightboxDotActive { background: var(--c-secondary); }
+
+/* ── Popup Leaflet (marqueur hôtel) ── */
+:global(.leaflet-popup-connectbe .leaflet-popup-content-wrapper) {
+  background: #1A1005;
+  border: 1px solid rgba(194, 120, 42, 0.4);
+  border-radius: 12px;
+  color: #F5E6C8;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+}
+:global(.leaflet-popup-connectbe .leaflet-popup-tip)         { background: #1A1005; }
+:global(.leaflet-popup-connectbe .leaflet-popup-close-button){ color: rgba(245,230,200,.6) !important; }
+

@@ -307,3 +307,61 @@
   align-self: center;
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Météo
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Portrait (borne verticale ou tablette portrait) ──── */
+@media (orientation: portrait) {
+  .page {
+    padding-top:   clamp(64px, 8vh, 100px);
+    padding-left:  clamp(16px, 3vw, 40px);
+    padding-right: clamp(16px, 3vw, 40px);
+  }
+
+  /* Bloc principal : empiler icône + données verticalement */
+  .mainBlock {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .mainRight {
+    grid-column: 1 / 3;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(12px, 3vw, 24px);
+  }
+
+  /* Métriques : 2 colonnes en portrait */
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+
+  /* Sélecteur de localités scrollable */
+  .localitySelector {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .localitySelector::-webkit-scrollbar { display: none; }
+}
+
+/* ─── Très petits écrans (< 480px) ────────────────────── */
+@media (max-width: 480px) {
+  /* Bloc météo principal empilé */
+  .mainBlock {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    gap: clamp(8px, 1.5vh, 14px);
+  }
+
+  .mainLeft  { justify-content: center; }
+  .mainRight { grid-column: 1; flex-direction: row; justify-content: center; gap: 16px; }
+
+  /* Métriques 2 colonnes */
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+
+  /* Prévisions horaires adaptées */
+  .hourlyCard { min-width: clamp(46px, 13vw, 64px); }
+}

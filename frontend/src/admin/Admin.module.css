@@ -65,7 +65,7 @@
 /* ════════════ LAYOUT ════════════ */
 .shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--a-bg);
   overflow: hidden;
 }
@@ -73,12 +73,13 @@
 /* ── Sidebar ── */
 .sidebar {
   width: var(--a-sidebar-w);
-  min-height: 100vh;
+  height: 100vh;
   background: var(--a-sidebar);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: width 0.25s ease;
+  overflow-y: auto;
 }
 
 .collapsed .sidebar { width: 64px; }
@@ -142,7 +143,7 @@
 .collapseBtn:hover, .logoutBtn:hover { background: rgba(255,255,255,0.08); color: #F5E6C8; }
 
 /* ── Main content ── */
-.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 
 .topbar {
   height: 56px;
@@ -444,9 +445,128 @@
 
 /* Status grid */
 .statusGrid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 16px;
 }
 .statusItem   { display: flex; flex-direction: column; gap: 4px; }
 .statusLabel  { font-size: 0.75rem; color: var(--a-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 .statusValue  { font-size: 1rem; font-weight: 700; color: var(--a-text); }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE ADMIN
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Bouton hamburger (caché sur desktop) ──────────────── */
+.hamburgerBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--a-border);
+  background: var(--a-surface);
+  cursor: pointer;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  min-height: unset;
+  min-width: unset;
+}
+
+/* ── Overlay sombre derrière la sidebar mobile ─────────── */
+.mobileOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 199;
+}
+
+/* ─────────────────── TABLETTE (≤ 1024px) ─────────────────── */
+@media (max-width: 1024px) {
+  /* Sidebar auto-repliée sur tablette */
+  .sidebar { width: 64px; }
+  .sidebarTitle { display: none; }
+  .navLabel     { display: none; }
+  .collapseBtn  { display: none; }    /* inutile car auto-replié */
+
+  /* Grilles 2 colonnes */
+  .statsGrid  { grid-template-columns: repeat(2, 1fr); }
+
+  /* Contenu */
+  .content { padding: 18px; }
+}
+
+/* ─────────────────── SMARTPHONE (≤ 640px) ─────────────────── */
+@media (max-width: 640px) {
+  /* Sidebar hors-écran par défaut (fixed overlay) */
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 220px !important;   /* toujours pleine largeur en overlay */
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  /* Afficher la sidebar quand mobileOpen */
+  .mobileOpen .sidebar {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Toujours afficher les labels en sidebar mobile ouverte */
+  .mobileOpen .sidebarTitle { display: inline !important; }
+  .mobileOpen .navLabel     { display: inline !important; }
+
+  /* Backdrop actif */
+  .mobileOpen .mobileOverlay { display: block; }
+
+  /* Hamburger visible sur mobile */
+  .hamburgerBtn { display: flex; }
+
+  /* Contenu prend toute la largeur (sidebar est fixed) */
+  .main { width: 100%; }
+
+  /* Topbar compacte */
+  .topbar { padding: 0 12px; gap: 8px; }
+
+  /* Grilles 2 colonnes sur smartphone */
+  .statsGrid  { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .statusGrid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+
+  /* Formulaires en 1 colonne */
+  .formGrid2 { grid-template-columns: 1fr; }
+  .fieldRow  { grid-template-columns: 1fr; }
+
+  /* Contenu compact */
+  .content { padding: 12px; }
+
+  /* En-tête de page empilé */
+  .pageHeader { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* Tables scrollables horizontalement */
+  .tableWrap { overflow-x: auto; }
+
+  /* Modal : ancré en bas sur mobile */
+  .modalBackdrop { align-items: flex-end; padding: 0; }
+  .modal {
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Login card adaptée */
+  .loginCard { padding: 32px 20px; margin: 0 16px; max-width: 100%; }
+}
+
+/* ─────────────────── TRÈS PETITS ÉCRANS (≤ 400px) ─────────── */
+@media (max-width: 400px) {
+  .statsGrid  { grid-template-columns: 1fr; }
+  .statusGrid { grid-template-columns: repeat(2, 1fr); }
+  .statValue  { font-size: 1.6rem; }
+  .content    { padding: 8px; }
+}

@@ -21,6 +21,22 @@
   text-align: center;
 }
 
+/* Badge mise à jour */
+.refreshBadge {
+  align-self: center;
+  font-size: clamp(0.68rem, 1vh, 0.78rem);
+  color: var(--c-text-muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--c-border);
+  padding: 0.25rem 0.9rem;
+  border-radius: 2rem;
+}
+.refreshBadgeStale {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
 /* Recherche */
 .searchBar {
   display: flex;
@@ -143,3 +159,52 @@
 /* États */
 .center { display: flex; align-items: center; justify-content: center; padding: 40px; }
 .empty  { text-align: center; padding: 40px; color: var(--c-text-muted); font-size: 1rem; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Vols
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Portrait ou écran étroit (< 900px en portrait) ──── */
+@media (orientation: portrait) and (max-width: 900px) {
+  .page {
+    padding-top: clamp(70px, 8vh, 100px);
+    padding-left: clamp(16px, 3vw, 32px);
+    padding-right: clamp(16px, 3vw, 32px);
+  }
+
+  /* Barre de recherche pleine largeur */
+  .searchBar { max-width: 100%; }
+
+  /* Rangée de vol : réduire la colonne de gauche */
+  .flightRow {
+    grid-template-columns: minmax(140px, auto) 1fr auto;
+    padding-left: clamp(10px, 2vw, 16px);
+    padding-right: clamp(10px, 2vw, 16px);
+  }
+
+  .routeAirport { max-width: 100px; }
+}
+
+/* ─── Très petits écrans (< 600px) ────────────────────── */
+@media (max-width: 600px) {
+  .flightRow {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 6px;
+  }
+
+  /* Gauche : ligne 1, col 1 */
+  .flightLeft { grid-column: 1; grid-row: 1; }
+
+  /* Centre : ligne 2, pleine largeur */
+  .flightCenter {
+    grid-column: 1 / 3;
+    grid-row: 2;
+  }
+
+  /* Droite : ligne 1, col 2 */
+  .flightRight { grid-column: 2; grid-row: 1; }
+
+  .tabs { gap: 6px; }
+  .tab  { padding: 10px 16px; }
+}

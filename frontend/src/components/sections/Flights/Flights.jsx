@@ -7,20 +7,43 @@ import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles           from './Flights.module.css';
 
+const RETRY_DELAY_MS  = 30_000;
+const STALE_THRESHOLD = 35 * 60 * 1000; // 35 min — dépasse l'intervalle de 30 min
+
 export default function Flights() {
   const { t }                          = useLanguage();
   const [tab, setTab]                  = useState('arrivals');
   const [search, setSearch]            = useState('');
   const [submitted, setSubmitted]      = useState('');
+  const [retryKey, setRetryKey]        = useState(0);
+  const [now, setNow]                  = useState(Date.now());
+
+  // Horloge pour rafraîchir l'affichage "il y a X min" toutes les minutes
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const isSearch = submitted.length > 0;
 
-  const listData = useApi('/flights', { type: tab }, { enabled: !isSearch, deps: [tab] });
+  const listData   = useApi('/flights', { type: tab }, { enabled: !isSearch, deps: [tab, retryKey] });
   const searchData = useApi('/flights/search', { flight: submitted }, { enabled: isSearch, deps: [submitted] });
 
   const { data, loading, error } = isSearch ? searchData : listData;
 
+  const isPending    = !isSearch && data?._pending;
+  const refreshedAt  = data?.refreshed_at ?? null;
+  const ageMs        = refreshedAt ? now - refreshedAt : null;
+  const ageMin       = ageMs !== null ? Math.floor(ageMs / 60_000) : null;
+  const isStale      = ageMs !== null && ageMs > STALE_THRESHOLD;
+
   useEffect(() => { trackEvent('flights', 'open'); }, []);
+
+  useEffect(() => {
+    if (!isPending) return;
+    const timer = setTimeout(() => setRetryKey(k => k + 1), RETRY_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isPending, retryKey]);
 
   const flights = data?.flights ?? [];
 
@@ -42,6 +65,16 @@ export default function Flights() {
 
       <h1 className={styles.title}>{t('flights.title')}</h1>
       <p className={styles.airport}>🛫 {t('flights.airport')}</p>
+
+      {/* Badge dernière mise à jour */}
+      {refreshedAt && !isPending && (
+        <div className={`${styles.refreshBadge} ${isStale ? styles.refreshBadgeStale : ''}`}>
+          {isStale
+            ? `⚠️ Données de il y a ${ageMin} min`
+            : `✓ Mis à jour il y a ${ageMin === 0 ? '< 1' : ageMin} min`
+          }
+        </div>
+      )}
 
       {/* Barre de recherche */}
       <form className={styles.searchBar} onSubmit={handleSearch}>
@@ -82,11 +115,14 @@ export default function Flights() {
       {/* Liste des vols */}
       <div className={styles.flightList} role="list">
         {loading && <div className={styles.center}><div className="spinner" /></div>}
-        {!loading && !error && flights.length === 0 && (
+        {!loading && isPending && (
+          <div className={styles.empty}>{t('flights.pending') || 'Chargement des données en cours...'}</div>
+        )}
+        {!loading && !isPending && !error && flights.length === 0 && (
           <div className={styles.empty}>{t('flights.no_results')}</div>
         )}
         {!loading && flights.map((flight, i) => (
-          <FlightRow key={i} flight={flight} tab={tab} t={t} />
+          <FlightRow key={i} flight={flight} tab={tab} isSearch={isSearch} t={t} />
         ))}
         {!loading && error && (
           <div className={styles.empty} style={{color:'var(--c-accent)'}}>
@@ -98,12 +134,16 @@ export default function Flights() {
   );
 }
 
-function FlightRow({ flight, tab, t }) {
-  const isArrival = tab === 'arrivals';
-  const info      = isArrival ? flight.arrival : flight.departure;
-  const other     = isArrival ? flight.departure : flight.arrival;
-  const delay     = info.delay || 0;
-  const status    = delay > 0 ? 'delayed' : flight.status;
+function FlightRow({ flight, tab, isSearch, t }) {
+  // En mode recherche : on affiche toujours départ → arrivée (route complète)
+  // En mode liste : on s'adapte à l'onglet actif (arrivées ou départs)
+  const isArrival = !isSearch && tab === 'arrivals';
+  const dep    = flight.departure;
+  const arr    = flight.arrival;
+  const info   = isArrival ? arr : dep;   // côté "principal" (horaire affiché à droite)
+  const other  = isArrival ? dep : arr;   // côté "origine"
+  const delay  = info.delay || 0;
+  const status = delay > 0 ? 'delayed' : flight.status;
 
   const fmtTime = (iso) => {
     if (!iso) return '—';
@@ -120,37 +160,46 @@ function FlightRow({ flight, tab, t }) {
 
       <div className={styles.flightCenter}>
         <div className={styles.routePoint}>
-          <span className={styles.routeIata}>{other.iata}</span>
-          <span className={styles.routeAirport}>{other.airport}</span>
+          <span className={styles.routeIata}>{dep.iata}</span>
+          <span className={styles.routeAirport}>{dep.airport}</span>
         </div>
-        <div className={styles.routeArrow}>
-          {isArrival ? '→' : '→'}
-        </div>
+        <div className={styles.routeArrow}>→</div>
         <div className={styles.routePoint}>
-          <span className={styles.routeIata}>{info.iata}</span>
-          <span className={styles.routeAirport}>{info.airport}</span>
+          <span className={styles.routeIata}>{arr.iata}</span>
+          <span className={styles.routeAirport}>{arr.airport}</span>
         </div>
       </div>
 
       <div className={styles.flightRight}>
-        <div className={styles.timeBlock}>
-          <span className={styles.timeLabel}>{t('flights.scheduled')}</span>
-          <span className={styles.timeValue}>{fmtTime(info.scheduled)}</span>
-        </div>
-        {(info.estimated || info.actual) && (
-          <div className={styles.timeBlock}>
-            <span className={styles.timeLabel}>
-              {info.actual ? t('flights.actual') : t('flights.estimated')}
-            </span>
-            <span className={`${styles.timeValue} ${delay > 0 ? styles.delayed : ''}`}>
-              {fmtTime(info.actual || info.estimated)}
-            </span>
-          </div>
-        )}
-        {delay > 0 && (
-          <span className={styles.delayBadge}>
-            +{delay} {t('flights.delay_min')}
-          </span>
+        {isSearch ? (
+          // Mode recherche : afficher les deux horaires (départ + arrivée)
+          <>
+            <div className={styles.timeBlock}>
+              <span className={styles.timeLabel}>🛫 {fmtTime(dep.actual || dep.estimated || dep.scheduled)}</span>
+              <span className={styles.timeLabel}>🛬 {fmtTime(arr.actual || arr.estimated || arr.scheduled)}</span>
+            </div>
+          </>
+        ) : (
+          // Mode liste : afficher l'horaire du côté actif (arrivée ou départ)
+          <>
+            <div className={styles.timeBlock}>
+              <span className={styles.timeLabel}>{t('flights.scheduled')}</span>
+              <span className={styles.timeValue}>{fmtTime(info.scheduled)}</span>
+            </div>
+            {(info.estimated || info.actual) && (
+              <div className={styles.timeBlock}>
+                <span className={styles.timeLabel}>
+                  {info.actual ? t('flights.actual') : t('flights.estimated')}
+                </span>
+                <span className={`${styles.timeValue} ${delay > 0 ? styles.delayed : ''}`}>
+                  {fmtTime(info.actual || info.estimated)}
+                </span>
+              </div>
+            )}
+            {delay > 0 && (
+              <span className={styles.delayBadge}>+{delay} {t('flights.delay_min')}</span>
+            )}
+          </>
         )}
         <div className={styles.gateInfo}>
           {info.terminal && <span>T{info.terminal}</span>}

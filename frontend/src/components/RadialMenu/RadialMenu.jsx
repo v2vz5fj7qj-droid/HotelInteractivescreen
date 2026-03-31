@@ -33,7 +33,7 @@ const SERVICE_CARDS = [
     subKey:   'menu.wellness_sub',
     Icon:  Sparkles,
     color: '#8B5CF6',
-    img:   'https://images.unsplash.com/photo-1544161515-4af6b1d4046c?auto=format&fit=crop&w=400&q=70',
+    img:   'https://images.unsplash.com/photo-1604938814491-c696899ec59b?auto=format&fit=crop&w=400&q=70',
   },
   {
     id: 'flights',
@@ -67,7 +67,7 @@ const SERVICE_CARDS = [
 /* ─── Composant principal ──────────────────────────────── */
 export default function RadialMenu() {
   const navigate          = useNavigate();
-  const { t, locale, setLocale } = useLanguage();
+  const { t, locale, setLocale, supportedLocales, localesMeta } = useLanguage();
   const { config }        = useTheme();
   const [activeNav,    setActiveNav]    = useState(null);
   const [notifIndex,   setNotifIndex]   = useState(0);
@@ -75,9 +75,17 @@ export default function RadialMenu() {
   const [localities,   setLocalities]   = useState([]);
   const [weatherIndex, setWeatherIndex] = useState(0);
   const [liveWeather,  setLiveWeather]  = useState(null);
+  const [langOpen,     setLangOpen]     = useState(false);
+  const langRef        = useRef(null);
   const weatherTimer   = useRef(null);
   const wTouchStart    = useRef(null);
   const didSwipe       = useRef(false);
+
+  // Défilement vertical du texte "Bon à savoir"
+  const clipRef        = useRef(null);
+  const msgRef         = useRef(null);
+  const [scrollDist,   setScrollDist]   = useState(0);
+  const [scrollDuration, setScrollDuration] = useState(4);
 
   // ── Raccourci admin caché : 5 taps rapides sur le logo ──
   const tapCount  = useRef(0);
@@ -126,6 +134,15 @@ export default function RadialMenu() {
     return () => clearInterval(weatherTimer.current);
   }, [localities.length]); // ← pas weatherIndex : l'interval tourne librement
 
+  // Fermer le sélecteur de langue au clic extérieur
+  useEffect(() => {
+    function handleOutside(e) {
+      if (langRef.current && !langRef.current.contains(e.target)) setLangOpen(false);
+    }
+    if (langOpen) document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, [langOpen]);
+
   // Rotation automatique des notifications toutes les 6s
   useEffect(() => {
     if (notifs.length <= 1) return;
@@ -133,9 +150,21 @@ export default function RadialMenu() {
     return () => clearInterval(id);
   }, [notifs.length]);
 
+  // Calcul du défilement : distance = hauteur texte − hauteur clip
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if (!clipRef.current || !msgRef.current) return;
+      const dist = Math.max(0, msgRef.current.scrollHeight - clipRef.current.offsetHeight);
+      setScrollDist(dist);
+      // Vitesse : ~28px/s, minimum 3s, maximum 10s
+      setScrollDuration(dist > 0 ? Math.min(10, Math.max(3, dist / 28)) : 4);
+    }, 80); // laisser le DOM se stabiliser après changement de notifIndex
+    return () => clearTimeout(id);
+  }, [notifIndex, notifs]);
+
   const currentNotif = notifs[notifIndex];
   const notifMsg = currentNotif
-    ? (locale === 'en' && currentNotif.message_en ? currentNotif.message_en : currentNotif.message_fr)
+    ? (locale !== 'fr' && currentNotif.message_en ? currentNotif.message_en : currentNotif.message_fr)
     : t('menu.notif_msg');
 
   const go = (id, route) => {
@@ -189,7 +218,7 @@ export default function RadialMenu() {
         {/* A — Bannière immersive */}
         <section className={styles.banner} aria-label={t('menu.welcome')}>
           <img
-            src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80"
+            src={config?.banner_image_url || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80'}
             alt={t('menu.welcome')}
             className={styles.bannerImg}
           />
@@ -237,8 +266,18 @@ export default function RadialMenu() {
             </div>
             <div className={styles.notifTextWrap}>
               <p className={styles.notifTitle}>{t('menu.notif_title')}</p>
-              <div className={styles.notifMsgClip}>
-                <p key={notifIndex} className={styles.notifMsg}>{notifMsg}</p>
+              <div className={styles.notifMsgClip} ref={clipRef}>
+                <p
+                  key={notifIndex}
+                  ref={msgRef}
+                  className={`${styles.notifMsg} ${scrollDist > 0 ? styles.notifMsgScrolling : ''}`}
+                  style={scrollDist > 0 ? {
+                    '--notif-scroll':          `-${scrollDist}px`,
+                    '--notif-scroll-duration': `${scrollDuration}s`,
+                  } : undefined}
+                >
+                  {notifMsg}
+                </p>
               </div>
               {notifs.length > 1 && (
                 <div className={styles.notifDots} aria-hidden="true">
@@ -337,15 +376,35 @@ export default function RadialMenu() {
 
         <div className={styles.navDivider} aria-hidden="true" />
 
-        {/* Sélecteur de langue */}
-        <button
-          className={styles.langBtn}
-          onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')}
-          aria-label={t('common.change_language')}
-        >
-          <Languages size={20} />
-          <span className={styles.langCode}>{locale.toUpperCase()}</span>
-        </button>
+        {/* Sélecteur de langue — dropdown vers le haut */}
+        <div className={styles.langWrap} ref={langRef}>
+          {langOpen && (
+            <div className={styles.langDropdown} role="listbox" aria-label={t('common.change_language')}>
+              {supportedLocales.map(loc => (
+                <button
+                  key={loc}
+                  role="option"
+                  aria-selected={loc === locale}
+                  className={`${styles.langOption} ${loc === locale ? styles.langOptionActive : ''}`}
+                  onClick={() => { setLocale(loc); setLangOpen(false); }}
+                >
+                  <span aria-hidden="true">{localesMeta[loc]?.flag}</span>
+                  <span>{localesMeta[loc]?.nativeName}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            className={`${styles.langBtn} ${langOpen ? styles.langBtnOpen : ''}`}
+            onClick={() => setLangOpen(v => !v)}
+            aria-haspopup="listbox"
+            aria-expanded={langOpen}
+            aria-label={t('common.change_language')}
+          >
+            <Languages size={20} />
+            <span className={styles.langCode}>{localesMeta[locale]?.flag} {locale.toUpperCase()}</span>
+          </button>
+        </div>
       </nav>
 
     </div>
@@ -384,19 +443,15 @@ function Clock({ locale }) {
     return () => clearInterval(id);
   }, []);
 
-  const fmt = loc => {
-    try { return loc; } catch { return 'fr-FR'; }
-  };
+  // Mapping locale i18n → BCP 47 pour l'API Intl
+  const BCP47 = { fr: 'fr-BF', en: 'en-US', de: 'de-DE', es: 'es-ES', pt: 'pt-PT', ar: 'ar-SA', zh: 'zh-CN', ja: 'ja-JP' };
+  const intlLocale = BCP47[locale] ?? locale;
 
   return (
     <p className={styles.brandTime}>
-      {time.toLocaleTimeString(fmt(locale === 'fr' ? 'fr-BF' : 'en-US'), {
-        hour: '2-digit', minute: '2-digit',
-      })}
+      {time.toLocaleTimeString(intlLocale, { hour: '2-digit', minute: '2-digit' })}
       {' • '}
-      {time.toLocaleDateString(fmt(locale === 'fr' ? 'fr-BF' : 'en-US'), {
-        weekday: 'short', day: 'numeric', month: 'short',
-      })}
+      {time.toLocaleDateString(intlLocale, { weekday: 'short', day: 'numeric', month: 'short' })}
     </p>
   );
 }

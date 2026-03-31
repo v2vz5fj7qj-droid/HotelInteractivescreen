@@ -29,8 +29,27 @@ router.get('/', async (req, res) => {
     query += ' ORDER BY p.display_order';
 
     const [rows] = await db.query(query, params);
-    await cache.set(cacheKey, JSON.stringify(rows), 3600);
-    res.json(rows);
+
+    // Attach images (max 3, ordered)
+    const ids = rows.map(r => r.id);
+    let images = [];
+    try {
+      if (ids.length) {
+        [images] = await db.query(
+          `SELECT poi_id, url FROM poi_images WHERE poi_id IN (?) ORDER BY poi_id, display_order`,
+          [ids]
+        );
+      }
+    } catch (_) { /* table poi_images absente — migration requise */ }
+    const imgMap = {};
+    for (const img of images) {
+      if (!imgMap[img.poi_id]) imgMap[img.poi_id] = [];
+      if (imgMap[img.poi_id].length < 3) imgMap[img.poi_id].push(img.url);
+    }
+    const result = rows.map(r => ({ ...r, images: imgMap[r.id] || [] }));
+
+    await cache.set(cacheKey, JSON.stringify(result), 3600);
+    res.json(result);
   } catch (err) {
     console.error('[POI]', err.message);
     res.status(500).json({ error: 'Erreur chargement POI' });

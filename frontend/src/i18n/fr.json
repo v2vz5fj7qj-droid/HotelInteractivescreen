@@ -81,7 +81,8 @@
       "active":    "En vol",
       "landed":    "Atterri",
       "cancelled": "Annulé",
-      "delayed":   "Retardé"
+      "delayed":   "Retardé",
+      "diverted":  "Dérouté"
     },
     "airport":     "Aéroport International de Ouagadougou",
     "no_results":  "Aucun vol trouvé",

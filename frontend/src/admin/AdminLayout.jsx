@@ -22,7 +22,8 @@ function usePageTitle() {
 
 export default function AdminLayout() {
   const navigate   = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed,   setCollapsed]   = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
   const pageTitle  = usePageTitle();
 
   const logout = () => {
@@ -31,7 +32,10 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className={`${styles.shell} ${collapsed ? styles.collapsed : ''}`}>
+    <div className={`${styles.shell} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.mobileOpen : ''}`}>
+      {/* ── Overlay mobile (clic pour fermer la sidebar) ── */}
+      <div className={styles.mobileOverlay} onClick={() => setMobileOpen(false)} />
+
       {/* ── Sidebar ── */}
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
@@ -45,12 +49,13 @@ export default function AdminLayout() {
               key={item.to}
               to={item.to}
               end={item.end}
+              onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
               }
             >
               <span className={styles.navIcon}>{item.icon}</span>
-              {!collapsed && <span className={styles.navLabel}>{item.label}</span>}
+              {(!collapsed || mobileOpen) && <span className={styles.navLabel}>{item.label}</span>}
             </NavLink>
           ))}
         </nav>
@@ -61,7 +66,7 @@ export default function AdminLayout() {
             {collapsed ? '→' : '←'}
           </button>
           <button className={styles.logoutBtn} onClick={logout}>
-            {collapsed ? '🚪' : '🚪 Déconnexion'}
+            {(collapsed && !mobileOpen) ? '🚪' : '🚪 Déconnexion'}
           </button>
         </div>
       </aside>
@@ -70,6 +75,13 @@ export default function AdminLayout() {
       <div className={styles.main}>
         <header className={styles.topbar}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              className={styles.hamburgerBtn}
+              onClick={() => setMobileOpen(o => !o)}
+              aria-label="Menu"
+            >
+              ☰
+            </button>
             <span style={{ fontSize: '0.78rem', color: '#9CA3AF' }}>ConnectBé Admin</span>
             <span style={{ color: '#D1D5DB' }}>›</span>
             <span className={styles.topbarPath}>{pageTitle}</span>

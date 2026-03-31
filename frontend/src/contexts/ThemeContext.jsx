@@ -26,6 +26,7 @@ const DEFAULT_THEME = {
   font_secondary:      'Playfair Display',
   logo_url:            '/images/logo.png',
   logo_url_dark:       '/images/logo-dark.png',
+  banner_image_url:    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80',
   idle_timeout_ms:     '30000',
 };
 

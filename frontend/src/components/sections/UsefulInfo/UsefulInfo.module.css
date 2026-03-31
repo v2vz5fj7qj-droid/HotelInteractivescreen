@@ -183,6 +183,31 @@
 .emptyIcon { font-size: 3rem; }
 .center { display: flex; justify-content: center; align-items: center; flex: 1; }
 
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Infos utiles
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Portrait ─────────────────────────────────────────── */
+@media (orientation: portrait) {
+  .page {
+    padding-top:   clamp(64px, 8vh, 100px);
+    padding-left:  clamp(16px, 3vw, 40px);
+    padding-right: clamp(16px, 3vw, 40px);
+  }
+
+  /* Grille de cartes : 1 colonne en portrait étroit */
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(clamp(220px, 42vw, 380px), 1fr));
+  }
+}
+
+/* ─── Très petits écrans (< 480px) ────────────────────── */
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .cardActions { gap: 6px; }
+  .actionBtn { padding: 7px 10px; font-size: 0.68rem; }
+}
+
 /* ── Dots de navigation ───────────────────────────────── */
 .sliderDots {
   display: flex;

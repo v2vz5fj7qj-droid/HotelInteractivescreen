@@ -192,11 +192,9 @@ export default function Weather() {
             <h2 className={styles.sectionTitle}>{t('weather.forecast_7days')}</h2>
             <div className={styles.forecastGrid}>
               {data.forecast.map((day, i) => {
-                const dayName = i === 0
-                  ? t('weather.today')
-                  : (DAY_SHORT[locale] || DAY_SHORT.fr)[new Date(day.dt * 1000).getDay()];
+                const dayName = (DAY_SHORT[locale] || DAY_SHORT.fr)[new Date(day.dt * 1000).getDay()];
                 return (
-                  <div key={i} className={`${styles.forecastCard} ${i === 0 ? styles.todayCard : ''}`}>
+                  <div key={i} className={styles.forecastCard}>
                     <span className={styles.dayLabel}>{dayName}</span>
                     <img src={`https://openweathermap.org/img/wn/${day.icon}@2x.png`} alt={day.description} className={styles.forecastIcon} />
                     <div className={styles.temps}>

@@ -29,8 +29,9 @@ export function useApi(url, params = {}, options = {}) {
 
     api.get(url, { params, signal: abortRef.current.signal })
       .then(res => {
+        if (res.data?._unavailable) return; // pas de données réelles disponibles
         setData(res.data);
-        if (res.data?._offline || res.data?._mock) setOffline(true);
+        if (res.data?._offline || res.data?._stale) setOffline(true);
       })
       .catch(err => {
         if (err.name !== 'CanceledError') setError(err);
