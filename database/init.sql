@@ -75,13 +75,35 @@ CREATE TABLE IF NOT EXISTS wellness_service_translations (
 );
 
 -- ─────────────────────────────────────────────────
+--  CATÉGORIES POI (gérées via backoffice)
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS poi_categories (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    label_fr     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100) NOT NULL,
+    icon         VARCHAR(10)  NOT NULL DEFAULT '📍',
+    color        VARCHAR(7)   NOT NULL DEFAULT '#C2782A',
+    display_order INT DEFAULT 0,
+    is_active    BOOLEAN DEFAULT TRUE,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO poi_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES
+('restaurant', 'Restaurants', 'Restaurants', '🍽️', '#E8521A', 1),
+('museum',     'Musées',      'Museums',     '🏛️', '#D4A843', 2),
+('attraction', 'Attractions', 'Attractions', '🎯', '#8B4F12', 3),
+('pharmacy',   'Pharmacies',  'Pharmacies',  '💊', '#27ae60', 4),
+('hospital',   'Hôpitaux',    'Hospitals',   '🏥', '#e74c3c', 5),
+('taxi',       'Taxis',       'Taxis',       '🚖', '#f39c12', 6),
+('market',     'Marchés',     'Markets',     '🛍️', '#9b59b6', 7);
+
+-- ─────────────────────────────────────────────────
 --  POINTS D'INTÉRÊT (Carte)
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS points_of_interest (
     id          INT AUTO_INCREMENT PRIMARY KEY,
-    category    ENUM('restaurant','museum','pharmacy','taxi',
-                     'hospital','attraction','market','hotel',
-                     'bank','mosque','church') NOT NULL,
+    category    VARCHAR(50) NOT NULL,
     lat         DECIMAL(10,7) NOT NULL,
     lng         DECIMAL(10,7) NOT NULL,
     phone       VARCHAR(30),
@@ -112,12 +134,35 @@ CREATE TABLE IF NOT EXISTS poi_images (
 );
 
 -- ─────────────────────────────────────────────────
+--  CATÉGORIES INFOS UTILES (gérées via backoffice)
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS info_categories (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    label_fr     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100) NOT NULL,
+    icon         VARCHAR(10)  NOT NULL DEFAULT '📋',
+    color        VARCHAR(7)   NOT NULL DEFAULT '#6B7280',
+    display_order INT DEFAULT 0,
+    is_active    BOOLEAN DEFAULT TRUE,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO info_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES
+('taxi',      'Taxi',       'Taxi',       '🚕', '#F59E0B', 1),
+('doctor',    'Médecin',    'Doctor',     '👨‍⚕️', '#3B82F6', 2),
+('pharmacy',  'Pharmacie',  'Pharmacy',   '💊', '#10B981', 3),
+('shuttle',   'Navette',    'Shuttle',    '🚌', '#8B5CF6', 4),
+('emergency', 'Urgences',   'Emergency',  '🚨', '#EF4444', 5),
+('embassy',   'Ambassade',  'Embassy',    '🏛️', '#6366F1', 6),
+('bank',      'Banque',     'Bank',       '🏦', '#0EA5E9', 7);
+
+-- ─────────────────────────────────────────────────
 --  INFOS UTILES (contacts, taxis, etc.)
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS useful_contacts (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    category     ENUM('taxi','doctor','pharmacy','shuttle',
-                      'emergency','embassy','bank') NOT NULL,
+    category     VARCHAR(50) NOT NULL,
     phone        VARCHAR(30),
     whatsapp     VARCHAR(30),
     website      VARCHAR(255),
@@ -138,12 +183,36 @@ CREATE TABLE IF NOT EXISTS useful_contact_translations (
 );
 
 -- ─────────────────────────────────────────────────
+--  CATÉGORIES ÉVÉNEMENTS (gérées via backoffice)
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS event_categories (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    label_fr     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100) NOT NULL,
+    icon         VARCHAR(10)  NOT NULL DEFAULT '🗓️',
+    color        VARCHAR(7)   NOT NULL DEFAULT '#6B7280',
+    display_order INT DEFAULT 0,
+    is_active    BOOLEAN DEFAULT TRUE,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO event_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES
+('culture',     'Culture',     'Culture',     '🎭', '#8B5CF6', 1),
+('music',       'Musique',     'Music',       '🎵', '#EC4899', 2),
+('sport',       'Sport',       'Sport',       '🏃', '#10B981', 3),
+('gastronomy',  'Gastronomie', 'Gastronomy',  '🍽️', '#F59E0B', 4),
+('festival',    'Festival',    'Festival',    '🎉', '#EF4444', 5),
+('exhibition',  'Exposition',  'Exhibition',  '🖼️', '#3B82F6', 6),
+('hotel',       'Hôtel',       'Hotel',       '🏨', '#C2782A', 7);
+
+-- ─────────────────────────────────────────────────
 --  ÉVÉNEMENTS
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS events (
     id           INT AUTO_INCREMENT PRIMARY KEY,
     slug         VARCHAR(120) NOT NULL UNIQUE,
-    category     ENUM('culture','music','sport','gastronomy','festival','exhibition','hotel') NOT NULL,
+    category     VARCHAR(50)  NOT NULL,
     start_date   DATE         NOT NULL,
     end_date     DATE,
     start_time   TIME,

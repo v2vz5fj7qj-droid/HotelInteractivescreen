@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
@@ -7,17 +7,20 @@ import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles           from './Events.module.css';
 
-const CATEGORIES = ['all','culture','music','sport','gastronomy','festival','exhibition','hotel'];
-
-const CATEGORY_ICONS = {
-  all: '🗓️', culture: '🎭', music: '🎵', sport: '🏃',
-  gastronomy: '🍽️', festival: '🎉', exhibition: '🖼️', hotel: '🏨',
-};
+const ALL_ENTRY = { key_name: 'all', icon: '🗓️', label_fr: 'Tout', label_en: 'All' };
 
 export default function Events() {
   const { t, locale }          = useLanguage();
   const [category, setCategory] = useState('all');
   const [selected, setSelected] = useState(null);
+
+  const { data: catsData } = useApi('/events/categories');
+  const categories = useMemo(() => [ALL_ENTRY, ...(catsData || [])], [catsData]);
+  const catMeta = useMemo(() => {
+    const m = {};
+    categories.forEach(c => { m[c.key_name] = c; });
+    return m;
+  }, [categories]);
 
   const params = { locale, upcoming: true, ...(category !== 'all' && { category }) };
   const { data, loading, error } = useApi('/events', params, { deps: [locale, category] });
@@ -30,6 +33,7 @@ export default function Events() {
         event={selected}
         t={t}
         locale={locale}
+        catMeta={catMeta}
         onBack={() => setSelected(null)}
       />
     );
@@ -49,15 +53,15 @@ export default function Events() {
 
       {/* Filtres par catégorie */}
       <div className={styles.filters} role="group" aria-label="Filtres catégories">
-        {CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button
-            key={cat}
-            className={`${styles.filterBtn} ${category === cat ? styles.filterActive : ''}`}
-            onClick={() => setCategory(cat)}
-            aria-pressed={category === cat}
+            key={cat.key_name}
+            className={`${styles.filterBtn} ${category === cat.key_name ? styles.filterActive : ''}`}
+            onClick={() => setCategory(cat.key_name)}
+            aria-pressed={category === cat.key_name}
           >
-            <span aria-hidden="true">{CATEGORY_ICONS[cat]}</span>
-            {t(`events.categories.${cat}`)}
+            <span aria-hidden="true">{cat.icon}</span>
+            {locale === 'fr' ? cat.label_fr : cat.label_en}
           </button>
         ))}
       </div>
@@ -86,6 +90,7 @@ export default function Events() {
                     event={ev}
                     t={t}
                     locale={locale}
+                    catMeta={catMeta}
                     onClick={() => {
                       setSelected(ev);
                       trackEvent('events', 'view', { event: ev.slug });
@@ -104,6 +109,7 @@ export default function Events() {
                     event={ev}
                     t={t}
                     locale={locale}
+                    catMeta={catMeta}
                     onClick={() => {
                       setSelected(ev);
                       trackEvent('events', 'view', { event: ev.slug });
@@ -120,21 +126,24 @@ export default function Events() {
 }
 
 /* ── Carte featured (grande) ──────────────────────────── */
-function EventCardFeatured({ event, t, locale, onClick }) {
+function EventCardFeatured({ event, t, locale, catMeta, onClick }) {
+  const cat = catMeta?.[event.category];
+  const catIcon  = cat?.icon  || '🗓️';
+  const catLabel = locale === 'fr' ? (cat?.label_fr || event.category) : (cat?.label_en || event.category);
   return (
     <button className={styles.cardFeatured} onClick={onClick}>
       {event.image_url ? (
         <img src={event.image_url} alt={event.title} className={styles.cardFeaturedImg} />
       ) : (
         <div className={styles.cardFeaturedImgPlaceholder}>
-          {CATEGORY_ICONS[event.category]}
+          {catIcon}
         </div>
       )}
 
       <div className={styles.cardFeaturedBody}>
         <div className={styles.cardTopRow}>
           <span className={`${styles.categoryBadge} ${styles[`cat_${event.category}`]}`}>
-            {CATEGORY_ICONS[event.category]} {t(`events.categories.${event.category}`)}
+            {catIcon} {catLabel}
           </span>
           {event.is_hotel && (
             <span className={styles.hotelBadge}>🏨 {t('events.hotel_event')}</span>
@@ -158,7 +167,10 @@ function EventCardFeatured({ event, t, locale, onClick }) {
 }
 
 /* ── Carte normale (petite) ───────────────────────────── */
-function EventCardSmall({ event, t, locale, onClick }) {
+function EventCardSmall({ event, t, locale, catMeta, onClick }) {
+  const cat = catMeta?.[event.category];
+  const catIcon  = cat?.icon  || '🗓️';
+  const catLabel = locale === 'fr' ? (cat?.label_fr || event.category) : (cat?.label_en || event.category);
   return (
     <button className={styles.cardSmall} onClick={onClick}>
       <div className={styles.cardSmallDate}>
@@ -173,7 +185,7 @@ function EventCardSmall({ event, t, locale, onClick }) {
       <div className={styles.cardSmallBody}>
         <div className={styles.cardSmallTop}>
           <span className={`${styles.categoryBadge} ${styles[`cat_${event.category}`]}`}>
-            {CATEGORY_ICONS[event.category]} {t(`events.categories.${event.category}`)}
+            {catIcon} {catLabel}
           </span>
           <span className={`${styles.priceBadge} ${event.is_free ? styles.priceFree : ''}`}>
             {event.is_free ? t('events.free') : `${event.price_fcfa.toLocaleString('fr-BF')} F`}
@@ -190,7 +202,10 @@ function EventCardSmall({ event, t, locale, onClick }) {
 }
 
 /* ── Vue détail ───────────────────────────────────────── */
-function EventDetail({ event, t, locale, onBack }) {
+function EventDetail({ event, t, locale, catMeta, onBack }) {
+  const cat = catMeta?.[event.category];
+  const catIcon  = cat?.icon  || '🗓️';
+  const catLabel = locale === 'fr' ? (cat?.label_fr || event.category) : (cat?.label_en || event.category);
   return (
     <div className={styles.detailPage}>
       <button className={styles.detailBackBtn} onClick={onBack}>
@@ -206,7 +221,7 @@ function EventDetail({ event, t, locale, onBack }) {
           <img src={event.image_url} alt={event.title} className={styles.detailImg} />
         ) : (
           <div className={styles.detailImgPlaceholder}>
-            {CATEGORY_ICONS[event.category]}
+            {catIcon}
           </div>
         )}
 
@@ -214,7 +229,7 @@ function EventDetail({ event, t, locale, onBack }) {
           {/* Badges */}
           <div className={styles.detailBadges}>
             <span className={`${styles.categoryBadge} ${styles[`cat_${event.category}`]}`}>
-              {CATEGORY_ICONS[event.category]} {t(`events.categories.${event.category}`)}
+              {catIcon} {catLabel}
             </span>
             {event.is_featured && (
               <span className={styles.featuredBadge}>⭐ {t('events.featured')}</span>

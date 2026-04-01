@@ -11,6 +11,7 @@ const NAV = [
   { to: '/admin/info',         icon: '📞', label: 'Infos utiles'               },
   { to: '/admin/localities',   icon: '🌍', label: 'Localités météo'            },
   { to: '/admin/flights',      icon: '✈️', label: 'Vols'                        },
+  { to: '/admin/categories',   icon: '🏷️', label: 'Catégories'                  },
   { to: '/admin/theme',        icon: '🎨', label: 'Thème'                      },
 ];
 

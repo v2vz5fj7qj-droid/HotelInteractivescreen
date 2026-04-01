@@ -11,6 +11,7 @@ import ThemeManager         from './pages/ThemeManager';
 import InfosManager         from './pages/InfosManager';
 import LocalitiesManager    from './pages/LocalitiesManager';
 import FlightsManager       from './pages/FlightsManager';
+import CategoriesManager    from './pages/CategoriesManager';
 
 /* ── Guard : redirige vers /admin/login si non authentifié ── */
 function RequireAuth({ children }) {
@@ -41,6 +42,7 @@ export default function AdminApp() {
         <Route path="info"          element={<InfosManager />} />
         <Route path="localities"    element={<LocalitiesManager />} />
         <Route path="flights"       element={<FlightsManager />} />
+        <Route path="categories"    element={<CategoriesManager />} />
         <Route path="theme"         element={<ThemeManager />} />
         <Route path="*"             element={<Navigate to="/admin" replace />} />
       </Route>

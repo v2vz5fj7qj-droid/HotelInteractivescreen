@@ -94,7 +94,7 @@
 .sidebarLogo { font-size: 1.6rem; flex-shrink: 0; }
 .sidebarTitle { font-size: 1.1rem; font-weight: 800; color: #F5E6C8; white-space: nowrap; }
 
-.sidebarNav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+.sidebarNav { flex: 1; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
 
 .navItem {
   display: flex;

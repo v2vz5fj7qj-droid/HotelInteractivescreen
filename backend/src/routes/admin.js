@@ -24,6 +24,21 @@ const upload = multer({
   },
 });
 
+// ── Upload images Wellness ────────────────────────────
+const wellnessImgDir     = path.resolve(__dirname, '../../../uploads/wellness');
+const wellnessImgStorage = multer.diskStorage({
+  destination: (req, file, cb) => { fs.mkdirSync(wellnessImgDir, { recursive: true }); cb(null, wellnessImgDir); },
+  filename:    (_, file, cb) => cb(null, `wellness_${Date.now()}${path.extname(file.originalname)}`),
+});
+const uploadWellnessImg = multer({
+  storage:    wellnessImgStorage,
+  limits:     { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    const ok = /image\/(png|jpeg|webp)/.test(file.mimetype);
+    cb(ok ? null : new Error('Format non supporté'), ok);
+  },
+});
+
 // ── Upload images POI ─────────────────────────────────
 const poiImgDir     = path.resolve(__dirname, '../../../uploads/poi');
 const poiImgStorage = multer.diskStorage({
@@ -141,6 +156,20 @@ router.delete('/wellness/:id', adminAuth, async (req, res) => {
     await cache.delPattern('wellness:*');
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/admin/wellness/:id/image  — upload image
+router.post('/wellness/:id/image', adminAuth, (req, res) => {
+  uploadWellnessImg.single('image')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+    const url = `/uploads/wellness/${req.file.filename}`;
+    try {
+      await db.query('UPDATE wellness_services SET image_url=? WHERE id=?', [url, req.params.id]);
+      await cache.delPattern('wellness:*');
+      res.json({ url });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+  });
 });
 
 // ════════════════════════════════════════════════════════
@@ -729,6 +758,219 @@ router.post('/theme/banner', adminAuth, upload.single('banner'), async (req, res
     );
     await cache.del('theme:config');
     res.json({ url: publicPath });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════
+//  CATÉGORIES POI
+// ════════════════════════════════════════════════════════
+
+router.get('/categories/events', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM event_categories ORDER BY display_order, id');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/categories/events/:id/count', adminAuth, async (req, res) => {
+  try {
+    const [[cat]] = await db.query('SELECT key_name FROM event_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM events WHERE category=?', [cat.key_name]);
+    res.json({ count: parseInt(count) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/categories/events', adminAuth, async (req, res) => {
+  const { key_name, label_fr, label_en, icon, color, display_order } = req.body;
+  if (!key_name || !label_fr || !label_en) return res.status(400).json({ error: 'key_name, label_fr et label_en sont requis' });
+  const safeKey = key_name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  try {
+    const [r] = await db.query(
+      'INSERT INTO event_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES (?,?,?,?,?,?)',
+      [safeKey, label_fr, label_en, icon || '🗓️', color || '#6B7280', display_order || 0]
+    );
+    await cache.delPattern('events:*');
+    res.status(201).json({ id: r.insertId, key_name: safeKey });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Cette clé existe déjà' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/categories/events/:id', adminAuth, async (req, res) => {
+  const { label_fr, label_en, icon, color, display_order, is_active } = req.body;
+  try {
+    await db.query(
+      'UPDATE event_categories SET label_fr=?, label_en=?, icon=?, color=?, display_order=?, is_active=? WHERE id=?',
+      [label_fr, label_en, icon, color, display_order || 0, is_active ?? 1, req.params.id]
+    );
+    await cache.delPattern('events:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/categories/events/:id', adminAuth, async (req, res) => {
+  const { reassign_to } = req.body;
+  try {
+    const [[cat]] = await db.query('SELECT * FROM event_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM events WHERE category=?', [cat.key_name]);
+    if (parseInt(count) > 0) {
+      if (!reassign_to) return res.status(400).json({ error: 'reassign_to requis', count: parseInt(count) });
+      const [[target]] = await db.query('SELECT id FROM event_categories WHERE key_name=?', [reassign_to]);
+      if (!target) return res.status(400).json({ error: 'Catégorie cible introuvable' });
+      await db.query('UPDATE events SET category=? WHERE category=?', [reassign_to, cat.key_name]);
+    }
+    await db.query('DELETE FROM event_categories WHERE id=?', [req.params.id]);
+    await cache.delPattern('events:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/categories/poi/:id/count', adminAuth, async (req, res) => {
+  try {
+    const [[cat]] = await db.query('SELECT key_name FROM poi_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM points_of_interest WHERE category=?', [cat.key_name]);
+    res.json({ count: parseInt(count) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/categories/poi', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM poi_categories ORDER BY display_order, id');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/categories/poi', adminAuth, async (req, res) => {
+  const { key_name, label_fr, label_en, icon, color, display_order } = req.body;
+  if (!key_name || !label_fr || !label_en) {
+    return res.status(400).json({ error: 'key_name, label_fr et label_en sont requis' });
+  }
+  const safeKey = key_name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  try {
+    const [r] = await db.query(
+      'INSERT INTO poi_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES (?,?,?,?,?,?)',
+      [safeKey, label_fr, label_en, icon || '📍', color || '#C2782A', display_order || 0]
+    );
+    await cache.delPattern('poi:*');
+    res.status(201).json({ id: r.insertId, key_name: safeKey });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Cette clé existe déjà' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/categories/poi/:id', adminAuth, async (req, res) => {
+  const { label_fr, label_en, icon, color, display_order, is_active } = req.body;
+  try {
+    await db.query(
+      'UPDATE poi_categories SET label_fr=?, label_en=?, icon=?, color=?, display_order=?, is_active=? WHERE id=?',
+      [label_fr, label_en, icon, color, display_order || 0, is_active ?? 1, req.params.id]
+    );
+    await cache.delPattern('poi:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE avec réaffectation obligatoire si des POI sont attachés
+router.delete('/categories/poi/:id', adminAuth, async (req, res) => {
+  const { reassign_to } = req.body;
+  try {
+    const [[cat]] = await db.query('SELECT * FROM poi_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+
+    const [[{ count }]] = await db.query(
+      'SELECT COUNT(*) AS count FROM points_of_interest WHERE category=?', [cat.key_name]
+    );
+
+    if (parseInt(count) > 0) {
+      if (!reassign_to) return res.status(400).json({ error: 'reassign_to requis', count: parseInt(count) });
+      const [[target]] = await db.query('SELECT id FROM poi_categories WHERE key_name=?', [reassign_to]);
+      if (!target) return res.status(400).json({ error: 'Catégorie cible introuvable' });
+      await db.query('UPDATE points_of_interest SET category=? WHERE category=?', [reassign_to, cat.key_name]);
+    }
+
+    await db.query('DELETE FROM poi_categories WHERE id=?', [req.params.id]);
+    await cache.delPattern('poi:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ════════════════════════════════════════════════════════
+//  CATÉGORIES INFOS UTILES
+// ════════════════════════════════════════════════════════
+
+router.get('/categories/info/:id/count', adminAuth, async (req, res) => {
+  try {
+    const [[cat]] = await db.query('SELECT key_name FROM info_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM useful_contacts WHERE category=?', [cat.key_name]);
+    res.json({ count: parseInt(count) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/categories/info', adminAuth, async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM info_categories ORDER BY display_order, id');
+    res.json(rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/categories/info', adminAuth, async (req, res) => {
+  const { key_name, label_fr, label_en, icon, color, display_order } = req.body;
+  if (!key_name || !label_fr || !label_en) {
+    return res.status(400).json({ error: 'key_name, label_fr et label_en sont requis' });
+  }
+  const safeKey = key_name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  try {
+    const [r] = await db.query(
+      'INSERT INTO info_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES (?,?,?,?,?,?)',
+      [safeKey, label_fr, label_en, icon || '📋', color || '#6B7280', display_order || 0]
+    );
+    await cache.delPattern('info:*');
+    res.status(201).json({ id: r.insertId, key_name: safeKey });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Cette clé existe déjà' });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/categories/info/:id', adminAuth, async (req, res) => {
+  const { label_fr, label_en, icon, color, display_order, is_active } = req.body;
+  try {
+    await db.query(
+      'UPDATE info_categories SET label_fr=?, label_en=?, icon=?, color=?, display_order=?, is_active=? WHERE id=?',
+      [label_fr, label_en, icon, color, display_order || 0, is_active ?? 1, req.params.id]
+    );
+    await cache.delPattern('info:*');
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE avec réaffectation obligatoire si des contacts sont attachés
+router.delete('/categories/info/:id', adminAuth, async (req, res) => {
+  const { reassign_to } = req.body;
+  try {
+    const [[cat]] = await db.query('SELECT * FROM info_categories WHERE id=?', [req.params.id]);
+    if (!cat) return res.status(404).json({ error: 'Catégorie introuvable' });
+
+    const [[{ count }]] = await db.query(
+      'SELECT COUNT(*) AS count FROM useful_contacts WHERE category=?', [cat.key_name]
+    );
+
+    if (parseInt(count) > 0) {
+      if (!reassign_to) return res.status(400).json({ error: 'reassign_to requis', count: parseInt(count) });
+      const [[target]] = await db.query('SELECT id FROM info_categories WHERE key_name=?', [reassign_to]);
+      if (!target) return res.status(400).json({ error: 'Catégorie cible introuvable' });
+      await db.query('UPDATE useful_contacts SET category=? WHERE category=?', [reassign_to, cat.key_name]);
+    }
+
+    await db.query('DELETE FROM info_categories WHERE id=?', [req.params.id]);
+    await cache.delPattern('info:*');
+    res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

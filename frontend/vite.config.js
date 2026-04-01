@@ -7,6 +7,7 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     hmr: { clientPort: 5173 },
+    watch: { usePolling: true, interval: 300 },
     proxy: {
       '/api': {
         // Mode B (local dev) : backend sur localhost:4000

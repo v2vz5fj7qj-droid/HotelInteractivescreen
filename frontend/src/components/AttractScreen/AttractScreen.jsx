@@ -4,7 +4,7 @@ import { useLanguage }  from '../../contexts/LanguageContext';
 import { useTheme }     from '../../contexts/ThemeContext';
 import styles           from './AttractScreen.module.css';
 
-const ATTRACT_DELAY = 30_000;
+const ATTRACT_DELAY = 60_000;
 const EVENTS = ['touchstart', 'touchmove', 'mousedown', 'keydown'];
 
 export default function AttractScreen() {

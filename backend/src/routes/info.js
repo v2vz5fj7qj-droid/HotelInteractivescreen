@@ -3,6 +3,22 @@ const db      = require('../services/db');
 const cache   = require('../services/cacheService');
 const router  = express.Router();
 
+// GET /api/info/categories
+router.get('/categories', async (req, res) => {
+  const cacheKey = 'info:categories';
+  const cached   = await cache.get(cacheKey);
+  if (cached) return res.json(JSON.parse(cached));
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM info_categories WHERE is_active=1 ORDER BY display_order, id'
+    );
+    await cache.set(cacheKey, JSON.stringify(rows), 3600);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur chargement catégories infos' });
+  }
+});
+
 // GET /api/info?locale=fr&category=taxi
 router.get('/', async (req, res) => {
   const locale   = req.query.locale   || 'fr';

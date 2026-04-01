@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
@@ -7,37 +7,25 @@ import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles           from './UsefulInfo.module.css';
 
-const CATEGORIES = ['all', 'taxi', 'doctor', 'pharmacy', 'shuttle', 'emergency', 'embassy', 'bank'];
-
-const CATEGORY_ICONS = {
-  all:       '📋',
-  taxi:      '🚕',
-  doctor:    '👨‍⚕️',
-  pharmacy:  '💊',
-  shuttle:   '🚌',
-  emergency: '🚨',
-  embassy:   '🏛️',
-  bank:      '🏦',
-};
-
-const CATEGORY_COLORS = {
-  taxi:      '#F59E0B',
-  doctor:    '#3B82F6',
-  pharmacy:  '#10B981',
-  shuttle:   '#8B5CF6',
-  emergency: '#EF4444',
-  embassy:   '#6366F1',
-  bank:      '#0EA5E9',
-};
+const ALL_ENTRY = { key: 'all', icon: '📋', color: '#6B7280', label_fr: 'Tout', label_en: 'All' };
 
 export default function UsefulInfo() {
   const { t, locale }           = useLanguage();
   const [catIndex, setCatIndex] = useState(0);
-  const category                = CATEGORIES[catIndex];
   const touchStart              = useRef(null);
 
   const params = { locale };
-  const { data, loading, error } = useApi('/info', params, { deps: [locale] });
+  const { data, loading, error }    = useApi('/info', params, { deps: [locale] });
+  const { data: catsData }          = useApi('/info/categories');
+  const categories = useMemo(
+    () => [ALL_ENTRY, ...(catsData || []).map(c => ({ key: c.key_name, icon: c.icon, color: c.color, label_fr: c.label_fr, label_en: c.label_en }))],
+    [catsData]
+  );
+
+  const category = categories[catIndex]?.key || 'all';
+  const catLabel = cat => locale === 'fr' ? cat.label_fr : cat.label_en;
+  const catIcon  = key => categories.find(c => c.key === key)?.icon || '📋';
+  const catColor = key => categories.find(c => c.key === key)?.color;
 
   useEffect(() => { trackEvent('info', 'open'); }, []);
 
@@ -51,8 +39,8 @@ export default function UsefulInfo() {
     touchStart.current = null;
     if (Math.abs(dx) < 60 || Math.abs(dx) < dy) return;
     setCatIndex(i => dx < 0
-      ? (i + 1) % CATEGORIES.length
-      : (i - 1 + CATEGORIES.length) % CATEGORIES.length
+      ? (i + 1) % categories.length
+      : (i - 1 + categories.length) % categories.length
     );
   };
 
@@ -62,9 +50,9 @@ export default function UsefulInfo() {
 
   // Grouper par catégorie quand "all" est sélectionné
   const grouped = category === 'all'
-    ? CATEGORIES.filter(cat => cat !== 'all' && data?.some(c => c.category === cat))
-        .map(cat => ({ cat, items: data.filter(c => c.category === cat) }))
-    : [{ cat: category, items: filtered }];
+    ? categories.filter(c => c.key !== 'all' && data?.some(d => d.category === c.key))
+        .map(c => ({ cat: c, items: data.filter(d => d.category === c.key) }))
+    : [{ cat: categories[catIndex], items: filtered }];
 
   return (
     <div className={styles.page} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
@@ -78,15 +66,15 @@ export default function UsefulInfo() {
 
       {/* Filtres catégories */}
       <div className={styles.filters} role="group" aria-label="Filtres catégories">
-        {CATEGORIES.map((cat, i) => (
+        {categories.map((cat, i) => (
           <button
-            key={cat}
+            key={cat.key}
             className={`${styles.filterBtn} ${catIndex === i ? styles.filterActive : ''}`}
             onClick={() => setCatIndex(i)}
             aria-pressed={catIndex === i}
           >
-            <span aria-hidden="true">{CATEGORY_ICONS[cat]}</span>
-            {t(`info.categories.${cat}`)}
+            <span aria-hidden="true">{cat.icon}</span>
+            {catLabel(cat)}
           </button>
         ))}
       </div>
@@ -103,12 +91,12 @@ export default function UsefulInfo() {
         )}
 
         {!loading && data?.length > 0 && grouped.map(({ cat, items }) => (
-          items.length === 0 ? null : (
-            <div key={cat} className={styles.group}>
+          !cat || items.length === 0 ? null : (
+            <div key={cat.key} className={styles.group}>
               {category === 'all' && (
                 <div className={styles.groupHeader}>
-                  <span className={styles.groupIcon}>{CATEGORY_ICONS[cat]}</span>
-                  <h2 className={styles.groupTitle}>{t(`info.categories.${cat}`)}</h2>
+                  <span className={styles.groupIcon}>{cat.icon}</span>
+                  <h2 className={styles.groupTitle}>{catLabel(cat)}</h2>
                 </div>
               )}
               <div className={styles.grid}>
@@ -116,7 +104,7 @@ export default function UsefulInfo() {
                   <ContactCard
                     key={contact.id}
                     contact={contact}
-                    color={CATEGORY_COLORS[contact.category]}
+                    color={catColor(contact.category)}
                     t={t}
                   />
                 ))}
@@ -127,7 +115,7 @@ export default function UsefulInfo() {
 
         {!loading && data?.length > 0 && filtered.length === 0 && (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>{CATEGORY_ICONS[category]}</span>
+            <span className={styles.emptyIcon}>{catIcon(category)}</span>
             <p>{t('info.no_results')}</p>
           </div>
         )}
@@ -135,12 +123,12 @@ export default function UsefulInfo() {
 
       {/* Dots de navigation */}
       <div className={styles.sliderDots}>
-        {CATEGORIES.map((cat, i) => (
+        {categories.map((cat, i) => (
           <button
-            key={cat}
+            key={cat.key}
             className={`${styles.sliderDot} ${i === catIndex ? styles.sliderDotActive : ''}`}
             onClick={() => setCatIndex(i)}
-            aria-label={t(`info.categories.${cat}`)}
+            aria-label={catLabel(cat)}
             aria-current={i === catIndex}
           />
         ))}

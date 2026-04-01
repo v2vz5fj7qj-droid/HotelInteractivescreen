@@ -2,20 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api    from '../useAdminApi';
 import styles from '../Admin.module.css';
 
-const CATS = ['taxi','doctor','pharmacy','shuttle','emergency','embassy','bank'];
-
-const CAT_LABELS = {
-  taxi:      '🚕 Taxi',
-  doctor:    '🩺 Médecin',
-  pharmacy:  '💊 Pharmacie',
-  shuttle:   '🚌 Navette',
-  emergency: '🚨 Urgences',
-  embassy:   '🏛️ Ambassade',
-  bank:      '🏦 Banque',
-};
-
 const EMPTY = {
-  category: 'taxi',
+  category: '',
   phone: '', whatsapp: '', website: '',
   available_24h: false, display_order: 0, is_active: true,
   translations: {
@@ -26,6 +14,7 @@ const EMPTY = {
 
 export default function InfosManager() {
   const [items,   setItems]   = useState([]);
+  const [cats,    setCats]    = useState([]);
   const [modal,   setModal]   = useState(null);
   const [editing, setEditing] = useState(EMPTY);
   const [tab,     setTab]     = useState('fr');
@@ -33,12 +22,18 @@ export default function InfosManager() {
   const [msg,     setMsg]     = useState('');
   const [filter,  setFilter]  = useState('all');
 
+  const loadCats = useCallback(() =>
+    api.get('/categories/info').then(r => setCats(r.data)).catch(() => {}), []);
+
   const load = useCallback(() =>
     api.get('/info').then(r => setItems(r.data)).catch(() => {}), []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadCats(); }, [load, loadCats]);
 
-  const openCreate = () => { setEditing(structuredClone(EMPTY)); setModal('create'); setTab('fr'); };
+  const openCreate = () => {
+    setEditing({ ...structuredClone(EMPTY), category: cats[0]?.key_name || '' });
+    setModal('create'); setTab('fr');
+  };
   const openEdit   = item => {
     setEditing({
       ...item,
@@ -74,6 +69,7 @@ export default function InfosManager() {
   }));
 
   const filtered = filter === 'all' ? items : items.filter(i => i.category === filter);
+  const catLabel = key => { const c = cats.find(x => x.key_name === key); return c ? `${c.icon} ${c.label_fr}` : key; };
 
   return (
     <div>
@@ -89,14 +85,14 @@ export default function InfosManager() {
 
       {/* Filtres */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        {['all', ...CATS].map(c => (
-          <button key={c} onClick={() => setFilter(c)} style={{
+        {[{ key_name: 'all', label_fr: 'Tous', icon: '' }, ...cats].map(c => (
+          <button key={c.key_name} onClick={() => setFilter(c.key_name)} style={{
             padding: '6px 14px', borderRadius: 20, border: '1px solid #E5E7EB', cursor: 'pointer',
-            background: filter === c ? '#C2782A' : '#fff',
-            color: filter === c ? '#fff' : '#374151',
+            background: filter === c.key_name ? '#C2782A' : '#fff',
+            color: filter === c.key_name ? '#fff' : '#374151',
             fontSize: '0.82rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif',
           }}>
-            {c === 'all' ? 'Tous' : CAT_LABELS[c] || c}
+            {c.icon ? `${c.icon} ` : ''}{c.label_fr}
           </button>
         ))}
       </div>
@@ -118,7 +114,7 @@ export default function InfosManager() {
                     <><br /><small style={{ color: '#9CA3AF' }}>{it.translations.fr.description}</small></>
                   )}
                 </td>
-                <td>{CAT_LABELS[it.category] || it.category}</td>
+                <td>{catLabel(it.category)}</td>
                 <td style={{ fontSize: '0.85rem' }}>{it.phone || '—'}</td>
                 <td style={{ fontSize: '0.85rem' }}>{it.whatsapp || '—'}</td>
                 <td>
@@ -156,7 +152,7 @@ export default function InfosManager() {
                 <div className={styles.field}>
                   <label className={styles.label}>Catégorie</label>
                   <select className={styles.select} value={editing.category} onChange={e => set('category', e.target.value)}>
-                    {CATS.map(c => <option key={c} value={c}>{CAT_LABELS[c] || c}</option>)}
+                    {cats.map(c => <option key={c.key_name} value={c.key_name}>{c.icon} {c.label_fr}</option>)}
                   </select>
                 </div>
                 <div className={styles.field}>

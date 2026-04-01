@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api    from '../useAdminApi';
 import styles from '../Admin.module.css';
 
-const CATS = ['culture','music','sport','gastronomy','festival','exhibition','hotel'];
-const EMPTY = { slug:'', category:'culture', start_date:'', end_date:'', start_time:'', end_time:'', location:'', lat:'', lng:'', price_fcfa:0, image_url:'', is_featured:false, is_active:true, display_order:0, translations:{ fr:{title:'',description:'',tags:''}, en:{title:'',description:'',tags:''} } };
+const EMPTY = { slug:'', category:'', start_date:'', end_date:'', start_time:'', end_time:'', location:'', lat:'', lng:'', price_fcfa:0, image_url:'', is_featured:false, is_active:true, display_order:0, translations:{ fr:{title:'',description:'',tags:''}, en:{title:'',description:'',tags:''} } };
 
 export default function EventsManager() {
   const [items,   setItems]   = useState([]);
+  const [cats,    setCats]    = useState([]);
   const [modal,   setModal]   = useState(null);
   const [editing, setEditing] = useState(EMPTY);
   const [tab,     setTab]     = useState('fr');
@@ -16,9 +16,15 @@ export default function EventsManager() {
   const load = useCallback(() =>
     api.get('/events').then(r => setItems(r.data)).catch(() => {}), []);
 
-  useEffect(() => { load(); }, [load]);
+  const loadCats = useCallback(() =>
+    api.get('/categories/events').then(r => {
+      setCats(r.data);
+      if (r.data.length > 0) setEditing(e => ({ ...e, category: e.category || r.data[0].key_name }));
+    }).catch(() => {}), []);
 
-  const openCreate = () => { setEditing(structuredClone(EMPTY)); setModal('create'); setTab('fr'); };
+  useEffect(() => { load(); loadCats(); }, [load, loadCats]);
+
+  const openCreate = () => { setEditing({ ...structuredClone(EMPTY), category: cats[0]?.key_name || '' }); setModal('create'); setTab('fr'); };
   const openEdit   = item => {
     setEditing({
       ...item,
@@ -83,7 +89,7 @@ export default function EventsManager() {
                   <strong>{it.translations?.fr?.title || it.slug}</strong>
                   {it.is_featured && <span className={`${styles.badge} ${styles.badgeFeatured}`} style={{ marginLeft:8 }}>★ À la une</span>}
                 </td>
-                <td style={{ textTransform:'capitalize' }}>{it.category}</td>
+                <td>{cats.find(c => c.key_name === it.category)?.icon || ''} {cats.find(c => c.key_name === it.category)?.label_fr || it.category}</td>
                 <td style={{ fontSize:'0.82rem' }}>{it.start_date?.slice(0,10)}</td>
                 <td>{it.price_fcfa === 0 ? <span style={{ color:'#10B981', fontWeight:700 }}>Gratuit</span> : `${Number(it.price_fcfa).toLocaleString()} F`}</td>
                 <td><span className={`${styles.badge} ${it.is_active ? styles.badgeActive : styles.badgeInactive}`}>{it.is_active ? 'Actif' : 'Inactif'}</span></td>
@@ -113,7 +119,7 @@ export default function EventsManager() {
                 <div className={styles.field}>
                   <label className={styles.label}>Catégorie</label>
                   <select className={styles.select} value={editing.category} onChange={e => set('category', e.target.value)}>
-                    {CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {cats.map(c => <option key={c.key_name} value={c.key_name}>{c.icon} {c.label_fr}</option>)}
                   </select>
                 </div>
               </div>

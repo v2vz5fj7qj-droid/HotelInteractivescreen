@@ -3,6 +3,22 @@ const db      = require('../services/db');
 const cache   = require('../services/cacheService');
 const router  = express.Router();
 
+// GET /api/poi/categories
+router.get('/categories', async (req, res) => {
+  const cacheKey = 'poi:categories';
+  const cached   = await cache.get(cacheKey);
+  if (cached) return res.json(JSON.parse(cached));
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM poi_categories WHERE is_active=1 ORDER BY display_order, id'
+    );
+    await cache.set(cacheKey, JSON.stringify(rows), 3600);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur chargement catégories POI' });
+  }
+});
+
 // GET /api/poi?locale=fr&category=restaurant
 router.get('/', async (req, res) => {
   const locale   = req.query.locale   || 'fr';

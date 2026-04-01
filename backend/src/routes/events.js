@@ -58,6 +58,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/events/categories  (public, cached 1h)
+router.get('/categories', async (req, res) => {
+  const cached = await cache.get('events:categories');
+  if (cached) return res.json(JSON.parse(cached));
+  try {
+    const [rows] = await db.query(
+      'SELECT * FROM event_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC'
+    );
+    await cache.set('events:categories', JSON.stringify(rows), 3600);
+    res.json(rows);
+  } catch (err) {
+    console.error('[Events/categories]', err.message);
+    res.json([]);
+  }
+});
+
 // GET /api/events/:id?locale=fr
 router.get('/:id', async (req, res) => {
   const locale = req.query.locale || 'fr';

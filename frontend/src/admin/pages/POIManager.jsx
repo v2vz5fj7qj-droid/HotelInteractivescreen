@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api    from '../useAdminApi';
 import styles from '../Admin.module.css';
 
-const CATS  = ['restaurant','museum','pharmacy','taxi','hospital','attraction','market'];
 const EMPTY = {
-  category: 'restaurant', lat: '', lng: '', phone: '', website: '', is_active: true,
+  category: '', lat: '', lng: '', phone: '', website: '', is_active: true,
   translations: {
     fr: { name: '', address: '', description: '' },
     en: { name: '', address: '', description: '' },
@@ -13,6 +12,7 @@ const EMPTY = {
 
 export default function POIManager() {
   const [items,   setItems]   = useState([]);
+  const [cats,    setCats]    = useState([]);
   const [modal,   setModal]   = useState(null);   // 'create' | 'edit'
   const [editing, setEditing] = useState(EMPTY);
   const [tab,     setTab]     = useState('fr');
@@ -22,12 +22,21 @@ export default function POIManager() {
   const [imgUploading, setImgUploading] = useState(false);
   const fileInputRef = useRef(null);
 
+  const loadCats = useCallback(() =>
+    api.get('/categories/poi').then(r => {
+      setCats(r.data);
+      setEditing(e => ({ ...e, category: e.category || r.data[0]?.key_name || '' }));
+    }).catch(() => {}), []);
+
   const load = useCallback(() =>
     api.get('/poi').then(r => setItems(r.data)).catch(() => {}), []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); loadCats(); }, [load, loadCats]);
 
-  const openCreate = () => { setEditing(structuredClone(EMPTY)); setModal('create'); setTab('fr'); };
+  const openCreate = () => {
+    setEditing({ ...structuredClone(EMPTY), category: cats[0]?.key_name || '' });
+    setModal('create'); setTab('fr');
+  };
   const openEdit   = item => {
     setEditing({
       ...item,
@@ -112,6 +121,7 @@ export default function POIManager() {
   }));
 
   const filtered = filter === 'all' ? items : items.filter(i => i.category === filter);
+  const catLabel = key => cats.find(c => c.key_name === key)?.label_fr || key;
 
   return (
     <div>
@@ -127,16 +137,16 @@ export default function POIManager() {
 
       {/* Filtres par catégorie */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        {['all', ...CATS].map(c => (
-          <button key={c} onClick={() => setFilter(c)}
+        {[{ key_name: 'all', label_fr: 'Tous', icon: '' }, ...cats].map(c => (
+          <button key={c.key_name} onClick={() => setFilter(c.key_name)}
             style={{
               padding: '6px 14px', borderRadius: 20, border: '1px solid #E5E7EB', cursor: 'pointer',
-              background: filter === c ? '#C2782A' : '#fff',
-              color: filter === c ? '#fff' : '#374151',
+              background: filter === c.key_name ? '#C2782A' : '#fff',
+              color: filter === c.key_name ? '#fff' : '#374151',
               fontSize: '0.82rem', fontWeight: 600, fontFamily: 'Poppins,sans-serif',
             }}
           >
-            {c === 'all' ? 'Tous' : c}
+            {c.icon ? `${c.icon} ` : ''}{c.label_fr}
           </button>
         ))}
       </div>
@@ -162,7 +172,9 @@ export default function POIManager() {
                     </p>
                   )}
                 </td>
-                <td style={{ textTransform: 'capitalize' }}>{it.category}</td>
+                <td>
+                  {(() => { const c = cats.find(x => x.key_name === it.category); return c ? `${c.icon} ${c.label_fr}` : it.category; })()}
+                </td>
                 <td style={{ fontSize: '0.78rem', color: '#6B7280', fontFamily: 'monospace' }}>{it.lat}, {it.lng}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -198,7 +210,7 @@ export default function POIManager() {
               <div className={styles.field}>
                 <label className={styles.label}>Catégorie</label>
                 <select className={styles.select} value={editing.category} onChange={e => set('category', e.target.value)}>
-                  {CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                  {cats.map(c => <option key={c.key_name} value={c.key_name}>{c.icon} {c.label_fr}</option>)}
                 </select>
               </div>
 

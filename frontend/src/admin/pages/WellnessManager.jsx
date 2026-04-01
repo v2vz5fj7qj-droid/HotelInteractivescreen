@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api    from '../useAdminApi';
 import styles from '../Admin.module.css';
 
 const EMPTY = { slug:'', duration_min:60, price_fcfa:0, available_hours:'', available_days:'', image_url:'', video_url:'', is_active:true, translations:{ fr:{ name:'', description:'' }, en:{ name:'', description:'' } } };
 
 export default function WellnessManager() {
-  const [items,   setItems]   = useState([]);
-  const [modal,   setModal]   = useState(null);   // null | 'create' | 'edit'
-  const [editing, setEditing] = useState(EMPTY);
-  const [tab,     setTab]     = useState('fr');
-  const [saving,  setSaving]  = useState(false);
-  const [msg,     setMsg]     = useState('');
+  const [items,        setItems]        = useState([]);
+  const [modal,        setModal]        = useState(null);
+  const [editing,      setEditing]      = useState(EMPTY);
+  const [tab,          setTab]          = useState('fr');
+  const [saving,       setSaving]       = useState(false);
+  const [msg,          setMsg]          = useState('');
+  const [uploading,    setUploading]    = useState(false);
+  const imgInputRef = useRef(null);
 
   const load = useCallback(() =>
     api.get('/wellness').then(r => setItems(r.data)).catch(() => {}), []);
@@ -45,6 +47,21 @@ export default function WellnessManager() {
     if (!confirm('Supprimer ce service ?')) return;
     await api.delete(`/wellness/${id}`).catch(() => {});
     load();
+  };
+
+  const uploadImage = async (file) => {
+    if (!editing.id) return; // ne peut uploader qu'en mode édition (après création)
+    const fd = new FormData();
+    fd.append('image', file);
+    setUploading(true);
+    try {
+      const r = await api.post(`/wellness/${editing.id}/image`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      set('image_url', r.data.url);
+      setMsg('✅ Image uploadée');
+    } catch { setMsg('❌ Erreur upload image'); }
+    finally { setUploading(false); setTimeout(() => setMsg(''), 3000); }
   };
 
   const set = (field, val) => setEditing(e => ({ ...e, [field]: val }));
@@ -127,11 +144,40 @@ export default function WellnessManager() {
                   <input className={styles.input} value={editing.available_days} onChange={e => set('available_days', e.target.value)} placeholder="ex: Lun-Sam" />
                 </div>
                 <div className={styles.field}>
-                  <label className={styles.label}>URL Image</label>
-                  <input className={styles.input} value={editing.image_url} onChange={e => set('image_url', e.target.value)} placeholder="https://..." />
+                  <label className={styles.label}>Image</label>
                   {editing.image_url && (
-                    <img src={editing.image_url} alt="Aperçu" onError={e => { e.target.style.display='none'; }}
-                      style={{ marginTop: 8, height: 80, borderRadius: 8, objectFit: 'cover', border: '1px solid #E5E7EB' }} />
+                    <img
+                      src={editing.image_url}
+                      alt="Aperçu"
+                      onError={e => { e.target.style.display='none'; }}
+                      style={{ display:'block', marginBottom:8, height:80, borderRadius:8, objectFit:'cover', border:'1px solid #E5E7EB' }}
+                    />
+                  )}
+                  <input className={styles.input} value={editing.image_url} onChange={e => set('image_url', e.target.value)} placeholder="https://... ou uploader ci-dessous" />
+                  {modal === 'edit' && (
+                    <>
+                      <input
+                        ref={imgInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        style={{ display:'none' }}
+                        onChange={e => { if (e.target.files[0]) uploadImage(e.target.files[0]); }}
+                      />
+                      <button
+                        type="button"
+                        className={styles.btnSecondary}
+                        style={{ marginTop:6 }}
+                        disabled={uploading}
+                        onClick={() => imgInputRef.current?.click()}
+                      >
+                        {uploading ? 'Upload en cours…' : '📁 Uploader une image'}
+                      </button>
+                    </>
+                  )}
+                  {modal === 'create' && (
+                    <p style={{ fontSize:'0.78rem', color:'#6B7280', marginTop:4 }}>
+                      L'upload de fichier sera disponible après la création du service.
+                    </p>
                   )}
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useLanguage }  from '../../../contexts/LanguageContext';
@@ -13,17 +13,8 @@ const HOTEL_LAT  = parseFloat(import.meta.env.VITE_HOTEL_LAT  || '12.3641');
 const HOTEL_LNG  = parseFloat(import.meta.env.VITE_HOTEL_LNG  || '-1.5332');
 const HOTEL_NAME = import.meta.env.VITE_HOTEL_NAME || 'ConnectBé';
 
-const CATEGORIES = [
-  { key: 'all',        labelFr: 'Tout',        labelEn: 'All',         icon: '📍', color: '#C2782A' },
-  { key: 'restaurant', labelFr: 'Restaurants', labelEn: 'Restaurants', icon: '🍽️', color: '#E8521A' },
-  { key: 'museum',     labelFr: 'Musées',      labelEn: 'Museums',     icon: '🏛️', color: '#D4A843' },
-  { key: 'attraction', labelFr: 'Attractions', labelEn: 'Attractions', icon: '🎯', color: '#8B4F12' },
-  { key: 'pharmacy',   labelFr: 'Pharmacies',  labelEn: 'Pharmacies',  icon: '💊', color: '#27ae60' },
-  { key: 'hospital',   labelFr: 'Hôpitaux',    labelEn: 'Hospitals',   icon: '🏥', color: '#e74c3c' },
-  { key: 'taxi',       labelFr: 'Taxis',       labelEn: 'Taxis',       icon: '🚖', color: '#f39c12' },
-  { key: 'market',     labelFr: 'Marchés',     labelEn: 'Markets',     icon: '🛍️', color: '#9b59b6' },
-];
-const CAT_META = Object.fromEntries(CATEGORIES.map(c => [c.key, c]));
+const ALL_CAT = { key: 'all', labelFr: 'Tout', labelEn: 'All', icon: '📍', color: '#C2782A' };
+const toCatShape = c => ({ key: c.key_name, labelFr: c.label_fr, labelEn: c.label_en, icon: c.icon, color: c.color });
 
 const BUBBLE_W  = 300; // largeur fixe pour le calcul de positionnement
 const ARROW_H   = 14;  // hauteur de la queue triangulaire
@@ -70,6 +61,9 @@ export default function MapSection() {
   const [lightbox,  setLightbox]  = useState(null);
 
   const { data: allPoi, loading, offline } = useApi('/poi', { locale });
+  const { data: catsData } = useApi('/poi/categories');
+  const categories = useMemo(() => [ALL_CAT, ...(catsData || []).map(toCatShape)], [catsData]);
+  const catMeta    = useMemo(() => Object.fromEntries(categories.map(c => [c.key, c])), [categories]);
 
   const poi = activeCategory === 'all'
     ? (allPoi || [])
@@ -90,7 +84,7 @@ export default function MapSection() {
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     map.attributionControl.setPrefix('');
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
@@ -130,7 +124,7 @@ export default function MapSection() {
     if (!poi.length) return;
 
     poi.forEach(p => {
-      const meta   = CAT_META[p.category] || CAT_META.all;
+      const meta   = catMeta[p.category] || catMeta.all;
       const marker = L.marker([p.lat, p.lng], { icon: makePinIcon(meta.icon, meta.color) }).addTo(map);
       marker.on('click', (e) => {
         L.DomEvent.stopPropagation(e); // empêche le clic de fermer la bulle
@@ -141,7 +135,7 @@ export default function MapSection() {
       });
       markersRef.current.push(marker);
     });
-  }, [poi]);
+  }, [poi, catMeta]);
 
   // ── Calcul position de la bulle ─────────────────────────
   let bubbleStyle   = null;
@@ -188,7 +182,7 @@ export default function MapSection() {
 
       {/* Filtres */}
       <div className={styles.categories} role="toolbar" aria-label="Filtres">
-        {CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button
             key={cat.key}
             className={`${styles.catBtn} ${activeCategory === cat.key ? styles.catBtnActive : ''}`}
@@ -219,7 +213,7 @@ export default function MapSection() {
 
             {/* En-tête */}
             <div className={styles.bubbleHeader}>
-              <span className={styles.bubbleIcon}>{CAT_META[selected.category]?.icon ?? '📍'}</span>
+              <span className={styles.bubbleIcon}>{catMeta[selected.category]?.icon ?? '📍'}</span>
               <div className={styles.bubbleTitles}>
                 <h3 className={styles.bubbleName}>{selected.name}</h3>
                 {selected.address && <p className={styles.bubbleAddr}>📍 {selected.address}</p>}

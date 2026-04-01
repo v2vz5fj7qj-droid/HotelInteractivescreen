@@ -7,7 +7,7 @@ export default function IdleTimer() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { config } = useTheme();
-  const timeoutMs = parseInt(config.idle_timeout_ms || '30000', 10);
+  const timeoutMs = parseInt(config.idle_timeout_ms || '60000', 10);
 
   useIdle(timeoutMs, () => {
     if (location.pathname !== '/') navigate('/');
