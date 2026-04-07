@@ -163,7 +163,7 @@ export default function RadialMenu() {
 
   const currentNotif = notifs[notifIndex];
   const notifMsg = currentNotif
-    ? (locale !== 'fr' && currentNotif.message_en ? currentNotif.message_en : currentNotif.message_fr)
+    ? (currentNotif[`message_${locale}`] || currentNotif.message_en || currentNotif.message_fr)
     : t('menu.notif_msg');
 
   const go = (id, route) => {

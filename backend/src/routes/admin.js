@@ -266,11 +266,11 @@ router.get('/notifications', adminAuth, async (req, res) => {
 });
 
 router.post('/notifications', adminAuth, async (req, res) => {
-  const { message_fr, message_en, display_order } = req.body;
+  const { message_fr, message_en, message_de, message_es, message_pt, message_ar, message_zh, message_ja, message_ru, display_order } = req.body;
   try {
     const [r] = await db.query(
-      'INSERT INTO notifications (message_fr, message_en, display_order) VALUES (?,?,?)',
-      [message_fr, message_en || message_fr, display_order || 0]
+      'INSERT INTO notifications (message_fr, message_en, message_de, message_es, message_pt, message_ar, message_zh, message_ja, message_ru, display_order) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [message_fr, message_en || null, message_de || null, message_es || null, message_pt || null, message_ar || null, message_zh || null, message_ja || null, message_ru || null, display_order || 0]
     );
     await cache.delPattern('notifications:*');
     res.status(201).json({ id: r.insertId });
@@ -278,11 +278,11 @@ router.post('/notifications', adminAuth, async (req, res) => {
 });
 
 router.put('/notifications/:id', adminAuth, async (req, res) => {
-  const { message_fr, message_en, is_active, display_order } = req.body;
+  const { message_fr, message_en, message_de, message_es, message_pt, message_ar, message_zh, message_ja, message_ru, is_active, display_order } = req.body;
   try {
     await db.query(
-      'UPDATE notifications SET message_fr=?, message_en=?, is_active=?, display_order=? WHERE id=?',
-      [message_fr, message_en || message_fr, is_active ?? 1, display_order || 0, req.params.id]
+      'UPDATE notifications SET message_fr=?, message_en=?, message_de=?, message_es=?, message_pt=?, message_ar=?, message_zh=?, message_ja=?, message_ru=?, is_active=?, display_order=? WHERE id=?',
+      [message_fr, message_en || null, message_de || null, message_es || null, message_pt || null, message_ar || null, message_zh || null, message_ja || null, message_ru || null, is_active ?? 1, display_order || 0, req.params.id]
     );
     await cache.delPattern('notifications:*');
     res.json({ ok: true });

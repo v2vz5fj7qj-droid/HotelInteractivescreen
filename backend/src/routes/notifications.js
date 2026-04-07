@@ -11,7 +11,7 @@ router.get('/', async (_req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const [rows] = await db.query(
-      'SELECT id, message_fr, message_en, display_order FROM notifications WHERE is_active = 1 ORDER BY display_order ASC'
+      'SELECT id, message_fr, message_en, message_de, message_es, message_pt, message_ar, message_zh, message_ja, message_ru, display_order FROM notifications WHERE is_active = 1 ORDER BY display_order ASC'
     );
     await cache.set(CACHE_KEY, JSON.stringify(rows), 60); // 1 min
     res.json(rows);
