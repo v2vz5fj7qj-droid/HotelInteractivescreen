@@ -2,7 +2,7 @@
   position: absolute;
   bottom: clamp(16px, 3vw, 32px);
   right: clamp(16px, 3vw, 32px);
-  z-index: 100;
+  z-index: 200;
   width: 52px;
   height: 52px;
   border-radius: 50%;

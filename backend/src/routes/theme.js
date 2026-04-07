@@ -37,6 +37,7 @@ router.put('/', async (req, res) => {
     'color_bg_dark','color_bg_light','color_surface_dark','color_surface_light',
     'color_text_dark','color_text_light','color_accent',
     'font_primary','font_secondary','logo_url','logo_url_dark','idle_timeout_ms',
+    'fullscreen_password',
   ];
 
   const invalidKeys = Object.keys(updates).filter(k => !allowedKeys.includes(k));
@@ -79,5 +80,20 @@ function getDefaultTheme() {
     idle_timeout_ms:    '30000',
   };
 }
+
+// POST /api/theme/fullscreen-verify  → Vérifie le mot de passe plein écran (public)
+router.post('/fullscreen-verify', async (req, res) => {
+  const { password } = req.body;
+  if (typeof password !== 'string') return res.json({ ok: false });
+  try {
+    const [rows] = await db.query(
+      "SELECT config_value FROM theme_config WHERE config_key = 'fullscreen_password'"
+    );
+    const stored = rows[0]?.config_value || 'fs1234';
+    res.json({ ok: password === stored });
+  } catch {
+    res.json({ ok: password === 'fs1234' });
+  }
+});
 
 module.exports = router;

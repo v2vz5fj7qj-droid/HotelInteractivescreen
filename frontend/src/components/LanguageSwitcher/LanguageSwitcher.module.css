@@ -2,7 +2,7 @@
   position: absolute;
   top: clamp(16px, 3vw, 32px);
   right: clamp(16px, 3vw, 32px);
-  z-index: 200;
+  z-index: 1060;
 }
 
 /* ── Bouton déclencheur ── */
@@ -109,4 +109,20 @@
 .optionName {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ── Compact : portrait ou écran étroit ── */
+@media (orientation: portrait), (max-width: 768px) {
+  .wrapper {
+    top: clamp(10px, 2vw, 20px);
+    right: clamp(10px, 2vw, 20px);
+  }
+  .trigger {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+  .triggerCode,
+  .chevron { display: none; }
+  /* Dropdown reste lisible */
+  .dropdown { min-width: 180px; }
 }

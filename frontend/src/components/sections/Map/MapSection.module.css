@@ -3,16 +3,72 @@
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;    /* Android/iOS : exclut la barre système */
   overflow: hidden;
   background: var(--c-bg);
   display: flex;
   flex-direction: column;
 }
 
+/* ── Header barre navigation ── */
+.header {
+  position: relative;           /* BackButton et LanguageSwitcher se positionnent ici */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: clamp(64px, 9vh, 80px);
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  z-index: 1050;
+}
+
+/* ── Filtres catégories ── */
+.categories {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.3rem, 0.6vw, 0.5rem);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* marge latérale pour laisser la place aux boutons absolus */
+  padding: 0 clamp(120px, 17vw, 170px);
+  width: 100%;
+  flex-wrap: nowrap;
+}
+.categories::-webkit-scrollbar { display: none; }
+
+.catBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: clamp(0.35rem, 0.8vh, 0.5rem) clamp(0.65rem, 1.2vw, 1rem);
+  border-radius: 2rem;
+  border: 1.5px solid var(--c-border);
+  background: transparent;
+  color: var(--c-text-muted);
+  font-size: clamp(0.7rem, 1.3vw, 0.88rem);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.catBtn:hover {
+  border-color: var(--c-primary);
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-primary) 8%, transparent);
+}
+.catBtnActive {
+  background: color-mix(in srgb, var(--cat-color, #C2782A) 15%, transparent);
+  border-color: var(--cat-color, #C2782A);
+  color: var(--c-text);
+  font-weight: 600;
+}
+
 /* ── Offline ── */
 .offlineTag {
   position: absolute;
-  top: clamp(1rem, 3vw, 1.5rem);
+  top: clamp(0.6rem, 1.5vh, 1rem);
   left: 50%;
   transform: translateX(-50%);
   background: rgba(232, 82, 26, 0.15);
@@ -23,45 +79,7 @@
   font-size: clamp(0.75rem, 1.5vw, 0.9rem);
   z-index: 1000;
   white-space: nowrap;
-}
-
-/* ── Filtres catégories ── */
-.categories {
-  position: absolute;
-  top: clamp(4.5rem, 8vh, 6rem);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  z-index: 1000;
-  padding: 0 1rem;
-  max-width: 90vw;
-}
-
-.catBtn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 2rem;
-  border: 1px solid var(--c-border);
-  background: rgba(8, 5, 2, 0.82);
-  color: var(--c-text-muted);
-  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
-  font-family: inherit;
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  white-space: nowrap;
-}
-.catBtn:hover { border-color: var(--c-primary); color: var(--c-text); }
-.catBtnActive {
-  background: color-mix(in srgb, var(--cat-color, #C2782A) 25%, transparent);
-  border-color: var(--cat-color, #C2782A);
-  color: var(--c-text);
-  font-weight: 600;
+  pointer-events: none;
 }
 
 /* ── Carte ── */
@@ -95,7 +113,7 @@
 .bubble {
   position: absolute;
   width: 300px;
-  max-height: 380px;
+  max-height: 460px;
   background: #ffffff;
   border-radius: 16px;
   border-top: 3px solid #C2782A;
@@ -207,6 +225,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.bubbleDist {
+  font-size: 0.72rem;
+  color: #C2782A;
+  font-weight: 600;
+  margin: 0.1rem 0 0;
+}
 
 /* Méta */
 .bubbleMeta {
@@ -311,6 +335,23 @@
   transition: background 0.2s;
 }
 .lightboxDotActive { background: var(--c-secondary); }
+
+/* ── QR Google Maps ── */
+.bubbleQr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0 0.2rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.bubbleQrLabel {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
 
 /* ── Popup Leaflet (marqueur hôtel) ── */
 :global(.leaflet-popup-connectbe .leaflet-popup-content-wrapper) {

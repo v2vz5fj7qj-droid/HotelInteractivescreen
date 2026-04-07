@@ -216,6 +216,25 @@ export default function ThemeManager() {
           </div>
         </div>
 
+        {/* ── Sécurité borne ── */}
+        <div style={{ background:'#fff', borderRadius:14, border:'1px solid #E5E7EB', padding:24, gridColumn:'span 2' }}>
+          <h3 style={{ fontWeight:800, marginBottom:8, fontSize:'1rem' }}>🔒 Sécurité borne</h3>
+          <p style={{ fontSize:'0.78rem', color:'#6B7280', marginBottom:16 }}>
+            Mot de passe requis pour quitter le mode plein écran sur la borne publique.
+          </p>
+          <div className={styles.field} style={{ maxWidth:360 }}>
+            <label className={styles.label}>Mot de passe plein écran</label>
+            <input
+              className={styles.input}
+              type="text"
+              value={config.fullscreen_password || ''}
+              onChange={e => set('fullscreen_password', e.target.value)}
+              placeholder="fs1234"
+              autoComplete="off"
+            />
+          </div>
+        </div>
+
         {/* ── Aperçu live ── */}
         <div style={{ background:'#fff', borderRadius:14, border:'1px solid #E5E7EB', padding:24, gridColumn:'span 2' }}>
           <h3 style={{ fontWeight:800, marginBottom:16, fontSize:'1rem' }}>👁 Aperçu des couleurs</h3>

@@ -15,13 +15,12 @@ import styles from './RadialMenu.module.css';
 
 /* ─── Configuration des sections ──────────────────────── */
 const NAV_ITEMS = [
-  { id: 'weather',  Icon: CloudSun,      route: '/weather',  labelKey: 'menu.weather'  },
+  { id: 'mobile',   Icon: Smartphone,    route: '/mobile',   labelKey: 'menu.mobile'   },
   { id: 'flights',  Icon: PlaneTakeoff,  route: '/flights',  labelKey: 'menu.flights'  },
   { id: 'wellness', Icon: Sparkles,      route: '/wellness', labelKey: 'menu.wellness' },
   { id: 'events',   Icon: CalendarDays,  route: '/events',   labelKey: 'menu.events'   },
   { id: 'map',      Icon: MapPin,        route: '/map',      labelKey: 'menu.map'      },
   { id: 'info',     Icon: Phone,         route: '/info',     labelKey: 'menu.info'     },
-  { id: 'mobile',   Icon: Smartphone,    route: '/mobile',   labelKey: 'menu.mobile'   },
 ];
 
 /* Cards de service dans la grille (4 cartes principales) */

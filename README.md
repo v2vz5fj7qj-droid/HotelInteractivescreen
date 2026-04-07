@@ -53,7 +53,7 @@ HotelInteractivescreen/
 | Agenda           | Événements à Ouagadougou, filtres par catégorie                            |
 | Carte & POI      | Carte Leaflet interactive, bulle de détail avec galerie d'images (max 3)   |
 | Infos utiles     | Contacts urgences, taxis, ambassades, pharmacies                           |
-| Transfert mobile | QR code pour continuer sur smartphone                                      |
+| Transfert mobile | QR code avec token TTL (10 min) pour continuer sur smartphone              |
 
 **Fonctionnalités transversales :**
 - Multilingue 8 langues : FR, EN, DE, ES, PT, AR (RTL), ZH, JA
@@ -67,6 +67,8 @@ HotelInteractivescreen/
 - Animations de transition entre pages
 - Badge météo flottant sur toutes les pages secondaires
 - Raccourci admin caché : 5 taps sur le logo → `/admin`
+- Mode plein écran protégé par mot de passe (sortie bloquée sans code — configurable dans le thème)
+- QR code avec token signé (TTL 10 min, auto-renouvelé) → page `/mobile/:section?token=…` sur smartphone
 
 ---
 
@@ -84,7 +86,7 @@ Accessible sur `/admin` — interface séparée de la borne.
 | Infos utiles     | CRUD contacts (taxi, médecin, urgences, ambassade — FR/EN)                  |
 | Localités météo  | Villes affichées dans la météo, localité par défaut                         |
 | Vols             | Config aéroport IATA, scheduler auto 30 min, compteur crédits FlightAPI     |
-| Thème            | Couleurs, logo (upload ou URL), nom hôtel — live sans redéploiement         |
+| Thème            | Couleurs, logo (upload ou URL), nom hôtel, mot de passe plein écran — live sans redéploiement |
 
 **Sécurité :** Authentification JWT (8h), token en sessionStorage, route guard sur toutes les pages protégées.
 
@@ -137,6 +139,8 @@ Accessible sur `/admin` — interface séparée de la borne.
 | `JWT_SECRET`              | Secret de signature JWT                    | Non (défaut dev) |
 | `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS de l'hôtel               | Non (Ouaga)      |
 | `IDLE_TIMEOUT_MS`         | Délai inactivité avant retour accueil      | Non (30000)      |
+| `QR_TOKEN_TTL_MIN`        | Durée de vie des tokens QR (minutes)       | Non (10)         |
+| `VITE_ORS_API_KEY`        | Clé OpenRouteService (itinéraires carte)   | Non              |
 
 ---
 
@@ -153,9 +157,11 @@ GET  /api/poi?locale=fr&category=...          Points d'intérêt (avec images)
 GET  /api/info?locale=fr                      Contacts utiles
 GET  /api/notifications                       Notifications actives (borne)
 GET  /api/theme                               Configuration thème
+POST /api/theme/fullscreen-verify             Vérifier le mot de passe plein écran (public)
 GET  /api/analytics/summary                   Stats interactions 24h
 POST /api/analytics                           Enregistrer une interaction
-GET  /api/qr?section=...                      QR code base64
+POST /api/qr/token                            Générer un token QR signé avec TTL
+GET  /api/qr/validate/:token                  Valider un token QR (→ 410 si expiré)
 
 POST /api/admin/login                         Authentification admin
 GET  /api/admin/wellness                      Liste services (admin)
@@ -302,3 +308,6 @@ git push origin main
 | Animations transitions   | ✅ Complet  |
 | Cache vols sans expiration | ✅ Complet |
 | Galerie images POI       | ✅ Complet  |
+| QR code avec token TTL   | ✅ Complet  |
+| MobileGate (page mobile) | ✅ Complet  |
+| Plein écran protégé      | ✅ Complet  |

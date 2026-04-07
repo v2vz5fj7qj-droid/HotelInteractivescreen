@@ -5,7 +5,7 @@ import { useTheme }     from '../../contexts/ThemeContext';
 import styles           from './AttractScreen.module.css';
 
 const ATTRACT_DELAY = 60_000;
-const EVENTS = ['touchstart', 'touchmove', 'mousedown', 'keydown'];
+const EVENTS = ['touchstart', 'touchmove', 'mousedown', 'keydown', 'scroll', 'wheel'];
 
 export default function AttractScreen() {
   const [visible, setVisible]   = useState(false);

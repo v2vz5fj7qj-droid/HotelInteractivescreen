@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
@@ -12,6 +13,49 @@ import styles           from './MapSection.module.css';
 const HOTEL_LAT  = parseFloat(import.meta.env.VITE_HOTEL_LAT  || '12.3641');
 const HOTEL_LNG  = parseFloat(import.meta.env.VITE_HOTEL_LNG  || '-1.5332');
 const HOTEL_NAME = import.meta.env.VITE_HOTEL_NAME || 'ConnectBé';
+
+const ORS_KEY = import.meta.env.VITE_ORS_API_KEY;
+
+function haversine(lat, lng) {
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat - HOTEL_LAT);
+  const dLng = toRad(lng - HOTEL_LNG);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(HOTEL_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+  const meters = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return { meters, label: formatDist(meters), mode: 'air' };
+}
+
+function formatDist(meters) {
+  return meters < 1000
+    ? `${Math.round(meters)} m`
+    : `${(meters / 1000).toFixed(1)} km`;
+}
+
+async function fetchWalkingDistance(lat, lng) {
+  if (!ORS_KEY) return null;
+  const url = 'https://api.openrouteservice.org/v2/directions/foot-walking';
+  const body = {
+    coordinates: [
+      [HOTEL_LNG, HOTEL_LAT],
+      [lng, lat],
+    ],
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': ORS_KEY,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const meters = data?.routes?.[0]?.summary?.distance;
+  if (!meters) return null;
+  return { meters, label: formatDist(meters), mode: 'walk' };
+}
 
 const ALL_CAT = { key: 'all', labelFr: 'Tout', labelEn: 'All', icon: '📍', color: '#C2782A' };
 const toCatShape = c => ({ key: c.key_name, labelFr: c.label_fr, labelEn: c.label_en, icon: c.icon, color: c.color });
@@ -59,6 +103,7 @@ export default function MapSection() {
   const [selected,  setSelected]  = useState(null);  // POI object
   const [bubblePos, setBubblePos] = useState(null);  // { x, y } pixels dans le container carte
   const [lightbox,  setLightbox]  = useState(null);
+  const [distance,  setDistance]  = useState(null);  // { label, mode } | null
 
   const { data: allPoi, loading, offline } = useApi('/poi', { locale });
   const { data: catsData } = useApi('/poi/categories');
@@ -71,6 +116,19 @@ export default function MapSection() {
 
   // Maintient la ref en sync avec l'état
   useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  // ── Calcul distance POI → hôtel ─────────────────
+  useEffect(() => {
+    if (!selected?.lat || !selected?.lng) { setDistance(null); return; }
+    setDistance(null); // reset (affiche "…" pendant le chargement)
+    let cancelled = false;
+    (async () => {
+      const fallback = haversine(selected.lat, selected.lng);
+      const walking  = await fetchWalkingDistance(selected.lat, selected.lng);
+      if (!cancelled) setDistance(walking ?? fallback);
+    })();
+    return () => { cancelled = true; };
+  }, [selected]);
 
   useEffect(() => { trackEvent('map', 'open'); }, []);
 
@@ -172,31 +230,33 @@ export default function MapSection() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
+
+      {/* ── Barre de navigation (hors canvas carte) ── */}
+      <header className={styles.header}>
+        <BackButton />
+        <div className={styles.categories} role="toolbar" aria-label="Filtres catégories">
+          {categories.map(cat => (
+            <button
+              key={cat.key}
+              className={`${styles.catBtn} ${activeCategory === cat.key ? styles.catBtnActive : ''}`}
+              style={activeCategory === cat.key ? { '--cat-color': cat.color } : {}}
+              onClick={() => setActiveCategory(cat.key)}
+            >
+              <span aria-hidden="true">{cat.icon}</span>
+              <span>{catLabel(cat)}</span>
+            </button>
+          ))}
+        </div>
+        <LanguageSwitcher />
+      </header>
+
       <ThemeToggle />
-
-      {offline && (
-        <div className={styles.offlineTag} role="status">⚡ {t('common.offline_banner')}</div>
-      )}
-
-      {/* Filtres */}
-      <div className={styles.categories} role="toolbar" aria-label="Filtres">
-        {categories.map(cat => (
-          <button
-            key={cat.key}
-            className={`${styles.catBtn} ${activeCategory === cat.key ? styles.catBtnActive : ''}`}
-            style={activeCategory === cat.key ? { '--cat-color': cat.color } : {}}
-            onClick={() => setActiveCategory(cat.key)}
-          >
-            <span>{cat.icon}</span>
-            <span>{catLabel(cat)}</span>
-          </button>
-        ))}
-      </div>
 
       {/* Carte + bulle positionnée dans le même conteneur relatif */}
       <div className={styles.mapWrapper}>
+        {offline && (
+          <div className={styles.offlineTag} role="status">⚡ {t('common.offline_banner')}</div>
+        )}
         {loading && <div className={styles.mapOverlay}><div className="spinner" /></div>}
         <div ref={mapRef} className={styles.map} />
 
@@ -217,6 +277,14 @@ export default function MapSection() {
               <div className={styles.bubbleTitles}>
                 <h3 className={styles.bubbleName}>{selected.name}</h3>
                 {selected.address && <p className={styles.bubbleAddr}>📍 {selected.address}</p>}
+                {selected.lat && selected.lng && (
+                  <p className={styles.bubbleDist}>
+                    {distance === null
+                      ? '⏳ …'
+                      : `${distance.mode === 'walk' ? '🚶' : '📐'} ${distance.label} ${locale === 'fr' ? "de l'hôtel" : 'from hotel'}${distance.mode === 'air' ? (locale === 'fr' ? ' (vol d\'oiseau)' : ' (as the crow flies)') : ''}`
+                    }
+                  </p>
+                )}
               </div>
             </div>
 
@@ -247,6 +315,22 @@ export default function MapSection() {
                     <img src={url} alt={`${selected.name} — photo ${i + 1}`} loading="lazy" />
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* QR Google Maps */}
+            {selected.lat && selected.lng && (
+              <div className={styles.bubbleQr}>
+                <QRCodeSVG
+                  value={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
+                  size={90}
+                  level="M"
+                  bgColor="transparent"
+                  fgColor="#C2782A"
+                />
+                <span className={styles.bubbleQrLabel}>
+                  {locale === 'fr' ? '📱 Ouvrir dans Maps' : '📱 Open in Maps'}
+                </span>
               </div>
             )}
           </aside>

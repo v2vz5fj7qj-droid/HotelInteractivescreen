@@ -8,6 +8,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;    /* Android/iOS : exclut la barre système */
   width: 100vw;
   background: var(--c-bg);
   padding: var(--gap);
@@ -703,17 +704,23 @@
     grid-row:    3 / 4;
   }
 
-  /* Navigation basse — wrap pour ne pas déborder */
+  /* Navigation basse — scroll horizontal, hauteur fixe */
   .bottomNav {
-    height: auto;
-    min-height: clamp(56px, 8vh, 76px);
-    flex-wrap: wrap;
-    padding: clamp(6px, 1vw, 12px);
-    gap: clamp(3px, 0.5vw, 7px);
+    height: clamp(56px, 8vh, 76px);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding: 0 clamp(8px, 1vw, 14px);
+    gap: clamp(2px, 0.4vw, 6px);
   }
+  .bottomNav::-webkit-scrollbar { display: none; }
 
   /* Libellés nav légèrement réduits en portrait */
-  .navBtn span { font-size: clamp(0.55rem, 0.8vw, 0.72rem); }
+  .navBtn { font-size: clamp(0.6rem, 0.85vw, 0.75rem); }
+  .navBtn span { font-size: inherit; }
 }
 
 /* ─── Petit écran paysage (tablette kiosque, < 1024px) ──── */

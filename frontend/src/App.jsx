@@ -11,6 +11,7 @@ const Weather        = lazy(() => import('./components/sections/Weather/Weather'
 const Flights        = lazy(() => import('./components/sections/Flights/Flights'));
 const Wellness       = lazy(() => import('./components/sections/Wellness/Wellness'));
 const MobileTransfer = lazy(() => import('./components/sections/MobileTransfer/MobileTransfer'));
+const MobileGate     = lazy(() => import('./components/MobileGate/MobileGate'));
 const Events         = lazy(() => import('./components/sections/Events/Events'));
 const MapSection     = lazy(() => import('./components/sections/Map/MapSection'));
 const UsefulInfo     = lazy(() => import('./components/sections/UsefulInfo/UsefulInfo'));
@@ -39,12 +40,14 @@ export default function App() {
                       <Route path="/events"   element={<KioskLayout><Events /></KioskLayout>} />
                       <Route path="/wellness" element={<KioskLayout><Wellness /></KioskLayout>} />
                       <Route path="/info"     element={<KioskLayout><UsefulInfo /></KioskLayout>} />
-                      <Route path="/mobile"         element={<KioskLayout><MobileTransfer /></KioskLayout>} />
-                      <Route path="/mobile/:section" element={<KioskLayout><MobileTransfer /></KioskLayout>} />
+                      <Route path="/mobile"   element={<KioskLayout><MobileTransfer /></KioskLayout>} />
                     </Routes>
                   </>
                 }
               />
+
+              {/* ── Route mobile QR (sans IdleTimer ni KioskLayout) ── */}
+              <Route path="/mobile/:section" element={<MobileGate />} />
 
               {/* ── Backoffice admin (sans IdleTimer ni KioskLayout) ── */}
               <Route path="/admin/*" element={<AdminApp />} />

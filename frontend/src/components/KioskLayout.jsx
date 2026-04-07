@@ -4,6 +4,7 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useLanguage }     from '../contexts/LanguageContext';
 import AttractScreen       from './AttractScreen/AttractScreen';
 import WeatherBadge        from './WeatherBadge/WeatherBadge';
+import FullscreenManager   from './FullscreenManager/FullscreenManager';
 import styles from './KioskLayout.module.css';
 
 export default function KioskLayout({ children }) {
@@ -11,10 +12,11 @@ export default function KioskLayout({ children }) {
   const { t }    = useLanguage();
   const location = useLocation();
 
-  // Badge météo visible sur toutes les pages sauf accueil, météo et admin
+  // Badge météo visible sur toutes les pages sauf accueil, météo, carte et admin
   const showWeatherBadge = !location.pathname.startsWith('/admin')
     && location.pathname !== '/'
-    && location.pathname !== '/weather';
+    && location.pathname !== '/weather'
+    && location.pathname !== '/map';
 
   return (
     <div className={styles.layout}>
@@ -23,6 +25,9 @@ export default function KioskLayout({ children }) {
 
       {/* Indicateur météo flottant (hors home et hors page météo) */}
       {showWeatherBadge && <WeatherBadge />}
+
+      {/* Gestionnaire plein écran */}
+      <FullscreenManager />
 
       {/* Bannière offline */}
       {!isOnline && (

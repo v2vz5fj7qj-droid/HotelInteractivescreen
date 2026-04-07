@@ -34,6 +34,7 @@ INSERT INTO theme_config (config_key, config_value, label) VALUES
 ('logo_url_dark',       '/images/logo-dark.png', 'Logo pour fond sombre'),
 ('banner_image_url',    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80', 'Image de fond bannière accueil'),
 ('idle_timeout_ms',     '30000',              'Délai inactivité avant retour menu (ms)'),
+('fullscreen_password', 'fs1234',             'Mot de passe pour quitter le mode plein écran'),
 ('flight_airport_iata',     'OUA',   'Code IATA aéroport des vols'),
 ('flight_refresh_interval', '5',     'Intervalle rafraîchissement automatique vols (minutes)'),
 ('flight_auto_refresh',     '0',     'Rafraîchissement automatique des vols activé (0/1)'),
@@ -293,3 +294,15 @@ CREATE TABLE IF NOT EXISTS localities (
 
 INSERT IGNORE INTO localities (id, name, country, owm_city_id, lat, lng, timezone, is_active, is_default, display_order)
 VALUES (1, 'Ouagadougou', 'Burkina Faso', '2355426', 12.3641, -1.5332, 'Africa/Ouagadougou', 1, 1, 0);
+
+-- ─────────────────────────────────────────────────
+--  TOKENS QR CODE (validité temporaire)
+-- ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS qr_tokens (
+    token       CHAR(36)     PRIMARY KEY,
+    section     VARCHAR(50)  NOT NULL,
+    locale      VARCHAR(5)   NOT NULL DEFAULT 'fr',
+    expires_at  DATETIME     NOT NULL,
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_qr_expires (expires_at)
+);

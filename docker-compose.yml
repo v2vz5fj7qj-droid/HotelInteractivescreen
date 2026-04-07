@@ -84,7 +84,6 @@ services:
       - VITE_HOTEL_LNG=${HOTEL_LNG}
       - VITE_HOTEL_NAME=${HOTEL_NAME}
       - VITE_IDLE_TIMEOUT_MS=${IDLE_TIMEOUT_MS}
-      - VITE_KIOSK_PUBLIC_URL=${KIOSK_PUBLIC_URL}
     networks:
       - connectbe_net
 

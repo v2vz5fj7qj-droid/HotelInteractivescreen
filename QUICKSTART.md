@@ -95,7 +95,7 @@ Fonctionnalités disponibles dans le backoffice :
 - **Infos utiles** — Contacts de taxi, médecins, urgences, ambassades (FR + EN)
 - **Localités météo** — Villes affichées dans la section météo + rafraîchissement manuel
 - **Vols** — Aéroport IATA, intervalle de rafraîchissement, scheduler automatique, compteur de crédits FlightAPI
-- **Thème** — Couleurs, logo, nom de l'hôtel (sans redéploiement)
+- **Thème** — Couleurs, logo, nom de l'hôtel, mot de passe plein écran (sans redéploiement)
 
 > Les identifiants sont modifiables dans `backend/.env` via `ADMIN_USERNAME` et `ADMIN_PASSWORD` (valeurs par défaut : `admin` / `connectbe2026`).
 
@@ -159,12 +159,15 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 
 ## Clés API (optionnelles)
 
-| API            | Site                     | Plan gratuit         |
-|----------------|--------------------------|----------------------|
-| OpenWeatherMap | openweathermap.org/api   | 1 000 appels/jour    |
-| FlightAPI      | flightapi.io             | 30 crédits (trial)   |
+| API                | Site                           | Plan gratuit         |
+|--------------------|--------------------------------|----------------------|
+| OpenWeatherMap     | openweathermap.org/api         | 1 000 appels/jour    |
+| FlightAPI          | flightapi.io                   | 30 crédits (trial)   |
+| OpenRouteService   | openrouteservice.org           | 2 000 req/jour       |
 
 > **FlightAPI — points importants :**
 > - L'endpoint correct est `/compschedule/{API_KEY}` (clé dans le chemin, pas en query param)
 > - Chaque appel consomme **2 crédits** (arrivées) ou **2 crédits** (départs)
 > - Ajouter `dns: [8.8.8.8, 1.1.1.1]` dans le service `backend` du `docker-compose.yml` pour l'accès internet depuis Docker
+
+> **Plein écran protégé :** Le mot de passe par défaut pour quitter le mode kiosque est `fs1234`. Il est modifiable depuis le backoffice → **Thème** (champ "Mot de passe plein écran").

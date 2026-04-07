@@ -1,0 +1,62 @@
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--c-bg);
+  padding: 1.5rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: var(--c-surface);
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.bigIcon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.sectionName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--c-primary);
+  margin: 0;
+}
+
+.message {
+  font-size: 0.95rem;
+  color: var(--c-text-muted, var(--c-text));
+  opacity: 0.75;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: color-mix(in srgb, var(--c-primary) 15%, transparent);
+  color: var(--c-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  margin-top: 0.5rem;
+}
