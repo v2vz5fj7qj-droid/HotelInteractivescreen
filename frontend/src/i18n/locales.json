@@ -6,5 +6,6 @@
   "pt": { "nativeName": "Português",  "flag": "🇵🇹", "dir": "ltr" },
   "ar": { "nativeName": "العربية",    "flag": "🇸🇦", "dir": "rtl" },
   "zh": { "nativeName": "中文",       "flag": "🇨🇳", "dir": "ltr" },
-  "ja": { "nativeName": "日本語",     "flag": "🇯🇵", "dir": "ltr" }
+  "ja": { "nativeName": "日本語",     "flag": "🇯🇵", "dir": "ltr" },
+  "ru": { "nativeName": "Русский",   "flag": "🇷🇺", "dir": "ltr" }
 }

@@ -18,6 +18,7 @@ const qrRoutes        = require('./routes/qr');
 const themeRoutes         = require('./routes/theme');
 const notificationsRoutes = require('./routes/notifications');
 const adminRoutes         = require('./routes/admin');
+const translateRoutes     = require('./routes/translate');
 const { startWeatherScheduler } = require('./services/weatherRefresh');
 const { startFlightScheduler }  = require('./services/flightRefresh');
 
@@ -44,6 +45,7 @@ app.use('/api/qr',        qrRoutes);
 app.use('/api/theme',         themeRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/admin',         adminRoutes);
+app.use('/api/translate',     translateRoutes);
 
 // Servir les uploads (logos)
 app.use('/uploads', require('express').static(

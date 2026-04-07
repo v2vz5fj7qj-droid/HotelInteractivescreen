@@ -105,7 +105,7 @@ export default function MapSection() {
   const [lightbox,  setLightbox]  = useState(null);
   const [distance,  setDistance]  = useState(null);  // { label, mode } | null
 
-  const { data: allPoi, loading, offline } = useApi('/poi', { locale });
+  const { data: allPoi, loading, offline } = useApi('/poi', { locale }, { deps: [locale] });
   const { data: catsData } = useApi('/poi/categories');
   const categories = useMemo(() => [ALL_CAT, ...(catsData || []).map(toCatShape)], [catsData]);
   const catMeta    = useMemo(() => Object.fromEntries(categories.map(c => [c.key, c])), [categories]);
@@ -116,6 +116,14 @@ export default function MapSection() {
 
   // Maintient la ref en sync avec l'état
   useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  // Met à jour le POI sélectionné quand les données sont re-fetched (changement de locale)
+  useEffect(() => {
+    if (!selected || !allPoi) return;
+    const fresh = allPoi.find(p => p.id === selected.id);
+    if (fresh) setSelected(fresh);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allPoi]);
 
   // ── Calcul distance POI → hôtel ─────────────────
   useEffect(() => {
@@ -323,13 +331,13 @@ export default function MapSection() {
               <div className={styles.bubbleQr}>
                 <QRCodeSVG
                   value={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
-                  size={90}
+                  size={56}
                   level="M"
                   bgColor="transparent"
                   fgColor="#C2782A"
                 />
                 <span className={styles.bubbleQrLabel}>
-                  {locale === 'fr' ? '📱 Ouvrir dans Maps' : '📱 Open in Maps'}
+                  {locale === 'fr' ? '📱 Scanner pour ouvrir dans Maps' : '📱 Scan to open in Maps'}
                 </span>
               </div>
             )}

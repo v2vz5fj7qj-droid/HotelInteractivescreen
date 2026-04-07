@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import api    from '../useAdminApi';
-import styles from '../Admin.module.css';
+import api              from '../useAdminApi';
+import styles           from '../Admin.module.css';
+import TranslationPanel from '../components/TranslationPanel';
+import { useTranslate } from '../hooks/useTranslate';
+import localesMeta      from '../../i18n/locales.json';
+
+const ALL_LOCALES = Object.keys(localesMeta);
+const emptyTr = () =>
+  Object.fromEntries(ALL_LOCALES.map(l => [l, { name: '', description: '', address: '' }]));
 
 const EMPTY = {
   category: '',
   phone: '', whatsapp: '', website: '',
   available_24h: false, display_order: 0, is_active: true,
-  translations: {
-    fr: { name: '', description: '', address: '' },
-    en: { name: '', description: '', address: '' },
-  },
+  translations: emptyTr(),
 };
 
 export default function InfosManager() {
@@ -17,10 +21,13 @@ export default function InfosManager() {
   const [cats,    setCats]    = useState([]);
   const [modal,   setModal]   = useState(null);
   const [editing, setEditing] = useState(EMPTY);
-  const [tab,     setTab]     = useState('fr');
-  const [saving,  setSaving]  = useState(false);
+  const [tab,        setTab]        = useState('fr');
+  const [sourceLang, setSourceLang] = useState('fr');
+  const [saving,     setSaving]     = useState(false);
   const [msg,     setMsg]     = useState('');
   const [filter,  setFilter]  = useState('all');
+
+  const { translateFields, translating } = useTranslate();
 
   const loadCats = useCallback(() =>
     api.get('/categories/info').then(r => setCats(r.data)).catch(() => {}), []);
@@ -32,19 +39,32 @@ export default function InfosManager() {
 
   const openCreate = () => {
     setEditing({ ...structuredClone(EMPTY), category: cats[0]?.key_name || '' });
-    setModal('create'); setTab('fr');
+    setModal('create'); setTab('fr'); setSourceLang('fr');
   };
-  const openEdit   = item => {
-    setEditing({
-      ...item,
-      is_active:    !!item.is_active,
-      available_24h: !!item.available_24h,
-      translations: {
-        fr: item.translations?.fr || { name: '', description: '', address: '' },
-        en: item.translations?.en || { name: '', description: '', address: '' },
-      },
+  const openEdit = item => {
+    const allTr = Object.fromEntries(
+      ALL_LOCALES.map(l => [l, { name: '', description: '', address: '', ...item.translations?.[l] }])
+    );
+    setEditing({ ...item, is_active: !!item.is_active, available_24h: !!item.available_24h, translations: allTr });
+    setModal('edit'); setTab('fr'); setSourceLang('fr');
+  };
+
+  const handleTranslateAll = async () => {
+    const result = await translateFields(
+      ['name', 'description', 'address'],
+      sourceLang,
+      editing.translations[sourceLang],
+      ALL_LOCALES,
+    );
+    setEditing(e => {
+      const updated = { ...e.translations };
+      for (const [locale, values] of Object.entries(result)) {
+        updated[locale] = { ...updated[locale], ...values };
+      }
+      return { ...e, translations: updated };
     });
-    setModal('edit'); setTab('fr');
+    setMsg('✅ Traduction automatique appliquée — vérifiez les onglets.');
+    setTimeout(() => setMsg(''), 5000);
   };
 
   const save = async () => {
@@ -200,13 +220,29 @@ export default function InfosManager() {
                 </div>
               </div>
 
-              {/* Onglets FR / EN */}
+              {/* ── Traductions ── */}
+              <TranslationPanel
+                sourceLang={sourceLang}
+                onSourceChange={setSourceLang}
+                allLocales={ALL_LOCALES}
+                onTranslateAll={handleTranslateAll}
+                translating={translating}
+              />
+
               <div>
-                <div className={styles.tabs}>
-                  {['fr', 'en'].map(l => (
+                <div className={styles.tabs} style={{ flexWrap: 'wrap' }}>
+                  {ALL_LOCALES.map(l => (
                     <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`}
-                      onClick={() => setTab(l)}>
-                      {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+                      onClick={() => setTab(l)} style={{ position: 'relative' }}
+                    >
+                      {localesMeta[l]?.flag} {l}
+                      {l === sourceLang && (
+                        <span style={{
+                          position: 'absolute', top: -4, right: -4,
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#C2782A', border: '1px solid #fff',
+                        }} />
+                      )}
                     </button>
                   ))}
                 </div>

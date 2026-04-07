@@ -8,10 +8,7 @@ const cache   = require('./cacheService');
 const db      = require('./db');
 const { addCredits } = require('./creditTracker');
 
-const AUTO_REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes — fixe, toujours actif
-
-let schedulerTimer     = null;
-let autoSchedulerTimer = null; // scheduler 30 min permanent
+let schedulerTimer = null;
 
 function getHourInTZ(timezone) {
   try {
@@ -70,6 +67,7 @@ function normalizeFlightData(f) {
   return {
     flight_number: fl.identification?.number?.default || 'N/A',
     airline:       fl.airline?.name || 'Compagnie inconnue',
+    airline_icao:  fl.airline?.code?.icao || null,
     status:        normalizeStatus(fl.status?.text),
     departure: {
       airport:   fl.airport?.origin?.name           || '',
@@ -133,23 +131,13 @@ async function refreshFlights(airportOverride) {
 }
 
 function stopFlightScheduler() {
-  if (schedulerTimer)     { clearInterval(schedulerTimer);     schedulerTimer     = null; }
-  if (autoSchedulerTimer) { clearInterval(autoSchedulerTimer); autoSchedulerTimer = null; }
+  if (schedulerTimer) { clearInterval(schedulerTimer); schedulerTimer = null; }
 }
 
 // Démarre (ou redémarre) le scheduler selon la config en base
 async function startFlightScheduler() {
   stopFlightScheduler();
 
-  // ── Scheduler 30 min — toujours actif, indépendant des réglages admin ──
-  autoSchedulerTimer = setInterval(() => {
-    console.log(`[Flights] Rafraîchissement automatique 30 min — ${new Date().toLocaleTimeString()}`);
-    refreshFlights().catch(() => {}); // erreur réseau silencieuse — cache conservé
-  }, AUTO_REFRESH_INTERVAL_MS);
-
-  console.log('[Flights] Scheduler permanent 30 min démarré');
-
-  // ── Scheduler admin (optionnel, en complément) ──
   let config;
   try {
     config = await getFlightConfig();
@@ -157,7 +145,10 @@ async function startFlightScheduler() {
     config = { auto_refresh: false, refresh_mode: 'interval', refresh_interval: 30, schedule_times: [], timezone: 'UTC' };
   }
 
-  if (!config.auto_refresh) return;
+  if (!config.auto_refresh) {
+    console.log('[Flights] Scheduler désactivé (auto_refresh = false)');
+    return;
+  }
 
   if (config.refresh_mode === 'schedule') {
     if (config.schedule_times.length === 0) return;

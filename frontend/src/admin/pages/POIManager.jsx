@@ -1,26 +1,34 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api    from '../useAdminApi';
-import styles from '../Admin.module.css';
+import api              from '../useAdminApi';
+import styles           from '../Admin.module.css';
+import TranslationPanel from '../components/TranslationPanel';
+import { useTranslate } from '../hooks/useTranslate';
+import localesMeta      from '../../i18n/locales.json';
+
+const ALL_LOCALES = Object.keys(localesMeta); // ['fr','en','de','es','pt','ar','zh','ja']
+
+const emptyTr = () =>
+  Object.fromEntries(ALL_LOCALES.map(l => [l, { name: '', address: '', description: '' }]));
 
 const EMPTY = {
   category: '', lat: '', lng: '', phone: '', website: '', is_active: true,
-  translations: {
-    fr: { name: '', address: '', description: '' },
-    en: { name: '', address: '', description: '' },
-  },
+  translations: emptyTr(),
 };
 
 export default function POIManager() {
-  const [items,   setItems]   = useState([]);
-  const [cats,    setCats]    = useState([]);
-  const [modal,   setModal]   = useState(null);   // 'create' | 'edit'
-  const [editing, setEditing] = useState(EMPTY);
-  const [tab,     setTab]     = useState('fr');
-  const [saving,  setSaving]  = useState(false);
-  const [msg,     setMsg]     = useState('');
-  const [filter,  setFilter]  = useState('all');
+  const [items,        setItems]        = useState([]);
+  const [cats,         setCats]         = useState([]);
+  const [modal,        setModal]        = useState(null);   // 'create' | 'edit'
+  const [editing,      setEditing]      = useState(EMPTY);
+  const [tab,          setTab]          = useState('fr');
+  const [sourceLang,   setSourceLang]   = useState('fr');
+  const [saving,       setSaving]       = useState(false);
+  const [msg,          setMsg]          = useState('');
+  const [filter,       setFilter]       = useState('all');
   const [imgUploading, setImgUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const { translateFields, translating } = useTranslate();
 
   const loadCats = useCallback(() =>
     api.get('/categories/poi').then(r => {
@@ -35,19 +43,33 @@ export default function POIManager() {
 
   const openCreate = () => {
     setEditing({ ...structuredClone(EMPTY), category: cats[0]?.key_name || '' });
-    setModal('create'); setTab('fr');
+    setModal('create'); setTab('fr'); setSourceLang('fr');
   };
-  const openEdit   = item => {
-    setEditing({
-      ...item,
-      is_active: !!item.is_active,
-      images: item.images || [],
-      translations: {
-        fr: { name: '', address: '', description: '', ...item.translations?.fr },
-        en: { name: '', address: '', description: '', ...item.translations?.en },
-      },
+
+  const openEdit = item => {
+    const allTr = Object.fromEntries(
+      ALL_LOCALES.map(l => [l, { name: '', address: '', description: '', ...item.translations?.[l] }])
+    );
+    setEditing({ ...item, is_active: !!item.is_active, images: item.images || [], translations: allTr });
+    setModal('edit'); setTab('fr'); setSourceLang('fr');
+  };
+
+  const handleTranslateAll = async () => {
+    const result = await translateFields(
+      ['name', 'address', 'description'],
+      sourceLang,
+      editing.translations[sourceLang],
+      ALL_LOCALES,
+    );
+    setEditing(e => {
+      const updated = { ...e.translations };
+      for (const [locale, values] of Object.entries(result)) {
+        updated[locale] = { ...updated[locale], ...values };
+      }
+      return { ...e, translations: updated };
     });
-    setModal('edit'); setTab('fr');
+    setMsg('✅ Traduction automatique appliquée — vérifiez les onglets.');
+    setTimeout(() => setMsg(''), 5000);
   };
 
   const save = async () => {
@@ -58,14 +80,12 @@ export default function POIManager() {
         setMsg('✅ Créé — ouvrez l\'édition pour ajouter des images.');
         load();
         setModal(null);
-        // Auto-ouvre le mode édition pour permettre d'ajouter des images
         const { data: fresh } = await api.get('/poi');
         const created = fresh.find(p => p.id === r.data.id);
         if (created) { setTimeout(() => openEdit(created), 300); }
       } else {
         await api.put(`/poi/${editing.id}`, editing);
         setMsg('✅ Enregistré');
-        // Rafraîchit juste les images de ce POI dans l'état local
         load();
       }
     } catch { setMsg('❌ Erreur'); }
@@ -78,7 +98,6 @@ export default function POIManager() {
     load();
   };
 
-  // ── Gestion images ──────────────────────────────────────
   const uploadImage = async (file) => {
     if (!file || !editing.id) return;
     if ((editing.images || []).length >= 3) {
@@ -114,7 +133,6 @@ export default function POIManager() {
     finally { setTimeout(() => setMsg(''), 3000); }
   };
 
-  // ── Helpers état ───────────────────────────────────────
   const set   = (f, v) => setEditing(e => ({ ...e, [f]: v }));
   const setTr = (locale, f, v) => setEditing(e => ({
     ...e, translations: { ...e.translations, [locale]: { ...e.translations[locale], [f]: v } }
@@ -199,7 +217,7 @@ export default function POIManager() {
       {/* ── Modal ── */}
       {modal && (
         <div className={styles.modalBackdrop} onClick={e => e.target === e.currentTarget && setModal(null)}>
-          <div className={styles.modal} style={{ maxWidth: 600 }}>
+          <div className={styles.modal} style={{ maxWidth: 620 }}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{modal === 'create' ? 'Nouveau POI' : 'Modifier le POI'}</span>
               <button className={styles.modalClose} onClick={() => setModal(null)}>✕</button>
@@ -251,12 +269,30 @@ export default function POIManager() {
                 <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Point actif (visible sur la carte)</span>
               </div>
 
-              {/* Traductions */}
+              {/* ── Traductions ── */}
+              <TranslationPanel
+                sourceLang={sourceLang}
+                onSourceChange={setSourceLang}
+                allLocales={ALL_LOCALES}
+                onTranslateAll={handleTranslateAll}
+                translating={translating}
+              />
+
               <div>
-                <div className={styles.tabs}>
-                  {['fr', 'en'].map(l => (
-                    <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`} onClick={() => setTab(l)}>
-                      {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+                <div className={styles.tabs} style={{ flexWrap: 'wrap' }}>
+                  {ALL_LOCALES.map(l => (
+                    <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`}
+                      onClick={() => setTab(l)}
+                      style={{ position: 'relative' }}
+                    >
+                      {localesMeta[l]?.flag} {l}
+                      {l === sourceLang && (
+                        <span style={{
+                          position: 'absolute', top: -4, right: -4,
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#C2782A', border: '1px solid #fff',
+                        }} title="Langue source" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -278,7 +314,6 @@ export default function POIManager() {
                     style={{ resize: 'vertical', minHeight: 72 }}
                     value={editing.translations[tab]?.description || ''}
                     onChange={e => setTr(tab, 'description', e.target.value)}
-                    placeholder={tab === 'fr' ? 'Description du lieu…' : 'Place description…'}
                   />
                 </div>
               </div>
@@ -310,22 +345,16 @@ export default function POIManager() {
                       </>
                     )}
                   </div>
-
                   {(editing.images || []).length === 0 && (
                     <p style={{ color: '#9CA3AF', fontSize: '0.82rem', textAlign: 'center', padding: '12px 0' }}>
                       Aucune photo — ajoutez jusqu'à 3 images (JPG, PNG, WebP · 3 Mo max)
                     </p>
                   )}
-
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {(editing.images || []).map(img => (
                       <div key={img.id} style={{ position: 'relative' }}>
-                        <img
-                          src={img.url}
-                          alt=""
-                          style={{ width: 100, height: 75, objectFit: 'cover', borderRadius: 10,
-                            border: '2px solid #E5E7EB' }}
-                        />
+                        <img src={img.url} alt=""
+                          style={{ width: 100, height: 75, objectFit: 'cover', borderRadius: 10, border: '2px solid #E5E7EB' }} />
                         <button
                           onClick={() => deleteImage(img.id)}
                           style={{

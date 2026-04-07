@@ -153,6 +153,14 @@ function FlightRow({ flight, tab, isSearch, t }) {
   return (
     <div className={styles.flightRow} role="listitem">
       <div className={styles.flightLeft}>
+        {flight.airline_icao && (
+          <img
+            src={`/airlines/${flight.airline_icao}.png`}
+            alt={flight.airline}
+            className={styles.airlineLogo}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
+        )}
         <span className={styles.flightNum}>{flight.flight_number}</span>
         <span className={styles.airline}>{flight.airline}</span>
         <span className={`status-badge ${status}`}>{t(`flights.status.${status}`) || status}</span>

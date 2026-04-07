@@ -38,6 +38,18 @@ services:
     networks:
       - connectbe_net
 
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: connectbe_libretranslate
+    restart: unless-stopped
+    environment:
+      LT_LOAD_ONLY: fr,en,de,es,pt,ar,zh,ja,ru
+      LT_DISABLE_WEB_UI: "true"
+    volumes:
+      - libretranslate_data:/home/libretranslate/.local
+    networks:
+      - connectbe_net
+
   backend:
     build:
       context: ./backend
@@ -51,6 +63,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_started
+      libretranslate:
         condition: service_started
     volumes:
       - ./backend/src:/app/src
@@ -90,6 +104,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  libretranslate_data:
 
 networks:
   connectbe_net:

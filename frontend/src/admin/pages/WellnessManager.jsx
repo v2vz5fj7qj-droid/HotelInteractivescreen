@@ -1,36 +1,59 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import api    from '../useAdminApi';
-import styles from '../Admin.module.css';
+import api              from '../useAdminApi';
+import styles           from '../Admin.module.css';
+import TranslationPanel from '../components/TranslationPanel';
+import { useTranslate } from '../hooks/useTranslate';
+import localesMeta      from '../../i18n/locales.json';
 
-const EMPTY = { slug:'', duration_min:60, price_fcfa:0, available_hours:'', available_days:'', image_url:'', video_url:'', is_active:true, translations:{ fr:{ name:'', description:'' }, en:{ name:'', description:'' } } };
+const ALL_LOCALES = Object.keys(localesMeta);
+const emptyTr = () =>
+  Object.fromEntries(ALL_LOCALES.map(l => [l, { name: '', description: '' }]));
+
+const EMPTY = { slug:'', duration_min:60, price_fcfa:0, available_hours:'', available_days:'', image_url:'', video_url:'', is_active:true, translations: emptyTr() };
 
 export default function WellnessManager() {
   const [items,        setItems]        = useState([]);
   const [modal,        setModal]        = useState(null);
   const [editing,      setEditing]      = useState(EMPTY);
   const [tab,          setTab]          = useState('fr');
+  const [sourceLang,   setSourceLang]   = useState('fr');
   const [saving,       setSaving]       = useState(false);
   const [msg,          setMsg]          = useState('');
   const [uploading,    setUploading]    = useState(false);
   const imgInputRef = useRef(null);
+
+  const { translateFields, translating } = useTranslate();
 
   const load = useCallback(() =>
     api.get('/wellness').then(r => setItems(r.data)).catch(() => {}), []);
 
   useEffect(() => { load(); }, [load]);
 
-  const openCreate = () => { setEditing(structuredClone(EMPTY)); setModal('create'); setTab('fr'); };
+  const openCreate = () => { setEditing(structuredClone(EMPTY)); setModal('create'); setTab('fr'); setSourceLang('fr'); };
   const openEdit   = item => {
-    setEditing({
-      ...item,
-      is_active: !!item.is_active,
-      translations: {
-        fr: item.translations?.fr || { name:'', description:'' },
-        en: item.translations?.en || { name:'', description:'' },
-      },
+    const allTr = Object.fromEntries(
+      ALL_LOCALES.map(l => [l, { name: '', description: '', ...item.translations?.[l] }])
+    );
+    setEditing({ ...item, is_active: !!item.is_active, translations: allTr });
+    setModal('edit'); setTab('fr'); setSourceLang('fr');
+  };
+
+  const handleTranslateAll = async () => {
+    const result = await translateFields(
+      ['name', 'description'],
+      sourceLang,
+      editing.translations[sourceLang],
+      ALL_LOCALES,
+    );
+    setEditing(e => {
+      const updated = { ...e.translations };
+      for (const [locale, values] of Object.entries(result)) {
+        updated[locale] = { ...updated[locale], ...values };
+      }
+      return { ...e, translations: updated };
     });
-    setModal('edit');
-    setTab('fr');
+    setMsg('✅ Traduction automatique appliquée — vérifiez les onglets.');
+    setTimeout(() => setMsg(''), 5000);
   };
 
   const save = async () => {
@@ -189,22 +212,39 @@ export default function WellnessManager() {
                 <span style={{ fontSize:'0.88rem', fontWeight:600 }}>Service actif (visible sur la borne)</span>
               </div>
 
-              {/* Traductions */}
+              {/* ── Traductions ── */}
+              <TranslationPanel
+                sourceLang={sourceLang}
+                onSourceChange={setSourceLang}
+                allLocales={ALL_LOCALES}
+                onTranslateAll={handleTranslateAll}
+                translating={translating}
+              />
+
               <div>
-                <div className={styles.tabs}>
-                  {['fr','en'].map(l => (
-                    <button key={l} className={`${styles.tab} ${tab===l ? styles.tabActive : ''}`} onClick={() => setTab(l)}>
-                      {l === 'fr' ? '🇫🇷 Français' : '🇬🇧 English'}
+                <div className={styles.tabs} style={{ flexWrap: 'wrap' }}>
+                  {ALL_LOCALES.map(l => (
+                    <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`}
+                      onClick={() => setTab(l)} style={{ position: 'relative' }}
+                    >
+                      {localesMeta[l]?.flag} {l}
+                      {l === sourceLang && (
+                        <span style={{
+                          position: 'absolute', top: -4, right: -4,
+                          width: 8, height: 8, borderRadius: '50%',
+                          background: '#C2782A', border: '1px solid #fff',
+                        }} />
+                      )}
                     </button>
                   ))}
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Nom du service</label>
-                  <input className={styles.input} value={editing.translations[tab]?.name || ''} onChange={e => setTr(tab,'name',e.target.value)} />
+                  <input className={styles.input} value={editing.translations[tab]?.name || ''} onChange={e => setTr(tab, 'name', e.target.value)} />
                 </div>
-                <div className={styles.field} style={{ marginTop:12 }}>
+                <div className={styles.field} style={{ marginTop: 12 }}>
                   <label className={styles.label}>Description</label>
-                  <textarea className={styles.textarea} value={editing.translations[tab]?.description || ''} onChange={e => setTr(tab,'description',e.target.value)} />
+                  <textarea className={styles.textarea} value={editing.translations[tab]?.description || ''} onChange={e => setTr(tab, 'description', e.target.value)} />
                 </div>
               </div>
             </div>

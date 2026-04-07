@@ -140,6 +140,7 @@
 
 /* Gauche */
 .flightLeft  { display: flex; flex-direction: column; gap: 4px; }
+.airlineLogo { width: auto; height: clamp(22px, 3vh, 32px); object-fit: contain; margin-bottom: 2px; }
 .flightNum   { font-size: clamp(1rem, 1.8vh, 1.3rem); font-weight: 800; color: var(--c-text); letter-spacing: 0.04em; }
 .airline     { font-size: clamp(0.75rem, 1.1vh, 0.9rem); color: var(--c-text-muted); }
 
