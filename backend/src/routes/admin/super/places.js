@@ -1,23 +1,247 @@
 // Super-admin — Gestion carte & lieux + workflow validation
 // GET    /api/admin/super/places
+// GET    /api/admin/super/places/:id
 // POST   /api/admin/super/places
 // PUT    /api/admin/super/places/:id
 // DELETE /api/admin/super/places/:id
 // POST   /api/admin/super/places/:id/publish
 // POST   /api/admin/super/places/:id/reject
-// POST   /api/admin/super/places/:id/assign     — affecter à un hôtel
+// POST   /api/admin/super/places/:id/assign
 // DELETE /api/admin/super/places/:id/assign/:hotelId
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
+const db      = require('../../../services/db');
 
-// TODO: implémenter les handlers
-router.get('/',                         async (req, res) => res.json({ todo: 'list all places with status' }));
-router.post('/',                        async (req, res) => res.json({ todo: 'create place' }));
-router.put('/:id',                      async (req, res) => res.json({ todo: 'update place' }));
-router.delete('/:id',                   async (req, res) => res.json({ todo: 'delete place' }));
-router.post('/:id/publish',             async (req, res) => res.json({ todo: 'publish place' }));
-router.post('/:id/reject',              async (req, res) => res.json({ todo: 'reject place + motif' }));
-router.post('/:id/assign',              async (req, res) => res.json({ todo: 'assign place to hotel' }));
-router.delete('/:id/assign/:hotelId',   async (req, res) => res.json({ todo: 'remove place from hotel' }));
+async function notifyAuthor(userId, type, entityId, messageFr) {
+  if (!userId) return;
+  await db.query(
+    `INSERT INTO workflow_notifications (recipient_id, type, entity_type, entity_id, message_fr)
+     VALUES (?, ?, 'place', ?, ?)`,
+    [userId, type, entityId, messageFr]
+  );
+}
+
+async function auditLog(userId, action, entityId, oldValue, newValue) {
+  await db.query(
+    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value)
+     VALUES (?, ?, 'place', ?, ?, ?)`,
+    [userId, action, entityId,
+     oldValue ? JSON.stringify(oldValue) : null,
+     newValue ? JSON.stringify(newValue) : null]
+  );
+}
+
+// Lister tous les lieux avec statut et hôtels associés
+router.get('/', async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = status ? 'WHERE p.status = ?' : '';
+    const params = status ? [status] : [];
+
+    const [places] = await db.query(`
+      SELECT p.*,
+             pc.label_fr AS category_label, pc.icon AS category_icon,
+             u.email AS created_by_email
+      FROM points_of_interest p
+      LEFT JOIN poi_categories pc ON pc.key_name = p.category
+      LEFT JOIN admin_users u ON u.id = p.created_by
+      ${where}
+      ORDER BY p.created_at DESC
+    `, params);
+
+    const [assignments] = await db.query(`
+      SELECT hp.place_id, hp.hotel_id, h.nom AS hotel_nom
+      FROM hotel_places hp JOIN hotels h ON h.id = hp.hotel_id
+    `);
+
+    const hotelMap = {};
+    for (const a of assignments) {
+      if (!hotelMap[a.place_id]) hotelMap[a.place_id] = [];
+      hotelMap[a.place_id].push({ hotel_id: a.hotel_id, nom: a.hotel_nom });
+    }
+
+    res.json(places.map(p => ({ ...p, hotels: hotelMap[p.id] || [] })));
+  } catch (err) {
+    console.error('[super/places GET]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Détail d'un lieu avec ses traductions et images
+router.get('/:id', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+    const [translations] = await db.query('SELECT * FROM poi_translations WHERE poi_id = ?', [req.params.id]);
+    const [images] = await db.query('SELECT * FROM poi_images WHERE poi_id = ? ORDER BY display_order', [req.params.id]);
+    const [hotels] = await db.query(`
+      SELECT hp.hotel_id, h.nom FROM hotel_places hp
+      JOIN hotels h ON h.id = hp.hotel_id WHERE hp.place_id = ?
+    `, [req.params.id]);
+    res.json({ ...rows[0], translations, images, hotels });
+  } catch (err) {
+    console.error('[super/places GET/:id]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Créer un lieu (super-admin → publié directement)
+router.post('/', async (req, res) => {
+  try {
+    const { category, lat, lng, phone, website, rating, price_level, display_order, translations } = req.body;
+    if (!category || !lat || !lng) return res.status(400).json({ error: 'category, lat, lng requis' });
+
+    const [result] = await db.query(
+      `INSERT INTO points_of_interest
+         (category, lat, lng, phone, website, rating, price_level, display_order,
+          created_by, status, validated_by, validated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, NOW())`,
+      [category, lat, lng, phone || null, website || null, rating || null,
+       price_level || null, display_order || 0, req.user.id, req.user.id]
+    );
+    const id = result.insertId;
+
+    if (translations?.length) {
+      for (const t of translations) {
+        await db.query(
+          'INSERT INTO poi_translations (poi_id, locale, name, address, description) VALUES (?, ?, ?, ?, ?)',
+          [id, t.locale, t.name, t.address || null, t.description || null]
+        );
+      }
+    }
+
+    await auditLog(req.user.id, 'create', id, null, { category, lat, lng });
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [id]);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error('[super/places POST]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Modifier un lieu
+router.put('/:id', async (req, res) => {
+  try {
+    const [existing] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!existing[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+
+    const allowed = ['category', 'lat', 'lng', 'phone', 'website', 'rating', 'price_level', 'display_order', 'is_active'];
+    const fields = {};
+    for (const k of allowed) if (req.body[k] !== undefined) fields[k] = req.body[k];
+
+    if (Object.keys(fields).length) {
+      await db.query('UPDATE points_of_interest SET ? WHERE id = ?', [fields, req.params.id]);
+    }
+
+    // Mettre à jour les traductions si fournies
+    if (req.body.translations?.length) {
+      for (const t of req.body.translations) {
+        await db.query(
+          `INSERT INTO poi_translations (poi_id, locale, name, address, description)
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE name=VALUES(name), address=VALUES(address), description=VALUES(description)`,
+          [req.params.id, t.locale, t.name, t.address || null, t.description || null]
+        );
+      }
+    }
+
+    await auditLog(req.user.id, 'update', req.params.id, existing[0], fields);
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[super/places PUT]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Supprimer un lieu
+router.delete('/:id', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+    await db.query('DELETE FROM points_of_interest WHERE id = ?', [req.params.id]);
+    await auditLog(req.user.id, 'delete', req.params.id, rows[0], null);
+    res.json({ message: 'Lieu supprimé' });
+  } catch (err) {
+    console.error('[super/places DELETE]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Publier un lieu (soumission contributeur)
+router.post('/:id/publish', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+    if (rows[0].status === 'published') return res.status(400).json({ error: 'Déjà publié' });
+
+    await db.query(
+      `UPDATE points_of_interest
+       SET status='published', validated_by=?, validated_at=NOW(), rejection_reason=NULL
+       WHERE id=?`,
+      [req.user.id, req.params.id]
+    );
+    await auditLog(req.user.id, 'publish', req.params.id, { status: rows[0].status }, { status: 'published' });
+    await notifyAuthor(rows[0].created_by, 'published', req.params.id, 'Votre lieu a été publié.');
+    res.json({ message: 'Lieu publié' });
+  } catch (err) {
+    console.error('[super/places POST /publish]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Rejeter un lieu
+router.post('/:id/reject', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ error: 'Motif de rejet requis' });
+
+    const [rows] = await db.query('SELECT * FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+
+    await db.query(
+      `UPDATE points_of_interest
+       SET status='rejected', validated_by=?, validated_at=NOW(), rejection_reason=?
+       WHERE id=?`,
+      [req.user.id, reason, req.params.id]
+    );
+    await auditLog(req.user.id, 'reject', req.params.id, { status: rows[0].status }, { status: 'rejected', reason });
+    await notifyAuthor(rows[0].created_by, 'rejected', req.params.id, `Votre lieu a été rejeté : ${reason}`);
+    res.json({ message: 'Lieu rejeté' });
+  } catch (err) {
+    console.error('[super/places POST /reject]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Affecter un lieu à un hôtel
+router.post('/:id/assign', async (req, res) => {
+  try {
+    const { hotel_id, display_order = 0 } = req.body;
+    if (!hotel_id) return res.status(400).json({ error: 'hotel_id requis' });
+    await db.query(
+      'INSERT IGNORE INTO hotel_places (hotel_id, place_id, display_order) VALUES (?, ?, ?)',
+      [hotel_id, req.params.id, display_order]
+    );
+    res.json({ message: 'Lieu affecté à l\'hôtel' });
+  } catch (err) {
+    console.error('[super/places POST /assign]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Retirer un lieu d'un hôtel
+router.delete('/:id/assign/:hotelId', async (req, res) => {
+  try {
+    await db.query(
+      'DELETE FROM hotel_places WHERE place_id = ? AND hotel_id = ?',
+      [req.params.id, req.params.hotelId]
+    );
+    res.json({ message: 'Lieu retiré de l\'hôtel' });
+  } catch (err) {
+    console.error('[super/places DELETE /assign]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
 
 module.exports = router;
