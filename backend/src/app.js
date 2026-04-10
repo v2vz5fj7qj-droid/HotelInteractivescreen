@@ -24,6 +24,9 @@ const qrRoutes           = require('./routes/qr');
 const themeRoutes        = require('./routes/theme');
 const notificationsRoutes = require('./routes/notifications');
 const translateRoutes    = require('./routes/translate');
+const kioskRoutes        = require('./routes/kiosk');
+const servicesRoutes     = require('./routes/services');
+const tipsRoutes         = require('./routes/tips');
 
 // ── Routes admin (ancien monolithe — rétrocompatibilité) ──────────
 const adminRoutesLegacy  = require('./routes/admin');
@@ -84,6 +87,10 @@ app.use('/api/qr',            qrRoutes);
 app.use('/api/theme',         themeRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/translate',     translateRoutes);
+app.use('/api/kiosk',         kioskRoutes);
+app.use('/api/hotels',        kioskRoutes);   // /api/hotels/public
+app.use('/api/services',      servicesRoutes);
+app.use('/api/tips',          tipsRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────
 app.use('/api/admin', authRoutes);

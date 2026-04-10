@@ -1,0 +1,343 @@
+/* ── Page d'accueil projet ConnectBé ─────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  background: #1A1208;
+  color: #F5E6C8;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Navbar ────────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(24px, 5vw, 80px);
+  height: 68px;
+  background: rgba(26, 18, 8, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(194, 120, 42, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #D4A843;
+  text-decoration: none;
+}
+
+.navBrand img {
+  height: 36px;
+  object-fit: contain;
+}
+
+.navAdmin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(194, 120, 42, 0.15);
+  border: 1px solid rgba(194, 120, 42, 0.4);
+  border-radius: 8px;
+  color: #D4A843;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.navAdmin:hover {
+  background: rgba(194, 120, 42, 0.3);
+}
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: clamp(60px, 10vh, 120px) clamp(24px, 5vw, 80px);
+  background: radial-gradient(ellipse at 50% 0%, rgba(194,120,42,0.18) 0%, transparent 70%);
+}
+
+.heroEyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #C2782A;
+  margin-bottom: 16px;
+}
+
+.heroTitle {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #F5E6C8;
+  margin: 0 0 20px;
+  max-width: 750px;
+}
+
+.heroTitle span {
+  color: #D4A843;
+}
+
+.heroSub {
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  color: #A08060;
+  max-width: 520px;
+  line-height: 1.7;
+  margin: 0 0 36px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btnPrimary {
+  padding: 13px 28px;
+  background: linear-gradient(135deg, #C2782A, #D4A843);
+  border-radius: 10px;
+  color: #1A1208;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 16px rgba(194,120,42,0.35);
+}
+
+.btnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(194,120,42,0.5);
+}
+
+.btnSecondary {
+  padding: 13px 28px;
+  background: transparent;
+  border: 1px solid rgba(194,120,42,0.4);
+  border-radius: 10px;
+  color: #D4A843;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btnSecondary:hover {
+  background: rgba(194,120,42,0.1);
+}
+
+/* ── Features ───────────────────────────────────────────────── */
+.section {
+  padding: clamp(48px, 7vh, 80px) clamp(24px, 5vw, 80px);
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #C2782A;
+  margin-bottom: 14px;
+}
+
+.sectionHeading {
+  text-align: center;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 700;
+  color: #F5E6C8;
+  margin: 0 0 48px;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.featureCard {
+  background: rgba(44, 30, 10, 0.6);
+  border: 1px solid rgba(194,120,42,0.18);
+  border-radius: 14px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.featureIcon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.featureTitle {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #D4A843;
+}
+
+.featureDesc {
+  font-size: 0.88rem;
+  color: #A08060;
+  line-height: 1.6;
+}
+
+/* ── Hôtels ─────────────────────────────────────────────────── */
+.hotelsSectionBg {
+  background: rgba(44, 30, 10, 0.35);
+}
+
+.hotelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hotelCard {
+  background: #2C1E0A;
+  border: 1px solid rgba(194,120,42,0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.hotelCard:hover {
+  transform: translateY(-3px);
+  border-color: rgba(194,120,42,0.5);
+}
+
+.hotelCardHeader {
+  height: 80px;
+  background: linear-gradient(135deg, rgba(194,120,42,0.2), rgba(212,168,67,0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.hotelCardLogo {
+  height: 48px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.hotelCardLogoPlaceholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(194,120,42,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.hotelCardBody {
+  padding: 18px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hotelCardName {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: #F5E6C8;
+}
+
+.hotelCardAddr {
+  font-size: 0.8rem;
+  color: #7A6040;
+  flex: 1;
+}
+
+.hotelCardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 14px;
+  background: rgba(194,120,42,0.15);
+  border: 1px solid rgba(194,120,42,0.35);
+  border-radius: 8px;
+  color: #D4A843;
+  font-size: 0.83rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  align-self: flex-start;
+}
+
+.hotelCardLink:hover {
+  background: rgba(194,120,42,0.3);
+}
+
+/* ── Erreur / chargement hôtels ─────────────────────────────── */
+.hotelsLoading, .hotelsEmpty {
+  text-align: center;
+  color: #7A6040;
+  padding: 32px 0;
+  font-size: 0.95rem;
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.footer {
+  margin-top: auto;
+  padding: 24px clamp(24px, 5vw, 80px);
+  border-top: 1px solid rgba(194,120,42,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footerCopy {
+  font-size: 0.82rem;
+  color: #5A4020;
+}
+
+.footerAdminLink {
+  font-size: 0.82rem;
+  color: #7A6040;
+  text-decoration: none;
+}
+
+.footerAdminLink:hover {
+  color: #D4A843;
+}
+
+/* ── Divider ────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(194,120,42,0.25), transparent);
+  margin: 0 clamp(24px, 5vw, 80px);
+}
+
+@media (max-width: 600px) {
+  .heroActions { flex-direction: column; align-items: center; }
+  .footer { flex-direction: column; text-align: center; }
+}

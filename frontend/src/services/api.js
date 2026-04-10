@@ -1,9 +1,19 @@
 import axios from 'axios';
+import { getHotelId } from './hotelStore';
 
 const api = axios.create({
   baseURL: '/api',
   timeout: 10_000,
   headers: { 'Content-Type': 'application/json' },
+});
+
+// ── Injecter hotel_id automatiquement sur toutes les requêtes GET ──
+api.interceptors.request.use(config => {
+  const hotelId = getHotelId();
+  if (hotelId && config.method === 'get') {
+    config.params = { hotel_id: hotelId, ...config.params };
+  }
+  return config;
 });
 
 // ── Offline : injecter les données en cache si réseau indisponible ──

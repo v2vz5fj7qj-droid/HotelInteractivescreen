@@ -3,15 +3,16 @@ const db      = require('../services/db');
 const cache   = require('../services/cacheService');
 const router  = express.Router();
 
-// GET /api/events?locale=fr&category=music&upcoming=true&limit=20
+// GET /api/events?hotel_id=1&locale=fr&category=music&upcoming=true&limit=20
 router.get('/', async (req, res) => {
+  const hotelId  = req.query.hotel_id ? parseInt(req.query.hotel_id) : null;
   const locale   = req.query.locale   || 'fr';
   const category = req.query.category || null;
   const upcoming = req.query.upcoming !== 'false';   // true par défaut
   const featured = req.query.featured === 'true';
   const limit    = Math.min(parseInt(req.query.limit || '20', 10), 50);
 
-  const cacheKey = `events:${locale}:${category||'all'}:${upcoming}:${featured}:${limit}`;
+  const cacheKey = `events:${hotelId||'global'}:${locale}:${category||'all'}:${upcoming}:${featured}:${limit}`;
   const cached   = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
 
@@ -28,10 +29,13 @@ router.get('/', async (req, res) => {
       FROM events e
       LEFT JOIN event_translations t  ON t.event_id = e.id AND t.locale = ?
       LEFT JOIN event_translations tf ON tf.event_id = e.id AND tf.locale = 'fr'
-      WHERE e.is_active = 1
+      WHERE e.status = 'published'
     `;
     const params = [locale];
 
+    if (hotelId) {
+      query += ' AND e.hotel_id = ?'; params.push(hotelId);
+    }
     if (upcoming) {
       query += ' AND (e.end_date >= CURDATE() OR (e.end_date IS NULL AND e.start_date >= CURDATE()))';
     }

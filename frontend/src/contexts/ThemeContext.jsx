@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import { useHotel } from './HotelContext';
 
 const ThemeContext = createContext(null);
 
-// Retourne true si l'heure actuelle est en période nocturne (20h–7h)
 function isNightTime() {
   const h = new Date().getHours();
   return h >= 20 || h < 7;
 }
 
-// Thème par défaut — sera écrasé par les données de l'API /theme
 const DEFAULT_THEME = {
   hotel_name:          'ConnectBé',
   color_primary:       '#C2782A',
@@ -26,17 +24,48 @@ const DEFAULT_THEME = {
   font_secondary:      'Playfair Display',
   logo_url:            '/images/logo.png',
   logo_url_dark:       '/images/logo-dark.png',
-  banner_image_url:    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80',
-  idle_timeout_ms:     '60000',
+  banner_image_url:    null,
+  idle_timeout_ms:     '30000',
 };
 
-export function ThemeProvider({ children }) {
-  const [config,    setConfig]    = useState(DEFAULT_THEME);
-  const [darkMode,  setDarkMode]  = useState(isNightTime()); // Auto selon heure
-  const [autoNight, setAutoNight] = useState(true);          // Mode auto activé
-  const [loading,   setLoading]   = useState(true);
+// Convertit hotel_settings en format config utilisé par le thème
+function settingsToConfig(settings) {
+  if (!settings) return null;
+  const colors = settings.theme_colors || {};
+  return {
+    hotel_name:          settings.nom            || DEFAULT_THEME.hotel_name,
+    color_primary:       colors.color_primary    || DEFAULT_THEME.color_primary,
+    color_primary_dark:  colors.color_primary_dark || DEFAULT_THEME.color_primary_dark,
+    color_secondary:     colors.color_secondary  || DEFAULT_THEME.color_secondary,
+    color_bg_dark:       colors.color_bg_dark    || DEFAULT_THEME.color_bg_dark,
+    color_bg_light:      colors.color_bg_light   || DEFAULT_THEME.color_bg_light,
+    color_surface_dark:  colors.color_surface_dark  || DEFAULT_THEME.color_surface_dark,
+    color_surface_light: colors.color_surface_light || DEFAULT_THEME.color_surface_light,
+    color_text_dark:     colors.color_text_dark  || DEFAULT_THEME.color_text_dark,
+    color_text_light:    colors.color_text_light || DEFAULT_THEME.color_text_light,
+    color_accent:        colors.color_accent     || DEFAULT_THEME.color_accent,
+    font_primary:        settings.font_primary   || DEFAULT_THEME.font_primary,
+    font_secondary:      settings.font_secondary || DEFAULT_THEME.font_secondary,
+    logo_url:            settings.logo_url       || DEFAULT_THEME.logo_url,
+    logo_url_dark:       settings.logo_url_dark  || DEFAULT_THEME.logo_url_dark,
+    banner_image_url:    settings.background_url || DEFAULT_THEME.banner_image_url,
+    idle_timeout_ms:     String(settings.idle_timeout_ms ?? DEFAULT_THEME.idle_timeout_ms),
+    fullscreen_password: settings.fullscreen_password || 'fs1234',
+    wifi_name:           settings.wifi_name      || null,
+    wifi_password:       settings.wifi_password  || null,
+    checkin_time:        settings.checkin_time   || null,
+    checkout_time:       settings.checkout_time  || null,
+  };
+}
 
-  // ── Mode nuit automatique : vérification toutes les minutes ──
+export function ThemeProvider({ children }) {
+  const { settings, loading: hotelLoading } = useHotel();
+
+  const [config,    setConfig]    = useState(DEFAULT_THEME);
+  const [darkMode,  setDarkMode]  = useState(isNightTime());
+  const [autoNight, setAutoNight] = useState(true);
+
+  // Mode nuit automatique
   useEffect(() => {
     if (!autoNight) return;
     const check = () => setDarkMode(isNightTime());
@@ -45,17 +74,15 @@ export function ThemeProvider({ children }) {
     return () => clearInterval(id);
   }, [autoNight]);
 
-  // ── Chargement config thème depuis l'API ─────────────
+  // Quand les settings de l'hôtel arrivent, mettre à jour le thème
   useEffect(() => {
-    api.get('/theme')
-      .then(res => {
-        if (res.data?.config) setConfig({ ...DEFAULT_THEME, ...res.data.config });
-      })
-      .catch(() => { /* Mode offline — thème par défaut */ })
-      .finally(() => setLoading(false));
-  }, []);
+    if (!hotelLoading) {
+      const derived = settingsToConfig(settings);
+      setConfig(derived || DEFAULT_THEME);
+    }
+  }, [settings, hotelLoading]);
 
-  // ── Application des CSS custom properties ────────────
+  // Application des CSS custom properties
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', darkMode ? 'dark' : 'light');
@@ -71,24 +98,15 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--font-display',    `'${config.font_secondary}', serif`);
   }, [config, darkMode]);
 
-  // Bascule manuelle : désactive le mode auto jusqu'au prochain rechargement
   const toggleDarkMode = useCallback(() => {
     setAutoNight(false);
     setDarkMode(d => !d);
   }, []);
 
-  // Mise à jour d'une valeur de thème (appel API + local)
-  const updateTheme = useCallback(async (updates) => {
-    try {
-      await api.put('/theme', { updates });
-      setConfig(prev => ({ ...prev, ...updates }));
-    } catch (err) {
-      console.error('[Theme update]', err.message);
-    }
-  }, []);
+  const loading = hotelLoading;
 
   return (
-    <ThemeContext.Provider value={{ config, darkMode, autoNight, toggleDarkMode, updateTheme, loading }}>
+    <ThemeContext.Provider value={{ config, darkMode, autoNight, toggleDarkMode, loading }}>
       {children}
     </ThemeContext.Provider>
   );
