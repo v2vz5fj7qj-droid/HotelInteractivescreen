@@ -8,6 +8,16 @@ const db      = require('../../../services/db');
 
 const SERVICE = 'flightapi';
 
+async function auditLog(userId, action, oldValue, newValue) {
+  await db.query(
+    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value)
+     VALUES (?, ?, 'api_token', 1, ?, ?)`,
+    [userId, action,
+     oldValue ? JSON.stringify(oldValue) : null,
+     newValue ? JSON.stringify(newValue) : null]
+  ).catch(() => {});
+}
+
 async function getTracking() {
   const [rows] = await db.query(
     'SELECT * FROM api_token_tracking WHERE service = ?', [SERVICE]
@@ -46,10 +56,9 @@ router.put('/', async (req, res) => {
 
     if (!Object.keys(fields).length) return res.status(400).json({ error: 'total_tokens ou alert_threshold requis' });
 
-    await db.query(
-      'UPDATE api_token_tracking SET ? WHERE service = ?',
-      [fields, SERVICE]
-    );
+    const before = await getTracking();
+    await db.query('UPDATE api_token_tracking SET ? WHERE service = ?', [fields, SERVICE]);
+    await auditLog(req.user.id, 'update_quota', before, fields);
     res.json(await getTracking());
   } catch (err) {
     console.error('[super/tokens PUT]', err);
@@ -60,10 +69,9 @@ router.put('/', async (req, res) => {
 // Remettre le compteur à zéro (nouveau cycle de quota)
 router.post('/reset', async (req, res) => {
   try {
-    await db.query(
-      'UPDATE api_token_tracking SET used_tokens = 0 WHERE service = ?',
-      [SERVICE]
-    );
+    const before = await getTracking();
+    await db.query('UPDATE api_token_tracking SET used_tokens = 0 WHERE service = ?', [SERVICE]);
+    await auditLog(req.user.id, 'reset_counter', { used_tokens: before?.used_tokens }, { used_tokens: 0 });
     res.json(await getTracking());
   } catch (err) {
     console.error('[super/tokens POST /reset]', err);

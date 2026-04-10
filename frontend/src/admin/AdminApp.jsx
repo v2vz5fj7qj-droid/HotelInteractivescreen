@@ -16,6 +16,7 @@ import SuperInfoManager        from './pages/super/InfoManager';
 import ServiceCategoriesManager from './pages/super/ServiceCategoriesManager';
 import WeatherManager          from './pages/super/WeatherManager';
 import TokensManager           from './pages/super/TokensManager';
+import AuditLog               from './pages/super/AuditLog';
 
 // Pages hotel-admin
 import HotelDashboard       from './pages/hotel/Dashboard';
@@ -88,6 +89,7 @@ export default function AdminApp() {
           <Route path="service-categories" element={<ServiceCategoriesManager />} />
           <Route path="weather"         element={<WeatherManager />} />
           <Route path="tokens"          element={<TokensManager />} />
+          <Route path="audit-log"       element={<AuditLog />} />
           <Route path="*"               element={<Navigate to="/admin/super" replace />} />
         </Route>
 

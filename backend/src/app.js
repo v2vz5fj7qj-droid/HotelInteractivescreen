@@ -54,6 +54,10 @@ const contribPlacesRoutes = require('./routes/admin/contributor/places');
 const contribEventsRoutes = require('./routes/admin/contributor/events');
 const contribInfoRoutes   = require('./routes/admin/contributor/info');
 
+// Transversal (tous rôles authentifiés)
+const myNotificationsRoutes = require('./routes/admin/myNotifications');
+const superAuditLogRoutes   = require('./routes/admin/super/auditLog');
+
 // ── Services ─────────────────────────────────────────────────────
 const { startWeatherScheduler }  = require('./services/weatherRefresh');
 const { startFlightScheduler }   = require('./services/flightRefresh');
@@ -110,6 +114,10 @@ adminV2.use('/hotel/notifications',     requireRole('super_admin','hotel_admin')
 adminV2.use('/contributor/places', requireRole('contributor'), contribPlacesRoutes);
 adminV2.use('/contributor/events', requireRole('contributor'), contribEventsRoutes);
 adminV2.use('/contributor/info',   requireRole('contributor'), contribInfoRoutes);
+
+// Transversal — disponible pour tout utilisateur authentifié
+adminV2.use('/notifications', myNotificationsRoutes);
+adminV2.use('/super/audit-log', requireRole('super_admin'), superAuditLogRoutes);
 
 app.use('/api/admin', adminV2);
 

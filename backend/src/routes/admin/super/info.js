@@ -29,12 +29,26 @@ async function auditLog(userId, action, entityId, oldValue, newValue) {
   );
 }
 
-// Lister toutes les infos utiles
+// Lister toutes les infos utiles (avec pagination + recherche)
 router.get('/', async (req, res) => {
   try {
-    const { status } = req.query;
-    const where = status ? 'WHERE u.status = ?' : '';
-    const params = status ? [status] : [];
+    const { status, search } = req.query;
+    const page     = Math.max(1, parseInt(req.query.page) || 1);
+    const per_page = Math.min(100, parseInt(req.query.per_page) || 25);
+    const offset   = (page - 1) * per_page;
+
+    const conditions = [];
+    const params = [];
+    if (status) { conditions.push('u.status = ?'); params.push(status); }
+    if (search) { conditions.push('(uct.name LIKE ? OR u.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(DISTINCT u.id) AS total FROM useful_contacts u
+       LEFT JOIN useful_contact_translations uct ON uct.contact_id = u.id AND uct.locale = 'fr'
+       ${where}`,
+      params
+    );
 
     const [rows] = await db.query(`
       SELECT u.*, uct.name, uct.description, uct.address,
@@ -43,9 +57,12 @@ router.get('/', async (req, res) => {
       LEFT JOIN useful_contact_translations uct ON uct.contact_id = u.id AND uct.locale = 'fr'
       LEFT JOIN admin_users au ON au.id = u.created_by
       ${where}
+      GROUP BY u.id
       ORDER BY u.display_order, u.created_at DESC
-    `, params);
-    res.json(rows);
+      LIMIT ? OFFSET ?
+    `, [...params, per_page, offset]);
+
+    res.json({ data: rows, total, page, per_page, total_pages: Math.ceil(total / per_page) });
   } catch (err) {
     console.error('[super/info GET]', err);
     res.status(500).json({ error: 'Erreur serveur' });

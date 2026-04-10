@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import api from '../../useAdminApi';
+import ConfirmModal from '../../components/ConfirmModal';
 import styles from '../../Admin.module.css';
 
 export default function TokensManager() {
-  const { user } = useAuth();
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [form,    setForm]    = useState({ total_tokens: '', alert_threshold: '' });
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
-
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  const [confirm, setConfirm] = useState(false);
 
   const load = async () => {
     try {
-      const { data: d } = await axios.get('/api/admin/super/tokens', { headers });
+      const { data: d } = await api.get('/super/tokens');
       setData(d);
       setForm({ total_tokens: d.total_tokens, alert_threshold: d.alert_threshold });
     } finally { setLoading(false); }
@@ -28,21 +26,21 @@ export default function TokensManager() {
   const save = async () => {
     setSaving(true);
     try {
-      const { data: d } = await axios.put('/api/admin/super/tokens', {
+      const { data: d } = await api.put('/super/tokens', {
         total_tokens:    parseInt(form.total_tokens),
         alert_threshold: parseInt(form.alert_threshold),
-      }, { headers });
+      });
       setData(d);
       showToast('Paramètres mis à jour');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
     finally { setSaving(false); }
   };
 
-  const reset = async () => {
-    if (!window.confirm('Remettre le compteur de tokens à zéro ?')) return;
-    const { data: d } = await axios.post('/api/admin/super/tokens/reset', {}, { headers });
+  const handleReset = async () => {
+    const { data: d } = await api.post('/super/tokens/reset', {});
     setData(d);
     showToast('Compteur remis à zéro');
+    setConfirm(false);
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
@@ -68,7 +66,6 @@ export default function TokensManager() {
         </div>
       )}
 
-      {/* Jauge */}
       <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, padding: 24, marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
           <div>
@@ -90,8 +87,7 @@ export default function TokensManager() {
         </div>
       </div>
 
-      {/* Paramètres */}
-      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, padding: 24, marginBottom: 24 }}>
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, padding: 24 }}>
         <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 16 }}>Paramètres du quota</h2>
         <div className={styles.fieldRow}>
           <div className={styles.field}>
@@ -109,11 +105,20 @@ export default function TokensManager() {
           <button className={styles.btnPrimary} onClick={save} disabled={saving}>
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
-          <button className={styles.btnDanger} onClick={reset}>
+          <button className={styles.btnDanger} onClick={() => setConfirm(true)}>
             Remettre le compteur à zéro
           </button>
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirm}
+        title="Remettre le compteur à zéro ?"
+        message="Cette action remet used_tokens à 0. À effectuer en début de cycle de facturation."
+        danger
+        onConfirm={handleReset}
+        onCancel={() => setConfirm(false)}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import api from '../../useAdminApi';
+import ConfirmModal from '../../components/ConfirmModal';
+import Pagination from '../../components/Pagination';
 import styles from '../../Admin.module.css';
 
 const EMPTY = { email: '', password: '', role: 'hotel_admin', hotel_id: '',
@@ -11,32 +12,44 @@ const ROLE_LABELS = {
   hotel_staff: 'Staff Hôtel', contributor: 'Contributeur',
 };
 
+const PER_PAGE = 25;
+
 export default function UsersManager() {
-  const { user } = useAuth();
   const [users,   setUsers]   = useState([]);
   const [hotels,  setHotels]  = useState([]);
+  const [total,   setTotal]   = useState(0);
+  const [page,    setPage]    = useState(1);
+  const [search,  setSearch]  = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
   const [form,    setForm]    = useState(EMPTY);
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
+  const [confirm, setConfirm] = useState(null);
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  // Charger la liste des hôtels (sans pagination — pour le sélecteur)
+  useEffect(() => {
+    api.get('/super/hotels').then(({ data }) => setHotels(Array.isArray(data) ? data.filter(h => h.is_active) : []));
+  }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p = 1) => {
+    setLoading(true);
     try {
-      const [u, h] = await Promise.all([
-        axios.get('/api/admin/super/users',  { headers }),
-        axios.get('/api/admin/super/hotels', { headers }),
-      ]);
-      setUsers(u.data);
-      setHotels(h.data.filter(h => h.is_active));
+      const params = { page: p, per_page: PER_PAGE };
+      if (search)     params.search = search;
+      if (roleFilter) params.role   = roleFilter;
+      const { data } = await api.get('/super/users', { params });
+      setUsers(data.data || []);
+      setTotal(data.total || 0);
+      setPage(p);
     } finally { setLoading(false); }
-  }, []); // eslint-disable-line
+  }, [search, roleFilter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(1); }, [load]);
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+  const totalPages = Math.ceil(total / PER_PAGE);
 
   const openCreate = () => { setForm(EMPTY); setModal('create'); };
   const openEdit   = u => {
@@ -51,42 +64,66 @@ export default function UsersManager() {
     try {
       const body = { ...form, hotel_id: form.hotel_id || null };
       if (modal === 'create') {
-        await axios.post('/api/admin/super/users', body, { headers });
+        await api.post('/super/users', body);
         showToast('Utilisateur créé');
       } else {
         if (!body.password) delete body.password;
-        await axios.put(`/api/admin/super/users/${modal.id}`, body, { headers });
+        await api.put(`/super/users/${modal.id}`, body);
         showToast('Utilisateur mis à jour');
       }
       setModal(null);
-      load();
+      load(page);
     } catch (err) {
       alert(err.response?.data?.error || 'Erreur');
     } finally { setSaving(false); }
   };
 
-  const toggle = async (u) => {
-    await axios.put(`/api/admin/super/users/${u.id}`, { is_active: u.is_active ? 0 : 1 }, { headers });
-    showToast(u.is_active ? 'Utilisateur désactivé' : 'Utilisateur activé');
-    load();
+  const handleToggle = async () => {
+    const u = confirm.user;
+    try {
+      await api.put(`/super/users/${u.id}`, { is_active: u.is_active ? 0 : 1 });
+      showToast(u.is_active ? 'Utilisateur désactivé' : 'Utilisateur activé');
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+    setConfirm(null);
   };
 
   const needsHotel = ['hotel_admin', 'hotel_staff'].includes(form.role);
   const isContrib  = form.role === 'contributor';
-
-  if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
 
   return (
     <div>
       <div className={styles.managerHeader}>
         <div>
           <h1 className={styles.managerTitle}>Utilisateurs</h1>
-          <p className={styles.managerSub}>{users.length} compte{users.length !== 1 ? 's' : ''}</p>
+          <p className={styles.managerSub}>{total} compte{total !== 1 ? 's' : ''}</p>
         </div>
         <button className={styles.btnPrimary} onClick={openCreate}>+ Ajouter un utilisateur</button>
       </div>
 
       {toast && <div className={styles.toast}>{toast}</div>}
+
+      {/* Filtres */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && load(1)}
+          placeholder="Rechercher par email…"
+          className={styles.input}
+          style={{ maxWidth: 280 }}
+        />
+        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+          className={styles.select} style={{ maxWidth: 180 }}>
+          <option value="">Tous les rôles</option>
+          {Object.entries(ROLE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <button className={styles.btnSecondary} onClick={() => load(1)}>Filtrer</button>
+        {(search || roleFilter) && (
+          <button className={styles.btnSecondary}
+            onClick={() => { setSearch(''); setRoleFilter(''); }}>✕ Effacer</button>
+        )}
+      </div>
 
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -94,35 +131,37 @@ export default function UsersManager() {
             <tr><th>Email</th><th>Rôle</th><th>Hôtel</th><th>Statut</th><th>Actions</th></tr>
           </thead>
           <tbody>
-            {users.length === 0 ? (
+            {loading ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#9CA3AF', padding: 24 }}>Chargement…</td></tr>
+            ) : users.length === 0 ? (
               <tr><td colSpan={5}><div className={styles.empty}><div className={styles.emptyIcon}>👤</div><div className={styles.emptyText}>Aucun utilisateur</div></div></td></tr>
-            ) : users.map(u => {
-              const hotel = hotels.find(h => h.id === u.hotel_id);
-              return (
-                <tr key={u.id}>
-                  <td style={{ fontWeight: 600 }}>{u.email}</td>
-                  <td><span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4B5563' }}>{ROLE_LABELS[u.role] || u.role}</span></td>
-                  <td style={{ color: '#6B7280' }}>{hotel?.name || '—'}</td>
-                  <td><span className={`${styles.badge} ${u.is_active ? styles.badgeActive : styles.badgeInactive}`}>
-                    {u.is_active ? 'Actif' : 'Inactif'}
-                  </span></td>
-                  <td>
-                    <div className={styles.tdActions}>
-                      <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
-                        onClick={() => openEdit(u)}>Modifier</button>
-                      <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
-                        onClick={() => toggle(u)}>{u.is_active ? 'Désactiver' : 'Activer'}</button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            ) : users.map(u => (
+              <tr key={u.id}>
+                <td style={{ fontWeight: 600 }}>{u.email}</td>
+                <td><span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4B5563' }}>{ROLE_LABELS[u.role] || u.role}</span></td>
+                <td style={{ color: '#6B7280' }}>{u.hotel_nom || '—'}</td>
+                <td><span className={`${styles.badge} ${u.is_active ? styles.badgeActive : styles.badgeInactive}`}>
+                  {u.is_active ? 'Actif' : 'Inactif'}
+                </span></td>
+                <td>
+                  <div className={styles.tdActions}>
+                    <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                      onClick={() => openEdit(u)}>Modifier</button>
+                    <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                      onClick={() => setConfirm({ user: u })}>{u.is_active ? 'Désactiver' : 'Activer'}</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
 
+      <Pagination page={page} totalPages={totalPages} onPage={p => load(p)} />
+
+      {/* Modal création/édition */}
       {modal !== null && (
-        <div className={styles.modalBackdrop} onClick={() => setModal(null)}>
+        <div className={styles.modalOverlay} onClick={() => setModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{modal === 'create' ? 'Nouvel utilisateur' : `Modifier — ${modal.email}`}</span>
@@ -135,7 +174,7 @@ export default function UsersManager() {
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>{modal === 'create' ? 'Mot de passe *' : 'Nouveau mot de passe (laisser vide pour ne pas changer)'}</label>
+                <label className={styles.label}>{modal === 'create' ? 'Mot de passe *' : 'Nouveau mot de passe (laisser vide pour conserver)'}</label>
                 <input className={styles.input} type="password" value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
               </div>
@@ -153,7 +192,7 @@ export default function UsersManager() {
                     <select className={styles.select} value={form.hotel_id}
                       onChange={e => setForm(f => ({ ...f, hotel_id: e.target.value }))}>
                       <option value="">— Sélectionner —</option>
-                      {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                      {hotels.map(h => <option key={h.id} value={h.id}>{h.nom}</option>)}
                     </select>
                   </div>
                 )}
@@ -183,6 +222,15 @@ export default function UsersManager() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirm}
+        title={confirm?.user?.is_active ? 'Désactiver cet utilisateur ?' : 'Activer cet utilisateur ?'}
+        message={`Compte : ${confirm?.user?.email}`}
+        danger={confirm?.user?.is_active}
+        onConfirm={handleToggle}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }

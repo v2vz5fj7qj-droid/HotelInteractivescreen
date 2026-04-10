@@ -11,6 +11,16 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../../services/db');
 
+async function auditLog(userId, action, entityId, oldValue, newValue) {
+  await db.query(
+    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value)
+     VALUES (?, ?, 'airport', ?, ?, ?)`,
+    [userId, action, entityId,
+     oldValue ? JSON.stringify(oldValue) : null,
+     newValue ? JSON.stringify(newValue) : null]
+  ).catch(() => {});
+}
+
 // Génère l'expression cron depuis les champs de planification
 function buildCronExpression(schedule_mode, interval_minutes, fixed_hours) {
   if (schedule_mode === 'interval') {
@@ -86,6 +96,7 @@ router.post('/', async (req, res) => {
     );
 
     const [rows] = await db.query('SELECT * FROM airports WHERE code = ?', [code.toUpperCase()]);
+    await auditLog(req.user.id, 'create', code.toUpperCase(), null, { code, label, schedule_mode });
     res.status(201).json(rows[0]);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Ce code aéroport existe déjà' });
@@ -120,6 +131,7 @@ router.put('/:code', async (req, res) => {
       : null;
 
     await db.query('UPDATE airports SET ? WHERE code = ?', [fields, code]);
+    await auditLog(req.user.id, 'update', code, existing[0], fields);
     const [rows] = await db.query('SELECT * FROM airports WHERE code = ?', [code]);
     res.json(rows[0]);
   } catch (err) {
@@ -135,6 +147,7 @@ router.delete('/:code', async (req, res) => {
     const [rows] = await db.query('SELECT code FROM airports WHERE code = ?', [code]);
     if (!rows[0]) return res.status(404).json({ error: 'Aéroport introuvable' });
     await db.query('DELETE FROM airports WHERE code = ?', [code]);
+    await auditLog(req.user.id, 'delete', code, rows[0], null);
     res.json({ message: 'Aéroport supprimé' });
   } catch (err) {
     console.error('[super/airports DELETE]', err);

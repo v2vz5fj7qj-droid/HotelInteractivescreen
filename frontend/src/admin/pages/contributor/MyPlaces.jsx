@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from '../../Admin.module.css';
 
@@ -21,11 +21,10 @@ export default function MyPlaces() {
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/contributor/places', { headers });
+      const { data } = await api.get('/contributor/places');
       setPlaces(data);
     } finally { setLoading(false); }
   }, []); // eslint-disable-line
@@ -53,10 +52,10 @@ export default function MyPlaces() {
         translations: [{ locale: 'fr', name: form.name }],
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/contributor/places', body, { headers });
+        await api.post('/contributor/places', body);
         showToast('Lieu soumis — en attente de validation');
       } else {
-        await axios.put(`/api/admin/contributor/places/${modal.id}`, body, { headers });
+        await api.put(`/contributor/places/${modal.id}`, body);
         showToast('Lieu resoumis');
       }
       setModal(null); load();

@@ -1,43 +1,44 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import api from '../../useAdminApi';
+import ConfirmModal from '../../components/ConfirmModal';
 import styles from '../../Admin.module.css';
 
 const EMPTY = { label_fr: '', label_en: '', icon: '✨', display_order: 0 };
 
 export default function ServiceCategoriesManager() {
-  const { user }  = useAuth();
   const [cats,    setCats]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
   const [form,    setForm]    = useState(EMPTY);
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
-
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  const [confirm, setConfirm] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/super/service-categories', { headers });
+      const { data } = await api.get('/super/service-categories');
       setCats(data);
     } finally { setLoading(false); }
-  }, []); // eslint-disable-line
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const openCreate = () => { setForm(EMPTY); setModal('create'); };
-  const openEdit   = c => { setForm({ label_fr: c.label_fr, label_en: c.label_en || '', icon: c.icon || '✨', display_order: c.display_order || 0 }); setModal(c); };
+  const openEdit   = c => {
+    setForm({ label_fr: c.label_fr, label_en: c.label_en || '', icon: c.icon || '✨', display_order: c.display_order || 0 });
+    setModal(c);
+  };
 
   const save = async () => {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axios.post('/api/admin/super/service-categories', form, { headers });
+        await api.post('/super/service-categories', form);
         showToast('Catégorie créée');
       } else {
-        await axios.put(`/api/admin/super/service-categories/${modal.id}`, form, { headers });
+        await api.put(`/super/service-categories/${modal.id}`, form);
         showToast('Catégorie mise à jour');
       }
       setModal(null); load();
@@ -45,12 +46,12 @@ export default function ServiceCategoriesManager() {
     finally { setSaving(false); }
   };
 
-  const del = async (c) => {
-    if (!window.confirm(`Supprimer "${c.label_fr}" ?`)) return;
+  const handleDelete = async () => {
     try {
-      await axios.delete(`/api/admin/super/service-categories/${c.id}`, { headers });
+      await api.delete(`/super/service-categories/${confirm.id}`);
       showToast('Catégorie supprimée'); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+    setConfirm(null);
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
@@ -86,7 +87,7 @@ export default function ServiceCategoriesManager() {
                   <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
                     onClick={() => openEdit(c)}>Modifier</button>
                   <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                    onClick={() => del(c)}>Supprimer</button>
+                    onClick={() => setConfirm(c)}>Supprimer</button>
                 </div></td>
               </tr>
             ))}
@@ -95,7 +96,7 @@ export default function ServiceCategoriesManager() {
       </div>
 
       {modal !== null && (
-        <div className={styles.modalBackdrop} onClick={() => setModal(null)}>
+        <div className={styles.modalOverlay} onClick={() => setModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{modal === 'create' ? 'Nouvelle catégorie' : `Modifier — ${modal.label_fr}`}</span>
@@ -133,6 +134,15 @@ export default function ServiceCategoriesManager() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirm}
+        title={`Supprimer "${confirm?.label_fr}" ?`}
+        message="Cette catégorie sera définitivement supprimée. Les services utilisant cette catégorie devront être réassignés."
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }

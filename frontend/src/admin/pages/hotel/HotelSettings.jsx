@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 export default function HotelSettings() {
-  const { user }   = useAuth();
+  const { user } = useAuth();
+  const hotelId  = useSuperHotelId(user);
+  const params   = hotelId ? { hotel_id: hotelId } : {};
+
   const [settings, setSettings] = useState(null);
   const [form,     setForm]     = useState({});
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [toast,    setToast]    = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
-
   useEffect(() => {
-    axios.get('/api/admin/hotel/settings', { headers })
+    api.get('/hotel/settings', { params })
       .then(({ data }) => {
         setSettings(data);
         let theme = {};
@@ -41,7 +43,7 @@ export default function HotelSettings() {
   const save = async () => {
     setSaving(true);
     try {
-      await axios.put('/api/admin/hotel/settings', {
+      await api.put('/hotel/settings', {
         welcome_message_fr: form.welcome_message_fr,
         welcome_message_en: form.welcome_message_en,
         contact_phone:      form.contact_phone,
@@ -54,7 +56,7 @@ export default function HotelSettings() {
           primary:   form.primary_color,
           secondary: form.secondary_color,
         }),
-      }, { headers });
+      }, { params });
       showToast('Paramètres enregistrés');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
     finally { setSaving(false); }
@@ -64,8 +66,9 @@ export default function HotelSettings() {
     const fd = new FormData();
     fd.append(field, file);
     try {
-      const { data } = await axios.post(`/api/admin/hotel/settings/${field}`, fd, {
-        headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+      const { data } = await api.post(`/hotel/settings/${field}`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        params,
       });
       setSettings(prev => ({ ...prev, ...data }));
       showToast(`${field === 'logo' ? 'Logo' : 'Image de fond'} mis à jour`);

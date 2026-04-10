@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 const EMPTY = {
@@ -17,6 +18,8 @@ const LANGS = [
 
 export default function NotificationsManager() {
   const { user }  = useAuth();
+  const hotelId = useSuperHotelId(user);
+  const params  = hotelId ? { hotel_id: hotelId } : {};
   const [notifs,  setNotifs]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
@@ -25,11 +28,10 @@ export default function NotificationsManager() {
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/hotel/notifications', { headers });
+      const { data } = await api.get('/hotel/notifications', { params });
       setNotifs(data);
     } finally { setLoading(false); }
   }, []); // eslint-disable-line
@@ -52,10 +54,10 @@ export default function NotificationsManager() {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axios.post('/api/admin/hotel/notifications', form, { headers });
+        await api.post('/hotel/notifications', form, { params });
         showToast('Notification créée');
       } else {
-        await axios.put(`/api/admin/hotel/notifications/${modal.id}`, form, { headers });
+        await api.put(`/hotel/notifications/${modal.id}`, form, { params });
         showToast('Notification mise à jour');
       }
       setModal(null); load();
@@ -64,14 +66,14 @@ export default function NotificationsManager() {
   };
 
   const toggleActive = async (n) => {
-    await axios.put(`/api/admin/hotel/notifications/${n.id}`, { is_active: n.is_active ? 0 : 1 }, { headers });
+    await api.put(`/hotel/notifications/${n.id}`, { is_active: n.is_active ? 0 : 1 }, { params });
     showToast(n.is_active ? 'Notification désactivée' : 'Notification activée');
     load();
   };
 
   const del = async (id) => {
     if (!window.confirm('Supprimer cette notification ?')) return;
-    await axios.delete(`/api/admin/hotel/notifications/${id}`, { headers });
+    await api.delete(`/hotel/notifications/${id}`, { params });
     showToast('Notification supprimée'); load();
   };
 

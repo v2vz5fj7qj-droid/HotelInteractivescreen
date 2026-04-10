@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from '../../Admin.module.css';
 
@@ -21,11 +21,10 @@ export default function MyInfo() {
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/contributor/info', { headers });
+      const { data } = await api.get('/contributor/info');
       setItems(data);
     } finally { setLoading(false); }
   }, []); // eslint-disable-line
@@ -53,10 +52,10 @@ export default function MyInfo() {
         translations: [{ locale: 'fr', name: form.name_fr, description: form.description_fr }],
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/contributor/info', body, { headers });
+        await api.post('/contributor/info', body);
         showToast('Info soumise — en attente de validation');
       } else {
-        await axios.put(`/api/admin/contributor/info/${modal.id}`, body, { headers });
+        await api.put(`/contributor/info/${modal.id}`, body);
         showToast('Info resoumise');
       }
       setModal(null); load();

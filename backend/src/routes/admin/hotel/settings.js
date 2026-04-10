@@ -7,6 +7,7 @@ const express = require('express');
 const router  = express.Router();
 const multer  = require('multer');
 const path    = require('path');
+const fs      = require('fs');
 const db      = require('../../../services/db');
 
 // Super-admin peut passer ?hotel_id=X pour gérer n'importe quel hôtel
@@ -17,24 +18,49 @@ function resolveHotelId(req) {
   return req.hotelId;
 }
 
-// Upload images hôtel
-const storage = multer.diskStorage({
-  destination: path.resolve(__dirname, '../../../../../uploads/hotels'),
-  filename: (req, file, cb) => {
-    const hotelId = resolveHotelId(req);
-    const ext = path.extname(file.originalname);
-    const field = file.fieldname; // 'logo' ou 'background'
-    cb(null, `hotel_${hotelId}_${field}${ext}`);
-  },
-});
+// Vérifie les magic bytes pour s'assurer que c'est bien une image
+const IMAGE_SIGNATURES = [
+  { ext: '.jpg',  bytes: [0xFF, 0xD8, 0xFF] },
+  { ext: '.png',  bytes: [0x89, 0x50, 0x4E, 0x47] },
+  { ext: '.gif',  bytes: [0x47, 0x49, 0x46, 0x38] },
+  { ext: '.webp', bytes: [0x52, 0x49, 0x46, 0x46], offset: 0, also: { bytes: [0x57, 0x45, 0x42, 0x50], offset: 8 } },
+  { ext: '.bmp',  bytes: [0x42, 0x4D] },
+];
+
+function detectImageType(buffer) {
+  for (const sig of IMAGE_SIGNATURES) {
+    const slice = [...buffer.slice(sig.offset || 0, (sig.offset || 0) + sig.bytes.length)];
+    if (sig.bytes.every((b, i) => slice[i] === b)) {
+      if (sig.also) {
+        const slice2 = [...buffer.slice(sig.also.offset, sig.also.offset + sig.also.bytes.length)];
+        if (!sig.also.bytes.every((b, i) => slice2[i] === b)) continue;
+      }
+      return sig.ext;
+    }
+  }
+  return null;
+}
+
+// Upload en mémoire — validation magic bytes avant écriture disque
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 Mo
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) return cb(new Error('Fichier image requis'));
     cb(null, true);
   },
 });
+
+const UPLOAD_DIR = path.resolve(__dirname, '../../../../../uploads/hotels');
+
+function saveUploadedImage(buffer, hotelId, fieldname) {
+  const ext = detectImageType(buffer);
+  if (!ext) throw new Error('Format image non reconnu (magic bytes invalides)');
+  const filename = `hotel_${hotelId}_${fieldname}${ext}`;
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+  return `/uploads/hotels/${filename}`;
+}
 
 // Lire les paramètres
 router.get('/', async (req, res) => {
@@ -88,10 +114,11 @@ router.post('/logo', upload.single('logo'), async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
-    const url = `/uploads/hotels/${req.file.filename}`;
+    const url = saveUploadedImage(req.file.buffer, hotelId, 'logo');
     await db.query('UPDATE hotel_settings SET logo_url = ? WHERE hotel_id = ?', [url, hotelId]);
     res.json({ logo_url: url });
   } catch (err) {
+    if (err.message.includes('magic bytes')) return res.status(400).json({ error: err.message });
     console.error('[hotel/settings POST /logo]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
@@ -102,10 +129,11 @@ router.post('/background', upload.single('background'), async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
-    const url = `/uploads/hotels/${req.file.filename}`;
+    const url = saveUploadedImage(req.file.buffer, hotelId, 'background');
     await db.query('UPDATE hotel_settings SET background_url = ? WHERE hotel_id = ?', [url, hotelId]);
     res.json({ background_url: url });
   } catch (err) {
+    if (err.message.includes('magic bytes')) return res.status(400).json({ error: err.message });
     console.error('[hotel/settings POST /background]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }

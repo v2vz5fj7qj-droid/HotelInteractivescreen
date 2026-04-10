@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 const STATUS_STYLE = {
@@ -20,6 +21,8 @@ const CATEGORIES = ['culture', 'sport', 'gastronomie', 'musique', 'art', 'busine
 
 export default function HotelEventsManager() {
   const { user }   = useAuth();
+  const hotelId  = useSuperHotelId(user);
+  const params   = hotelId ? { hotel_id: hotelId } : {};
   const [events,   setEvents]   = useState([]);
   const [pending,  setPending]  = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -29,14 +32,13 @@ export default function HotelEventsManager() {
   const [saving,   setSaving]   = useState(false);
   const [toast,    setToast]    = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [{ data: ev }, { data: pd }] = await Promise.all([
-        axios.get('/api/admin/hotel/events',         { headers }),
-        axios.get('/api/admin/hotel/events/pending', { headers }),
+        api.get('/hotel/events', { params }),
+        api.get('/hotel/events/pending', { params }),
       ]);
       setEvents(ev);
       setPending(pd);
@@ -67,10 +69,10 @@ export default function HotelEventsManager() {
         translations: [{ locale: 'fr', title: form.title_fr, description: form.description_fr }],
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/hotel/events', body, { headers });
+        await api.post('/hotel/events', body, { params });
         showToast('Événement créé');
       } else {
-        await axios.put(`/api/admin/hotel/events/${modal.id}`, body, { headers });
+        await api.put(`/hotel/events/${modal.id}`, body, { params });
         showToast('Événement mis à jour');
       }
       setModal(null); load();
@@ -80,7 +82,7 @@ export default function HotelEventsManager() {
 
   const preApprove = async (id) => {
     try {
-      await axios.post(`/api/admin/hotel/events/${id}/pre-approve`, {}, { headers });
+      await api.post(`/hotel/events/${id}/pre-approve`, {}, { params });
       showToast('Événement pré-approuvé'); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
   };
@@ -89,21 +91,21 @@ export default function HotelEventsManager() {
     const reason = window.prompt('Motif du rejet :');
     if (reason == null) return;
     try {
-      await axios.post(`/api/admin/hotel/events/${id}/reject`, { reason }, { headers });
+      await api.post(`/hotel/events/${id}/reject`, { reason }, { params });
       showToast('Événement rejeté'); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
   };
 
   const archive = async (id) => {
     try {
-      await axios.post(`/api/admin/hotel/events/${id}/archive`, {}, { headers });
+      await api.post(`/hotel/events/${id}/archive`, {}, { params });
       showToast('Événement archivé'); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
   };
 
   const del = async (id, title) => {
     if (!window.confirm(`Supprimer "${title}" ?`)) return;
-    await axios.delete(`/api/admin/hotel/events/${id}`, { headers });
+    await api.delete(`/hotel/events/${id}`, { params });
     showToast('Événement supprimé'); load();
   };
 

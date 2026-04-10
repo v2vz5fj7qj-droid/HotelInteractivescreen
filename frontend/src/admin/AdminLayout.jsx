@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import NotificationBell from './components/NotificationBell';
+import SuperHotelSelector from './components/SuperHotelSelector';
 import styles from './Admin.module.css';
 
 // ── Menus par section ─────────────────────────────────────────────
@@ -16,6 +18,7 @@ const NAV_SUPER = [
   { to: '/admin/super/weather',           icon: '🌍', label: 'Météo'                       },
   { to: '/admin/super/airports',          icon: '✈️', label: 'Aéroports'                   },
   { to: '/admin/super/tokens',            icon: '🔑', label: 'Tokens API'                  },
+  { to: '/admin/super/audit-log',        icon: '📋', label: 'Journal d\'activité'           },
 ];
 
 const NAV_HOTEL = [
@@ -160,6 +163,8 @@ export default function AdminLayout({ section }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {switchLinks}
+            {section === 'hotel' && user?.role === 'super_admin' && <SuperHotelSelector />}
+            <NotificationBell />
             <a href="/" target="_blank" rel="noreferrer" className={styles.previewLink}>
               👁 Voir la borne
             </a>

@@ -31,23 +31,39 @@ async function auditLog(userId, action, entityId, oldValue, newValue) {
   );
 }
 
-// Lister tous les lieux avec statut et hôtels associés
+// Lister tous les lieux avec statut et hôtels associés (avec pagination + recherche)
 router.get('/', async (req, res) => {
   try {
-    const { status } = req.query;
-    const where = status ? 'WHERE p.status = ?' : '';
-    const params = status ? [status] : [];
+    const { status, search } = req.query;
+    const page     = Math.max(1, parseInt(req.query.page) || 1);
+    const per_page = Math.min(100, parseInt(req.query.per_page) || 25);
+    const offset   = (page - 1) * per_page;
+
+    const conditions = [];
+    const params = [];
+    if (status) { conditions.push('p.status = ?'); params.push(status); }
+    if (search) { conditions.push('(pt.name LIKE ? OR p.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(DISTINCT p.id) AS total FROM points_of_interest p
+       LEFT JOIN poi_translations pt ON pt.poi_id = p.id AND pt.locale = 'fr'
+       ${where}`,
+      params
+    );
 
     const [places] = await db.query(`
       SELECT p.*,
-             pc.label_fr AS category_label, pc.icon AS category_icon,
+             pt.name, pt.address,
              u.email AS created_by_email
       FROM points_of_interest p
-      LEFT JOIN poi_categories pc ON pc.key_name = p.category
+      LEFT JOIN poi_translations pt ON pt.poi_id = p.id AND pt.locale = 'fr'
       LEFT JOIN admin_users u ON u.id = p.created_by
       ${where}
+      GROUP BY p.id
       ORDER BY p.created_at DESC
-    `, params);
+      LIMIT ? OFFSET ?
+    `, [...params, per_page, offset]);
 
     const [assignments] = await db.query(`
       SELECT hp.place_id, hp.hotel_id, h.nom AS hotel_nom
@@ -60,7 +76,8 @@ router.get('/', async (req, res) => {
       hotelMap[a.place_id].push({ hotel_id: a.hotel_id, nom: a.hotel_nom });
     }
 
-    res.json(places.map(p => ({ ...p, hotels: hotelMap[p.id] || [] })));
+    const data = places.map(p => ({ ...p, hotels: hotelMap[p.id] || [] }));
+    res.json({ data, total, page, per_page, total_pages: Math.ceil(total / per_page) });
   } catch (err) {
     console.error('[super/places GET]', err);
     res.status(500).json({ error: 'Erreur serveur' });

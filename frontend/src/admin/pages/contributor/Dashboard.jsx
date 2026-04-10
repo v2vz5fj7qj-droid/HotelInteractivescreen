@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from '../../Admin.module.css';
 
@@ -18,9 +18,7 @@ function Section({ title, icon, items, labelKey }) {
         {icon} {title}
       </div>
       {items.length === 0 ? (
-        <div className={styles.empty}>
-          <div className={styles.emptyText}>Aucune soumission</div>
-        </div>
+        <div className={styles.empty}><div className={styles.emptyText}>Aucune soumission</div></div>
       ) : (
         <table className={styles.table}>
           <thead><tr><th>Titre</th><th>Statut</th><th>Soumis le</th></tr></thead>
@@ -46,20 +44,18 @@ function Section({ title, icon, items, labelKey }) {
 
 export default function ContributorDashboard() {
   const { user } = useAuth();
-  const [places, setPlaces] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [info,   setInfo]   = useState([]);
+  const [places,  setPlaces]  = useState([]);
+  const [events,  setEvents]  = useState([]);
+  const [info,    setInfo]    = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   useEffect(() => {
     const load = async () => {
       try {
         const [pl, ev, inf] = await Promise.allSettled([
-          axios.get('/api/admin/contributor/places', { headers }),
-          axios.get('/api/admin/contributor/events', { headers }),
-          axios.get('/api/admin/contributor/info',   { headers }),
+          api.get('/contributor/places'),
+          api.get('/contributor/events'),
+          api.get('/contributor/info'),
         ]);
         if (pl.status  === 'fulfilled') setPlaces(pl.value.data  || []);
         if (ev.status  === 'fulfilled') setEvents(ev.value.data  || []);
@@ -86,26 +82,10 @@ export default function ContributorDashboard() {
       </div>
 
       <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>📋</div>
-          <div className={styles.statValue}>{total}</div>
-          <div className={styles.statLabel}>Total soumissions</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>✅</div>
-          <div className={styles.statValue} style={{ color: '#065F46' }}>{published}</div>
-          <div className={styles.statLabel}>Publiées</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>⏳</div>
-          <div className={styles.statValue} style={pending > 0 ? { color: '#D97706' } : {}}>{pending}</div>
-          <div className={styles.statLabel}>En attente</div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>❌</div>
-          <div className={styles.statValue} style={rejected > 0 ? { color: '#EF4444' } : {}}>{rejected}</div>
-          <div className={styles.statLabel}>Rejetées</div>
-        </div>
+        <div className={styles.statCard}><div className={styles.statIcon}>📋</div><div className={styles.statValue}>{total}</div><div className={styles.statLabel}>Total soumissions</div></div>
+        <div className={styles.statCard}><div className={styles.statIcon}>✅</div><div className={styles.statValue} style={{ color: '#065F46' }}>{published}</div><div className={styles.statLabel}>Publiées</div></div>
+        <div className={styles.statCard}><div className={styles.statIcon}>⏳</div><div className={styles.statValue} style={pending > 0 ? { color: '#D97706' } : {}}>{pending}</div><div className={styles.statLabel}>En attente</div></div>
+        <div className={styles.statCard}><div className={styles.statIcon}>❌</div><div className={styles.statValue} style={rejected > 0 ? { color: '#EF4444' } : {}}>{rejected}</div><div className={styles.statLabel}>Rejetées</div></div>
       </div>
 
       {rejected > 0 && (

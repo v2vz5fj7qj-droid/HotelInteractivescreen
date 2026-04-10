@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 const EMPTY_SVC = {
@@ -11,6 +12,8 @@ const EMPTY_SVC = {
 
 export default function ServicesManager() {
   const { user }   = useAuth();
+  const hotelId  = useSuperHotelId(user);
+  const params   = hotelId ? { hotel_id: hotelId } : {};
   const [services, setServices] = useState([]);
   const [cats,     setCats]     = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -19,13 +22,12 @@ export default function ServicesManager() {
   const [saving,   setSaving]   = useState(false);
   const [toast,    setToast]    = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
       const [{ data: sv }, { data: ct }] = await Promise.all([
-        axios.get('/api/admin/hotel/services',            { headers }),
-        axios.get('/api/admin/hotel/services/categories', { headers }),
+        api.get('/hotel/services', { params }),
+        api.get('/hotel/services/categories', { params }),
       ]);
       setServices(sv);
       setCats(ct);
@@ -61,10 +63,10 @@ export default function ServicesManager() {
         translations:   [{ locale: 'fr', name: form.name_fr, description: form.description_fr }],
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/hotel/services', body, { headers });
+        await api.post('/hotel/services', body, { params });
         showToast('Service créé');
       } else {
-        await axios.put(`/api/admin/hotel/services/${modal.id}`, body, { headers });
+        await api.put(`/hotel/services/${modal.id}`, body, { params });
         showToast('Service mis à jour');
       }
       setModal(null); load();
@@ -74,7 +76,7 @@ export default function ServicesManager() {
 
   const del = async (id, name) => {
     if (!window.confirm(`Supprimer "${name}" ?`)) return;
-    await axios.delete(`/api/admin/hotel/services/${id}`, { headers });
+    await api.delete(`/hotel/services/${id}`, { params });
     showToast('Service supprimé'); load();
   };
 

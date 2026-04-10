@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 const EMPTY = { titre_fr: '', titre_en: '', contenu_fr: '', contenu_en: '', categorie: '', display_order: 0 };
 
 export default function TipsManager() {
   const { user }  = useAuth();
+  const hotelId = useSuperHotelId(user);
+  const params  = hotelId ? { hotel_id: hotelId } : {};
   const [tips,    setTips]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal,   setModal]   = useState(null);
@@ -15,11 +18,10 @@ export default function TipsManager() {
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/hotel/tips', { headers });
+      const { data } = await api.get('/hotel/tips', { params });
       setTips(data);
     } finally { setLoading(false); }
   }, []); // eslint-disable-line
@@ -40,10 +42,10 @@ export default function TipsManager() {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await axios.post('/api/admin/hotel/tips', form, { headers });
+        await api.post('/hotel/tips', form, { params });
         showToast('Conseil créé');
       } else {
-        await axios.put(`/api/admin/hotel/tips/${modal.id}`, form, { headers });
+        await api.put(`/hotel/tips/${modal.id}`, form, { params });
         showToast('Conseil mis à jour');
       }
       setModal(null); load();
@@ -52,13 +54,13 @@ export default function TipsManager() {
   };
 
   const toggleActive = async (t) => {
-    await axios.put(`/api/admin/hotel/tips/${t.id}`, { is_active: t.is_active ? 0 : 1 }, { headers });
+    await api.put(`/hotel/tips/${t.id}`, { is_active: t.is_active ? 0 : 1 }, { params });
     showToast(t.is_active ? 'Conseil désactivé' : 'Conseil activé'); load();
   };
 
   const del = async (id, titre) => {
     if (!window.confirm(`Supprimer "${titre}" ?`)) return;
-    await axios.delete(`/api/admin/hotel/tips/${id}`, { headers });
+    await api.delete(`/hotel/tips/${id}`, { params });
     showToast('Conseil supprimé'); load();
   };
 

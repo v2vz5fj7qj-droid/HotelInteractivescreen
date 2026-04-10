@@ -30,15 +30,27 @@ async function auditLog(userId, action, entityId, oldValue, newValue) {
   );
 }
 
-// Lister tous les événements
+// Lister tous les événements (avec pagination + recherche)
 router.get('/', async (req, res) => {
   try {
-    const { status, hotel_id } = req.query;
+    const { status, hotel_id, search } = req.query;
+    const page     = Math.max(1, parseInt(req.query.page) || 1);
+    const per_page = Math.min(100, parseInt(req.query.per_page) || 25);
+    const offset   = (page - 1) * per_page;
+
     const conditions = [];
     const params = [];
     if (status)   { conditions.push('e.status = ?');   params.push(status); }
     if (hotel_id) { conditions.push('e.hotel_id = ?'); params.push(hotel_id); }
+    if (search)   { conditions.push('(et.title LIKE ? OR e.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+    const [[{ total }]] = await db.query(
+      `SELECT COUNT(DISTINCT e.id) AS total FROM events e
+       LEFT JOIN event_translations et ON et.event_id = e.id AND et.locale = 'fr'
+       ${where}`,
+      params
+    );
 
     const [rows] = await db.query(`
       SELECT e.*, et.title, et.description,
@@ -48,9 +60,12 @@ router.get('/', async (req, res) => {
       LEFT JOIN admin_users u ON u.id = e.created_by
       LEFT JOIN hotels h ON h.id = e.hotel_id
       ${where}
+      GROUP BY e.id
       ORDER BY e.created_at DESC
-    `, params);
-    res.json(rows);
+      LIMIT ? OFFSET ?
+    `, [...params, per_page, offset]);
+
+    res.json({ data: rows, total, page, per_page, total_pages: Math.ceil(total / per_page) });
   } catch (err) {
     console.error('[super/events GET]', err);
     res.status(500).json({ error: 'Erreur serveur' });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
 function StatCard({ icon, value, label, color }) {
@@ -23,24 +24,25 @@ const STATUS_STYLE = {
 
 export default function HotelDashboard() {
   const { user } = useAuth();
-  const [services,  setServices]  = useState([]);
-  const [events,    setEvents]    = useState([]);
-  const [tips,      setTips]      = useState([]);
-  const [notifs,    setNotifs]    = useState([]);
-  const [pending,   setPending]   = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const hotelId  = useSuperHotelId(user);
+  const params   = hotelId ? { hotel_id: hotelId } : {};
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  const [services, setServices] = useState([]);
+  const [events,   setEvents]   = useState([]);
+  const [tips,     setTips]     = useState([]);
+  const [notifs,   setNotifs]   = useState([]);
+  const [pending,  setPending]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
         const [sv, ev, tp, nt, pd] = await Promise.allSettled([
-          axios.get('/api/admin/hotel/services',      { headers }),
-          axios.get('/api/admin/hotel/events',        { headers }),
-          axios.get('/api/admin/hotel/tips',          { headers }),
-          axios.get('/api/admin/hotel/notifications', { headers }),
-          axios.get('/api/admin/hotel/events/pending', { headers }),
+          api.get('/hotel/services',      { params }),
+          api.get('/hotel/events',        { params }),
+          api.get('/hotel/tips',          { params }),
+          api.get('/hotel/notifications', { params }),
+          api.get('/hotel/events/pending', { params }),
         ]);
         if (sv.status === 'fulfilled') setServices(sv.value.data || []);
         if (ev.status === 'fulfilled') setEvents(ev.value.data || []);
@@ -67,14 +69,13 @@ export default function HotelDashboard() {
       </div>
 
       <div className={styles.statsGrid}>
-        <StatCard icon="💆" value={services.length}   label="Services actifs" />
-        <StatCard icon="🗓️" value={pubEvents}          label="Événements publiés" />
-        <StatCard icon="💡" value={tips.length}        label="Bons à savoir" />
-        <StatCard icon="🔔" value={activeNotifs}       label="Notifications actives"
+        <StatCard icon="💆" value={services.length} label="Services actifs" />
+        <StatCard icon="🗓️" value={pubEvents}        label="Événements publiés" />
+        <StatCard icon="💡" value={tips.length}      label="Bons à savoir" />
+        <StatCard icon="🔔" value={activeNotifs}     label="Notifications actives"
           color={activeNotifs > 0 ? '#C2782A' : undefined} />
       </div>
 
-      {/* Pending submissions from staff/contributors */}
       {pending.length > 0 && (
         <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 10,
           padding: '12px 16px', marginBottom: 24, fontSize: '0.88rem', color: '#92400E', fontWeight: 600 }}>
@@ -82,15 +83,12 @@ export default function HotelDashboard() {
         </div>
       )}
 
-      {/* Recent events */}
       <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', fontWeight: 700, fontSize: '0.95rem' }}>
           Derniers événements
         </div>
         <table className={styles.table}>
-          <thead>
-            <tr><th>Titre</th><th>Date</th><th>Statut</th></tr>
-          </thead>
+          <thead><tr><th>Titre</th><th>Date</th><th>Statut</th></tr></thead>
           <tbody>
             {events.length === 0 ? (
               <tr><td colSpan={3}><div className={styles.empty}><div className={styles.emptyText}>Aucun événement</div></div></td></tr>
@@ -108,7 +106,6 @@ export default function HotelDashboard() {
         </table>
       </div>
 
-      {/* Active notifications */}
       <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', fontWeight: 700, fontSize: '0.95rem' }}>
           Notifications borne actives

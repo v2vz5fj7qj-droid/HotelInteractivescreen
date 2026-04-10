@@ -7,6 +7,16 @@ const express = require('express');
 const router  = express.Router();
 const db      = require('../../../services/db');
 
+async function auditLog(userId, action, entityId, oldValue, newValue) {
+  await db.query(
+    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value)
+     VALUES (?, ?, 'service_category', ?, ?, ?)`,
+    [userId, action, entityId,
+     oldValue ? JSON.stringify(oldValue) : null,
+     newValue ? JSON.stringify(newValue) : null]
+  ).catch(() => {});
+}
+
 // Lister les catégories globales
 router.get('/', async (req, res) => {
   try {
@@ -32,6 +42,7 @@ router.post('/', async (req, res) => {
       [label_fr, label_en || null, icon || '✨', display_order || 0, req.user.id]
     );
     const [rows] = await db.query('SELECT * FROM service_categories WHERE id = ?', [result.insertId]);
+    await auditLog(req.user.id, 'create', result.insertId, null, { label_fr, icon });
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error('[super/service-categories POST]', err);
@@ -57,6 +68,7 @@ router.put('/:id', async (req, res) => {
 
     if (!Object.keys(fields).length) return res.status(400).json({ error: 'Aucun champ à modifier' });
     await db.query('UPDATE service_categories SET ? WHERE id = ?', [fields, req.params.id]);
+    await auditLog(req.user.id, 'update', req.params.id, rows[0], fields);
     const [updated] = await db.query('SELECT * FROM service_categories WHERE id = ?', [req.params.id]);
     res.json(updated[0]);
   } catch (err) {
@@ -81,6 +93,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.query('DELETE FROM service_categories WHERE id = ?', [req.params.id]);
+    await auditLog(req.user.id, 'delete', req.params.id, rows[0], null);
     res.json({ message: 'Catégorie supprimée' });
   } catch (err) {
     console.error('[super/service-categories DELETE]', err);

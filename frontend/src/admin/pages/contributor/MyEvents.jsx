@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import styles from '../../Admin.module.css';
 
@@ -26,11 +26,10 @@ export default function MyEvents() {
   const [saving,  setSaving]  = useState(false);
   const [toast,   setToast]   = useState('');
 
-  const headers = { Authorization: `Bearer ${user?.token}` };
 
   const load = useCallback(async () => {
     try {
-      const { data } = await axios.get('/api/admin/contributor/events', { headers });
+      const { data } = await api.get('/contributor/events');
       setEvents(data);
     } finally { setLoading(false); }
   }, []); // eslint-disable-line
@@ -58,10 +57,10 @@ export default function MyEvents() {
         translations: [{ locale: 'fr', title: form.title_fr, description: form.description_fr }],
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/contributor/events', body, { headers });
+        await api.post('/contributor/events', body);
         showToast('Événement soumis — en attente de validation');
       } else {
-        await axios.put(`/api/admin/contributor/events/${modal.id}`, body, { headers });
+        await api.put(`/contributor/events/${modal.id}`, body);
         showToast('Événement resoumis');
       }
       setModal(null); load();

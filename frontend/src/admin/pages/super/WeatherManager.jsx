@@ -1,31 +1,26 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import api from '../../useAdminApi';
 import styles from '../../Admin.module.css';
 
 export default function WeatherManager() {
-  const { user }      = useAuth();
-  const [hotels,      setHotels]      = useState([]);
-  const [localities,  setLocalities]  = useState([]);
-  const [selected,    setSelected]    = useState(null);  // hotel selectionné
-  const [hotelLocs,   setHotelLocs]   = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [adding,      setAdding]      = useState(false);
-  const [addForm,     setAddForm]     = useState({ locality_id: '', is_default: false });
-  const [toast,       setToast]       = useState('');
-
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  const [hotels,     setHotels]     = useState([]);
+  const [localities, setLocalities] = useState([]);
+  const [selected,   setSelected]   = useState(null);
+  const [hotelLocs,  setHotelLocs]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [addForm,    setAddForm]    = useState({ locality_id: '', is_default: false });
+  const [toast,      setToast]      = useState('');
 
   const load = useCallback(async () => {
     try {
       const [{ data: h }, { data: locs }] = await Promise.all([
-        axios.get('/api/admin/super/hotels',            { headers }),
-        axios.get('/api/admin/super/weather/localities', { headers }),
+        api.get('/super/hotels'),
+        api.get('/super/weather/localities'),
       ]);
-      setHotels(h.filter(x => x.is_active));
+      setHotels(Array.isArray(h) ? h.filter(x => x.is_active) : []);
       setLocalities(locs);
     } finally { setLoading(false); }
-  }, []); // eslint-disable-line
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -33,17 +28,17 @@ export default function WeatherManager() {
 
   const selectHotel = async (hotel) => {
     setSelected(hotel);
-    const { data } = await axios.get(`/api/admin/super/weather/hotels/${hotel.id}`, { headers });
+    const { data } = await api.get(`/super/weather/hotels/${hotel.id}`);
     setHotelLocs(data);
   };
 
   const addLocality = async () => {
     if (!addForm.locality_id) return;
     try {
-      const { data } = await axios.post(`/api/admin/super/weather/hotels/${selected.id}`, {
+      const { data } = await api.post(`/super/weather/hotels/${selected.id}`, {
         locality_id: parseInt(addForm.locality_id),
         is_default: addForm.is_default,
-      }, { headers });
+      });
       setHotelLocs(data);
       setAddForm({ locality_id: '', is_default: false });
       showToast('Localité ajoutée');
@@ -52,7 +47,7 @@ export default function WeatherManager() {
 
   const removeLocality = async (localityId) => {
     try {
-      await axios.delete(`/api/admin/super/weather/hotels/${selected.id}/${localityId}`, { headers });
+      await api.delete(`/super/weather/hotels/${selected.id}/${localityId}`);
       setHotelLocs(prev => prev.filter(l => l.locality_id !== localityId));
       showToast('Localité retirée');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
@@ -60,7 +55,7 @@ export default function WeatherManager() {
 
   const setDefault = async (localityId) => {
     try {
-      await axios.put(`/api/admin/super/weather/hotels/${selected.id}/${localityId}/default`, {}, { headers });
+      await api.put(`/super/weather/hotels/${selected.id}/${localityId}/default`, {});
       setHotelLocs(prev => prev.map(l => ({ ...l, is_default: l.locality_id === localityId ? 1 : 0 })));
       showToast('Localité par défaut mise à jour');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
@@ -68,12 +63,12 @@ export default function WeatherManager() {
 
   const refreshWeather = async (localityId) => {
     try {
-      await axios.post(`/api/admin/super/weather/refresh/${localityId}`, {}, { headers });
+      await api.post(`/super/weather/refresh/${localityId}`, {});
       showToast('Météo rafraîchie');
     } catch (err) { alert(err.response?.data?.error || 'Erreur refresh météo'); }
   };
 
-  const assigned = hotelLocs.map(l => l.locality_id);
+  const assigned  = hotelLocs.map(l => l.locality_id);
   const available = localities.filter(l => !assigned.includes(l.id));
 
   if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
@@ -95,6 +90,9 @@ export default function WeatherManager() {
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #E5E7EB', fontWeight: 700, fontSize: '0.9rem' }}>
             Hôtels
           </div>
+          {hotels.length === 0 && (
+            <div style={{ padding: 16, color: '#9CA3AF', fontSize: '0.85rem' }}>Aucun hôtel actif</div>
+          )}
           {hotels.map(h => (
             <button key={h.id}
               onClick={() => selectHotel(h)}
@@ -105,7 +103,7 @@ export default function WeatherManager() {
                 cursor: 'pointer', fontSize: '0.88rem',
                 borderBottom: '1px solid #F3F4F6',
                 fontFamily: 'Poppins, sans-serif' }}>
-              {h.name}
+              {h.nom}
             </button>
           ))}
         </div>
@@ -119,10 +117,9 @@ export default function WeatherManager() {
             </div>
           ) : (
             <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700 }}>{selected.name} — {hotelLocs.length}/5 localités</span>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
+                <span style={{ fontWeight: 700 }}>{selected.nom} — {hotelLocs.length}/5 localités</span>
               </div>
-
               <table className={styles.table}>
                 <thead><tr><th>Localité</th><th>Pays</th><th>Défaut</th><th>Actions</th></tr></thead>
                 <tbody>
@@ -149,7 +146,6 @@ export default function WeatherManager() {
                   ))}
                 </tbody>
               </table>
-
               {hotelLocs.length < 5 && (
                 <div style={{ padding: '16px 20px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
                   <div className={styles.field} style={{ flex: 1 }}>

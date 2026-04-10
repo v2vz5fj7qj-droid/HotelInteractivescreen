@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import api from '../../useAdminApi';
+import ConfirmModal from '../../components/ConfirmModal';
 import styles from '../../Admin.module.css';
 
 const EMPTY_AIRPORT = {
@@ -10,28 +10,21 @@ const EMPTY_AIRPORT = {
 };
 
 export default function AirportsManager() {
-  const { user }   = useAuth();
-  const [airports, setAirports] = useState([]);
-  const [hotels,   setHotels]   = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [modal,    setModal]    = useState(null);
-  const [form,     setForm]     = useState(EMPTY_AIRPORT);
-  const [saving,   setSaving]   = useState(false);
-  const [toast,    setToast]    = useState('');
+  const [airports,   setAirports]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [modal,      setModal]      = useState(null);
+  const [form,       setForm]       = useState(EMPTY_AIRPORT);
+  const [saving,     setSaving]     = useState(false);
+  const [toast,      setToast]      = useState('');
   const [refreshing, setRefreshing] = useState({});
-
-  const headers = { Authorization: `Bearer ${user?.token}` };
+  const [confirm,    setConfirm]    = useState(null); // airport to delete
 
   const load = useCallback(async () => {
     try {
-      const [{ data: ap }, { data: h }] = await Promise.all([
-        axios.get('/api/admin/super/airports', { headers }),
-        axios.get('/api/admin/super/hotels',   { headers }),
-      ]);
-      setAirports(ap);
-      setHotels(h.filter(x => x.is_active));
+      const { data } = await api.get('/super/airports');
+      setAirports(data);
     } finally { setLoading(false); }
-  }, []); // eslint-disable-line
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -40,7 +33,7 @@ export default function AirportsManager() {
   const openCreate = () => { setForm(EMPTY_AIRPORT); setModal('create'); };
   const openEdit   = ap => {
     let fixed_hours = '';
-    try { fixed_hours = ap.fixed_hours ? JSON.parse(ap.fixed_hours).join(',') : ''; } catch { fixed_hours = ''; }
+    try { fixed_hours = ap.fixed_hours ? JSON.parse(ap.fixed_hours).join(',') : ''; } catch {}
     setForm({
       code: ap.code, label: ap.label,
       schedule_enabled: !!ap.schedule_enabled, schedule_mode: ap.schedule_mode || 'interval',
@@ -53,7 +46,7 @@ export default function AirportsManager() {
     setSaving(true);
     try {
       const body = {
-        label: form.label,
+        label:            form.label,
         schedule_enabled: form.schedule_enabled,
         schedule_mode:    form.schedule_mode,
         interval_minutes: parseInt(form.interval_minutes) || 30,
@@ -62,10 +55,10 @@ export default function AirportsManager() {
           : null,
       };
       if (modal === 'create') {
-        await axios.post('/api/admin/super/airports', { ...body, code: form.code.toUpperCase() }, { headers });
+        await api.post('/super/airports', { ...body, code: form.code.toUpperCase() });
         showToast('Aéroport créé');
       } else {
-        await axios.put(`/api/admin/super/airports/${modal.code}`, body, { headers });
+        await api.put(`/super/airports/${modal.code}`, body);
         showToast('Aéroport mis à jour');
       }
       setModal(null); load();
@@ -73,20 +66,19 @@ export default function AirportsManager() {
     finally { setSaving(false); }
   };
 
-  const del = async (code) => {
-    if (!window.confirm(`Supprimer l'aéroport ${code} ?`)) return;
+  const handleDelete = async () => {
     try {
-      await axios.delete(`/api/admin/super/airports/${code}`, { headers });
+      await api.delete(`/super/airports/${confirm.code}`);
       showToast('Aéroport supprimé'); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+    setConfirm(null);
   };
 
   const refresh = async (code) => {
     setRefreshing(r => ({ ...r, [code]: true }));
     try {
-      await axios.post(`/api/admin/super/airports/${code}/refresh`, {}, { headers });
-      showToast(`Vols rafraîchis pour ${code}`);
-      load();
+      await api.post(`/super/airports/${code}/refresh`, {});
+      showToast(`Vols rafraîchis pour ${code}`); load();
     } catch (err) { alert(err.response?.data?.error || 'Erreur refresh'); }
     finally { setRefreshing(r => ({ ...r, [code]: false })); }
   };
@@ -140,7 +132,7 @@ export default function AirportsManager() {
                       {refreshing[ap.code] ? '…' : '↻ Refresh'}
                     </button>
                     <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                      onClick={() => del(ap.code)}>Supprimer</button>
+                      onClick={() => setConfirm(ap)}>Supprimer</button>
                   </div>
                 </td>
               </tr>
@@ -149,15 +141,13 @@ export default function AirportsManager() {
         </table>
       </div>
 
-      {/* Hôtels associés par aéroport */}
       {airports.some(ap => ap.hotels?.length > 0) && (
         <div style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>Affectations hôtels</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {airports.filter(ap => ap.hotels?.length > 0).map(ap => (
               <div key={ap.code} style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '12px 16px' }}>
-                <strong>{ap.code}</strong> —{' '}
-                {ap.hotels.map(h => h.nom).join(', ')}
+                <strong>{ap.code}</strong> — {ap.hotels.map(h => h.nom).join(', ')}
               </div>
             ))}
           </div>
@@ -166,7 +156,7 @@ export default function AirportsManager() {
 
       {/* Modal création/édition */}
       {modal !== null && (
-        <div className={styles.modalBackdrop} onClick={() => setModal(null)}>
+        <div className={styles.modalOverlay} onClick={() => setModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <span className={styles.modalTitle}>{modal === 'create' ? 'Nouvel aéroport' : `Modifier — ${modal.code}`}</span>
@@ -186,21 +176,18 @@ export default function AirportsManager() {
                     onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
                 </div>
               </div>
-
               <div className={styles.field}>
                 <label className={styles.label}>Planification automatique</label>
                 <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
-                    <input type="radio" checked={form.schedule_enabled} onChange={() => setForm(f => ({ ...f, schedule_enabled: true }))} />
-                    Activée
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
-                    <input type="radio" checked={!form.schedule_enabled} onChange={() => setForm(f => ({ ...f, schedule_enabled: false }))} />
-                    Désactivée (manuel uniquement)
-                  </label>
+                  {[['Activée', true], ['Désactivée (manuel)', false]].map(([l, v]) => (
+                    <label key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.88rem' }}>
+                      <input type="radio" checked={form.schedule_enabled === v}
+                        onChange={() => setForm(f => ({ ...f, schedule_enabled: v }))} />
+                      {l}
+                    </label>
+                  ))}
                 </div>
               </div>
-
               {form.schedule_enabled && (
                 <>
                   <div className={styles.field}>
@@ -242,6 +229,15 @@ export default function AirportsManager() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirm}
+        title={`Supprimer l'aéroport ${confirm?.code} ?`}
+        message="Cette action supprimera également toutes les affectations hôtels associées."
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }
