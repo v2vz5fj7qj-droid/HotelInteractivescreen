@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate }     from 'react-router-dom';
 import axios               from 'axios';
+import { useAuth }         from './contexts/AuthContext';
 import styles              from './Admin.module.css';
 
 export default function AdminLogin() {
-  const [form,    setForm]    = useState({ username: '', password: '' });
+  const [form,    setForm]    = useState({ email: '', password: '' });
   const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
   const navigate              = useNavigate();
+  const { login }             = useAuth();
 
   const submit = async e => {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
       const { data } = await axios.post('/api/admin/login', form);
-      sessionStorage.setItem('admin_token', data.token);
-      navigate('/admin');
+      login(data); // stocke token, role, hotel_id, email
+
+      // Redirection selon le rôle
+      if (data.role === 'super_admin')  navigate('/admin/super');
+      else if (data.role === 'hotel_admin' || data.role === 'hotel_staff') navigate('/admin/hotel');
+      else if (data.role === 'contributor') navigate('/admin/contributor');
+      else navigate('/admin');
     } catch (err) {
       if (err.response?.status === 401) {
-        setError('Identifiants incorrects. Vérifiez votre nom d\'utilisateur et mot de passe.');
+        setError('Identifiants incorrects. Vérifiez votre email et mot de passe.');
       } else {
         setError('Impossible de joindre le serveur. Vérifiez que le backend est démarré.');
       }
@@ -36,13 +43,14 @@ export default function AdminLogin() {
 
         <form onSubmit={submit} className={styles.loginForm}>
           <div className={styles.field}>
-            <label className={styles.label}>Identifiant</label>
+            <label className={styles.label}>Email</label>
             <input
               className={styles.input}
-              type="text"
-              value={form.username}
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-              autoComplete="username"
+              type="email"
+              value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              autoComplete="email"
+              placeholder="votre@email.com"
               required
             />
           </div>
