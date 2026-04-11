@@ -15,6 +15,176 @@ const STATUS_STYLE = {
 const FILTERS = ['all', 'pending', 'published', 'rejected', 'archived'];
 const PER_PAGE = 25;
 
+function DetailModal({ detail, onClose, onPublish, onReject, onDelete }) {
+  const [rejectMode, setRejectMode]   = useState(false);
+  const [reason,     setReason]       = useState('');
+  const [acting,     setActing]       = useState(false);
+
+  if (!detail) return null;
+
+  const st = STATUS_STYLE[detail.status] || STATUS_STYLE.pending;
+  const canValidate = detail.status === 'pending' || detail.status === 'pre_approved';
+
+  const handlePublish = async () => {
+    setActing(true);
+    await onPublish(detail.id);
+    setActing(false);
+  };
+
+  const handleReject = async () => {
+    if (!reason.trim()) return;
+    setActing(true);
+    await onReject(detail.id, reason.trim());
+    setActing(false);
+  };
+
+  const handleDelete = async () => {
+    setActing(true);
+    await onDelete(detail.id);
+    setActing(false);
+  };
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <span className={styles.modalTitle}>Détail — {detail.name || detail.slug}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.modalBody} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Statut + contributeur */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: '#F9FAFB', borderRadius: 8, padding: '10px 14px' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>Soumis par</div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{detail.created_by_email || '—'}</div>
+              {detail.created_at && (
+                <div style={{ fontSize: '0.78rem', color: '#9CA3AF', marginTop: 2 }}>
+                  {new Date(detail.created_at).toLocaleString('fr-FR')}
+                </div>
+              )}
+            </div>
+            <span className={styles.badge} style={{ background: st.bg, color: st.color }}>{st.label}</span>
+          </div>
+
+          {/* Champs principaux */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <Field label="Nom" value={detail.name} />
+            <Field label="Catégorie" value={detail.category} />
+            <Field label="Latitude" value={detail.lat} />
+            <Field label="Longitude" value={detail.lng} />
+            <Field label="Adresse" value={detail.address} span />
+            <Field label="Téléphone" value={detail.phone} />
+            <Field label="Site web" value={detail.website} link />
+          </div>
+
+          {/* Lien carte si coordonnées */}
+          {detail.lat && detail.lng && (
+            <a
+              href={`https://www.openstreetmap.org/?mlat=${detail.lat}&mlon=${detail.lng}&zoom=15`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: '0.82rem', color: '#C2782A', textDecoration: 'underline' }}>
+              Voir sur la carte (OpenStreetMap)
+            </a>
+          )}
+
+          {/* Hôtels associés */}
+          {detail.hotels?.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.78rem', color: '#6B7280', marginBottom: 4 }}>Hôtels associés</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {detail.hotels.map(h => (
+                  <span key={h.hotel_id} style={{ background: '#E5E7EB', borderRadius: 6,
+                    padding: '3px 10px', fontSize: '0.8rem', fontWeight: 600 }}>{h.nom}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Motif de rejet existant */}
+          {detail.rejection_reason && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
+              padding: '10px 14px', fontSize: '0.85rem', color: '#991B1B' }}>
+              Motif de rejet : {detail.rejection_reason}
+            </div>
+          )}
+
+          {/* Zone de rejet inline */}
+          {rejectMode && (
+            <div>
+              <label className={styles.label} style={{ marginBottom: 4 }}>Motif du rejet *</label>
+              <textarea
+                className={styles.textarea}
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="Expliquer le motif au contributeur…"
+                rows={3}
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+
+        <div className={styles.modalFooter} style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={styles.btnDanger} style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+              onClick={handleDelete} disabled={acting}>
+              Supprimer
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={styles.btnSecondary} onClick={rejectMode ? () => setRejectMode(false) : onClose}
+              disabled={acting}>
+              {rejectMode ? 'Annuler' : 'Fermer'}
+            </button>
+            {canValidate && !rejectMode && (
+              <button className={styles.btnSecondary} style={{ color: '#991B1B', borderColor: '#FECACA' }}
+                onClick={() => { setRejectMode(true); setReason(''); }} disabled={acting}>
+                Rejeter
+              </button>
+            )}
+            {rejectMode && (
+              <button className={styles.btnDanger}
+                onClick={handleReject} disabled={acting || !reason.trim()}>
+                {acting ? '…' : 'Confirmer le rejet'}
+              </button>
+            )}
+            {canValidate && !rejectMode && (
+              <button className={styles.btnPrimary}
+                onClick={handlePublish} disabled={acting}>
+                {acting ? '…' : 'Publier'}
+              </button>
+            )}
+            {detail.status === 'rejected' && !rejectMode && (
+              <button className={styles.btnPrimary}
+                onClick={handlePublish} disabled={acting}>
+                {acting ? '…' : 'Re-publier'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, span, link }) {
+  if (!value && value !== 0) return null;
+  return (
+    <div style={span ? { gridColumn: '1 / -1' } : {}}>
+      <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>{label}</div>
+      {link
+        ? <a href={value} target="_blank" rel="noreferrer"
+            style={{ fontSize: '0.88rem', color: '#C2782A', textDecoration: 'underline', wordBreak: 'break-all' }}>
+            {value}
+          </a>
+        : <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{value}</div>
+      }
+    </div>
+  );
+}
+
 export default function PlacesManager() {
   const [places,   setPlaces]   = useState([]);
   const [total,    setTotal]    = useState(0);
@@ -24,6 +194,7 @@ export default function PlacesManager() {
   const [loading,  setLoading]  = useState(true);
   const [toast,    setToast]    = useState('');
   const [confirm,  setConfirm]  = useState(null); // { id, mode:'reject'|'delete', name }
+  const [detail,   setDetail]   = useState(null); // null | {loading:true} | item
 
   const load = useCallback(async (p = 1) => {
     setLoading(true);
@@ -43,7 +214,45 @@ export default function PlacesManager() {
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
   const totalPages = Math.ceil(total / PER_PAGE);
 
+  const openDetail = async (id) => {
+    setDetail({ loading: true });
+    try {
+      const { data } = await api.get(`/super/places/${id}`);
+      setDetail(data);
+    } catch {
+      setDetail(null);
+    }
+  };
+
   const publish = async (id) => {
+    try {
+      await api.post(`/super/places/${id}/publish`, {});
+      showToast('Lieu publié');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  const rejectPlace = async (id, reason) => {
+    try {
+      await api.post(`/super/places/${id}/reject`, { reason });
+      showToast('Lieu rejeté');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  const deletePlace = async (id) => {
+    try {
+      await api.delete(`/super/places/${id}`);
+      showToast('Lieu supprimé');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  // Actions rapides depuis la liste (maintenues pour cohérence)
+  const publishQuick = async (id) => {
     try {
       await api.post(`/super/places/${id}/publish`, {});
       showToast('Lieu publié'); load(page);
@@ -125,10 +334,12 @@ export default function PlacesManager() {
                   <td><span className={styles.badge} style={{ background: st.bg, color: st.color }}>{st.label}</span></td>
                   <td>
                     <div className={styles.tdActions}>
+                      <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                        onClick={() => openDetail(p.id)}>Voir</button>
                       {(p.status === 'pending' || p.status === 'pre_approved') && (
                         <>
                           <button className={styles.btnPrimary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                            onClick={() => publish(p.id)}>Publier</button>
+                            onClick={() => publishQuick(p.id)}>Publier</button>
                           <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             onClick={() => setConfirm({ id: p.id, mode: 'reject', name: p.name || p.slug })}>
                             Rejeter
@@ -137,7 +348,7 @@ export default function PlacesManager() {
                       )}
                       {p.status === 'rejected' && (
                         <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                          onClick={() => publish(p.id)}>Re-publier</button>
+                          onClick={() => publishQuick(p.id)}>Re-publier</button>
                       )}
                       <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                         onClick={() => setConfirm({ id: p.id, mode: 'delete', name: p.name || p.slug })}>
@@ -153,6 +364,22 @@ export default function PlacesManager() {
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPage={p => load(p)} />
+
+      {/* Modal détail */}
+      {detail && !detail.loading && (
+        <DetailModal
+          detail={detail}
+          onClose={() => setDetail(null)}
+          onPublish={publish}
+          onReject={rejectPlace}
+          onDelete={deletePlace}
+        />
+      )}
+      {detail?.loading && (
+        <div className={styles.modalOverlay}>
+          <div style={{ color: '#fff', fontSize: '1rem' }}>Chargement…</div>
+        </div>
+      )}
 
       <ConfirmModal
         open={confirm?.mode === 'reject'}

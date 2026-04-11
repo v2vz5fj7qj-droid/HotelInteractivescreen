@@ -13,6 +13,160 @@ const STATUS_STYLE = {
 const FILTERS = ['all', 'pending', 'published', 'rejected'];
 const PER_PAGE = 25;
 
+function DetailModal({ detail, onClose, onPublish, onReject, onDelete }) {
+  const [rejectMode, setRejectMode] = useState(false);
+  const [reason,     setReason]     = useState('');
+  const [acting,     setActing]     = useState(false);
+
+  if (!detail) return null;
+
+  const st = STATUS_STYLE[detail.status] || STATUS_STYLE.pending;
+  const canValidate = detail.status === 'pending';
+
+  const handlePublish = async () => {
+    setActing(true);
+    await onPublish(detail.id);
+    setActing(false);
+  };
+
+  const handleReject = async () => {
+    if (!reason.trim()) return;
+    setActing(true);
+    await onReject(detail.id, reason.trim());
+    setActing(false);
+  };
+
+  const handleDelete = async () => {
+    setActing(true);
+    await onDelete(detail.id);
+    setActing(false);
+  };
+
+  const trans = detail.translations?.find(t => t.locale === 'fr') || {};
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modal} style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <span className={styles.modalTitle}>Détail — {trans.name || detail.name}</span>
+          <button className={styles.modalClose} onClick={onClose}>✕</button>
+        </div>
+        <div className={styles.modalBody} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Statut + contributeur */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: '#F9FAFB', borderRadius: 8, padding: '10px 14px' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>Soumis par</div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem' }}>{detail.created_by_email || '—'}</div>
+              {detail.created_at && (
+                <div style={{ fontSize: '0.78rem', color: '#9CA3AF', marginTop: 2 }}>
+                  {new Date(detail.created_at).toLocaleString('fr-FR')}
+                </div>
+              )}
+            </div>
+            <span className={styles.badge} style={{ background: st.bg, color: st.color }}>{st.label}</span>
+          </div>
+
+          {/* Nom + Description */}
+          {(trans.name || detail.name) && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>Nom / Raison sociale</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem' }}>{trans.name || detail.name}</div>
+            </div>
+          )}
+          {(trans.description || detail.description) && (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>Description</div>
+              <div style={{ fontSize: '0.88rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                {trans.description || detail.description}
+              </div>
+            </div>
+          )}
+
+          {/* Champs de contact */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <Field label="Catégorie" value={detail.category} />
+            <Field label="Téléphone" value={detail.phone} />
+            <Field label="WhatsApp" value={detail.whatsapp} />
+            <Field label="Site web" value={detail.website} link />
+          </div>
+
+          {/* Motif de rejet existant */}
+          {detail.rejection_reason && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8,
+              padding: '10px 14px', fontSize: '0.85rem', color: '#991B1B' }}>
+              Motif de rejet : {detail.rejection_reason}
+            </div>
+          )}
+
+          {/* Zone de rejet inline */}
+          {rejectMode && (
+            <div>
+              <label className={styles.label} style={{ marginBottom: 4 }}>Motif du rejet *</label>
+              <textarea
+                className={styles.textarea}
+                value={reason}
+                onChange={e => setReason(e.target.value)}
+                placeholder="Expliquer le motif au contributeur…"
+                rows={3}
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
+
+        <div className={styles.modalFooter} style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={styles.btnDanger} style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+              onClick={handleDelete} disabled={acting}>
+              Supprimer
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className={styles.btnSecondary}
+              onClick={rejectMode ? () => setRejectMode(false) : onClose} disabled={acting}>
+              {rejectMode ? 'Annuler' : 'Fermer'}
+            </button>
+            {canValidate && !rejectMode && (
+              <button className={styles.btnSecondary} style={{ color: '#991B1B', borderColor: '#FECACA' }}
+                onClick={() => { setRejectMode(true); setReason(''); }} disabled={acting}>
+                Rejeter
+              </button>
+            )}
+            {rejectMode && (
+              <button className={styles.btnDanger}
+                onClick={handleReject} disabled={acting || !reason.trim()}>
+                {acting ? '…' : 'Confirmer le rejet'}
+              </button>
+            )}
+            {canValidate && !rejectMode && (
+              <button className={styles.btnPrimary} onClick={handlePublish} disabled={acting}>
+                {acting ? '…' : 'Publier'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, link }) {
+  if (!value) return null;
+  return (
+    <div>
+      <div style={{ fontSize: '0.75rem', color: '#6B7280', marginBottom: 2 }}>{label}</div>
+      {link
+        ? <a href={value} target="_blank" rel="noreferrer"
+            style={{ fontSize: '0.88rem', color: '#C2782A', textDecoration: 'underline', wordBreak: 'break-all' }}>
+            {value}
+          </a>
+        : <div style={{ fontSize: '0.88rem', fontWeight: 500 }}>{value}</div>
+      }
+    </div>
+  );
+}
+
 export default function InfoManager() {
   const [items,   setItems]   = useState([]);
   const [total,   setTotal]   = useState(0);
@@ -22,6 +176,7 @@ export default function InfoManager() {
   const [loading, setLoading] = useState(true);
   const [toast,   setToast]   = useState('');
   const [confirm, setConfirm] = useState(null); // { id, mode, name }
+  const [detail,  setDetail]  = useState(null);
 
   const load = useCallback(async (p = 1) => {
     setLoading(true);
@@ -41,7 +196,45 @@ export default function InfoManager() {
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
   const totalPages = Math.ceil(total / PER_PAGE);
 
+  const openDetail = async (id) => {
+    setDetail({ loading: true });
+    try {
+      const { data } = await api.get(`/super/info/${id}`);
+      setDetail(data);
+    } catch {
+      setDetail(null);
+    }
+  };
+
   const publish = async (id) => {
+    try {
+      await api.post(`/super/info/${id}/publish`, {});
+      showToast('Info publiée');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  const rejectInfo = async (id, reason) => {
+    try {
+      await api.post(`/super/info/${id}/reject`, { reason });
+      showToast('Info rejetée');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  const deleteInfo = async (id) => {
+    try {
+      await api.delete(`/super/info/${id}`);
+      showToast('Info supprimée');
+      setDetail(null);
+      load(page);
+    } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  // Actions rapides depuis la liste
+  const publishQuick = async (id) => {
     try {
       await api.post(`/super/info/${id}/publish`, {});
       showToast('Info publiée'); load(page);
@@ -122,10 +315,12 @@ export default function InfoManager() {
                   <td><span className={styles.badge} style={{ background: st.bg, color: st.color }}>{st.label}</span></td>
                   <td>
                     <div className={styles.tdActions}>
+                      <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                        onClick={() => openDetail(it.id)}>Voir</button>
                       {it.status === 'pending' && (
                         <>
                           <button className={styles.btnPrimary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
-                            onClick={() => publish(it.id)}>Publier</button>
+                            onClick={() => publishQuick(it.id)}>Publier</button>
                           <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             onClick={() => setConfirm({ id: it.id, mode: 'reject', name: it.name })}>
                             Rejeter
@@ -146,6 +341,22 @@ export default function InfoManager() {
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPage={p => load(p)} />
+
+      {/* Modal détail */}
+      {detail && !detail.loading && (
+        <DetailModal
+          detail={detail}
+          onClose={() => setDetail(null)}
+          onPublish={publish}
+          onReject={rejectInfo}
+          onDelete={deleteInfo}
+        />
+      )}
+      {detail?.loading && (
+        <div className={styles.modalOverlay}>
+          <div style={{ color: '#fff', fontSize: '1rem' }}>Chargement…</div>
+        </div>
+      )}
 
       <ConfirmModal
         open={confirm?.mode === 'reject'}

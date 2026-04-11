@@ -178,4 +178,4 @@ async function startFlightScheduler() {
   }
 }
 
-module.exports = { getFlightConfig, refreshFlights, startFlightScheduler, stopFlightScheduler };
+module.exports = { getFlightConfig, refreshFlights, refreshFlightsForAirport: refreshFlights, startFlightScheduler, stopFlightScheduler };

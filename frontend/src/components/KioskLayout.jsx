@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation }     from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useLanguage }     from '../contexts/LanguageContext';
 import AttractScreen       from './AttractScreen/AttractScreen';
@@ -8,15 +8,16 @@ import FullscreenManager   from './FullscreenManager/FullscreenManager';
 import styles from './KioskLayout.module.css';
 
 export default function KioskLayout({ children }) {
-  const isOnline = useOnlineStatus();
-  const { t }    = useLanguage();
-  const location = useLocation();
+  const isOnline      = useOnlineStatus();
+  const { t }         = useLanguage();
+  const location      = useLocation();
+  const { hotelSlug } = useParams();
 
-  // Badge météo visible sur toutes les pages sauf accueil, météo, carte et admin
-  const showWeatherBadge = !location.pathname.startsWith('/admin')
-    && location.pathname !== '/'
-    && location.pathname !== '/weather'
-    && location.pathname !== '/map';
+  // Badge météo masqué sur l'accueil kiosque, la page météo et la carte
+  const showWeatherBadge = location.pathname !== `/${hotelSlug}`
+    && location.pathname !== `/${hotelSlug}/`
+    && location.pathname !== `/${hotelSlug}/weather`
+    && location.pathname !== `/${hotelSlug}/map`;
 
   return (
     <div className={styles.layout}>

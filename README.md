@@ -55,11 +55,12 @@ HotelInteractivescreen/
 ## Rôles et périmètres
 
 ### SUPER_ADMIN
-- Carte : CRUD complet, affectation lieux → hôtels, validation soumissions contributeurs
+- **Configuration hôtel** : page dédiée par hôtel (paramètres, branding, météo, aéroports) accessible depuis la liste des hôtels via le bouton "Configurer"
+- Carte : CRUD complet, affectation lieux → hôtels, **consultation détaillée des soumissions** avant validation (coordonnées GPS, lien OpenStreetMap, informations contributeur)
 - Météo : définir localités par hôtel (max 5), cache partagé inter-hôtels par localité
 - Vols : clé API FlightAPI.io, affectation aéroports par hôtel, planification par aéroport (intervalle ou heures fixes), désactivation planification (manuel uniquement), rafraîchissement forcé, suivi consommation tokens
-- Agenda : CRUD global + modifier/supprimer tout événement (y compris ceux des hôtels et contributeurs)
-- Infos utiles : validation soumissions contributeurs, CRUD complet
+- Agenda : CRUD global + modifier/supprimer tout événement (y compris ceux des hôtels et contributeurs), **consultation détaillée** avant validation ou rejet
+- Infos utiles : **consultation détaillée des soumissions** avant validation, CRUD complet
 - Services et bien-être : créer catégories globales "modèles" réutilisables par tous les hôtels
 - Users : gestion comptes, rôles, permissions modules des contributeurs
 
@@ -97,8 +98,10 @@ CONTRIBUTOR / HOTEL_STAFF
         ▼
   Notification dashboard → SUPER_ADMIN
         │
+        ├──► SUPER_ADMIN consulte le détail complet (modal Voir)
+        │         → champs, coordonnées GPS, lien carte, historique
         ├──► SUPER_ADMIN publie (status: published)
-        ├──► SUPER_ADMIN rejette (status: rejected + motif)
+        ├──► SUPER_ADMIN rejette avec motif (status: rejected + motif notifié à l'auteur)
         └──► SUPER_ADMIN peut court-circuiter la pré-validation
         │
         ▼
@@ -153,10 +156,11 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Page | Fonctionnalité |
 |---|---|
 | Tableau de bord | Vue globale, notifications de workflow (soumissions en attente) |
-| Hôtels | CRUD hôtels, affectation lieux/aéroports/localités météo |
-| Carte & POI | CRUD lieux, validation soumissions contributeurs, affectation → hôtels |
-| Agenda | CRUD événements globaux, validation soumissions, modification/suppression tous événements |
-| Infos utiles | CRUD, validation soumissions contributeurs |
+| Hôtels | CRUD hôtels (nom, slug, statut) + bouton **Configurer** par hôtel |
+| Configuration hôtel | Page dédiée par hôtel — 3 onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Météo** (localités, défaut, refresh), **Aéroports** (affectation/retrait) |
+| Carte & POI | CRUD lieux, **modal détail** (coordonnées, carte OSM, contributeur, historique rejet) avant validation/rejet, affectation → hôtels |
+| Agenda | CRUD événements globaux, **modal détail** (titre, description, dates, lieu, contributeur) avant validation/rejet/archivage |
+| Infos utiles | CRUD, **modal détail** (contacts, description, contributeur) avant validation/rejet |
 | Services (catégories globales) | Catégories modèles réutilisables par les hôtels |
 | Météo | Localités par hôtel (max 5), cache partagé par localité |
 | Vols | Clé API, aéroports par hôtel, planification par aéroport, suivi tokens |
@@ -370,20 +374,25 @@ git push origin feat/multi-hotel
 
 ### Version 2 — Multi-hôtels (`feat/multi-hotel`)
 
-| Module                            | Statut         |
-|-----------------------------------|----------------|
-| Migration DB multi-hôtels         | 🔄 En cours    |
-| Rôles et authentification JWT     | ⏳ À faire     |
-| Super-admin backoffice            | ⏳ À faire     |
-| Hotel-admin backoffice            | ⏳ À faire     |
-| Contributor backoffice            | ⏳ À faire     |
-| Workflow validation               | ⏳ À faire     |
-| Cache partagé vols (par aéroport) | ⏳ À faire     |
-| Cache partagé météo (par localité)| ⏳ À faire     |
-| Planification vols par aéroport   | ⏳ À faire     |
-| Suivi tokens FlightAPI            | ⏳ À faire     |
-| Services et bien-être (multi)     | ⏳ À faire     |
-| Bon à savoir (par hôtel)          | ⏳ À faire     |
-| Audit trail                       | ⏳ À faire     |
-| Notifications dashboard workflow  | ⏳ À faire     |
-| Archivage automatique agenda      | ⏳ À faire     |
+| Module                                          | Statut      |
+|-------------------------------------------------|-------------|
+| Migration DB multi-hôtels                       | ✅ Complet  |
+| Rôles et authentification JWT                   | ✅ Complet  |
+| Super-admin backoffice                          | ✅ Complet  |
+| Hotel-admin backoffice                          | ✅ Complet  |
+| Contributor backoffice                          | ✅ Complet  |
+| Workflow validation (pending → published/rejet) | ✅ Complet  |
+| Modal détail soumissions (Lieux/Événements/Infos) | ✅ Complet |
+| Rejet avec motif inline (sans fermer la modal)  | ✅ Complet  |
+| Page configuration hôtel (Paramètres)           | ✅ Complet  |
+| Configuration météo par hôtel (onglet dédié)    | ✅ Complet  |
+| Configuration aéroports par hôtel (onglet dédié)| ✅ Complet  |
+| Cache partagé vols (par aéroport)               | ✅ Complet  |
+| Cache partagé météo (par localité)              | ✅ Complet  |
+| Planification vols par aéroport                 | ✅ Complet  |
+| Suivi tokens FlightAPI                          | ✅ Complet  |
+| Services et bien-être (multi)                   | ✅ Complet  |
+| Bon à savoir (par hôtel)                        | ✅ Complet  |
+| Audit trail                                     | ✅ Complet  |
+| Notifications dashboard workflow                | ✅ Complet  |
+| Archivage automatique agenda                    | ✅ Complet  |

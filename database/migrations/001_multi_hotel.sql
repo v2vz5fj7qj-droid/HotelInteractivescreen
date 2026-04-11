@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 -- Super-admin par défaut (mot de passe à changer en prod)
 -- hash bcrypt de "admin1234" — à remplacer via le backoffice
 INSERT IGNORE INTO admin_users (id, hotel_id, email, password_hash, role) VALUES
-(1, NULL, 'admin@connectbe.com', '$2b$10$placeholder_hash_to_replace', 'super_admin');
+(1, NULL, 'admin@iconnectbe.com', '$2b$10$placeholder_hash_to_replace', 'super_admin');
 
 -- ════════════════════════════════════════════════════════════════
 --  ÉTAPE 3 — PARAMÈTRES HÔTEL (remplace theme_config globale)

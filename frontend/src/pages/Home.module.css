@@ -1,27 +1,25 @@
-/* ── Page d'accueil projet ConnectBé ─────────────────────────── */
+/* ── Page d'accueil ConnectBé — no-scroll layout ──────────────── */
 
 .page {
-  min-height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: #1A1208;
   color: #F5E6C8;
   font-family: 'Poppins', sans-serif;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
 }
 
-/* ── Navbar ────────────────────────────────────────────────── */
+/* ── Navbar ─────────────────────────────────────────────────── */
 .nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 clamp(24px, 5vw, 80px);
-  height: 68px;
-  background: rgba(26, 18, 8, 0.92);
+  padding: 0 clamp(20px, 4vw, 60px);
+  height: clamp(48px, 5.5vh, 64px);
+  background: rgba(26, 18, 8, 0.95);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(194, 120, 42, 0.2);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  flex-shrink: 0;
 }
 
 .navBrand {
@@ -29,64 +27,51 @@
   align-items: center;
   gap: 10px;
   font-family: 'Playfair Display', serif;
-  font-size: 1.35rem;
+  font-size: clamp(1rem, 2vw, 1.35rem);
   font-weight: 700;
   color: #D4A843;
   text-decoration: none;
 }
 
 .navBrand img {
-  height: 36px;
+  height: clamp(24px, 3.5vh, 36px);
   object-fit: contain;
 }
 
-.navAdmin {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: rgba(194, 120, 42, 0.15);
-  border: 1px solid rgba(194, 120, 42, 0.4);
-  border-radius: 8px;
-  color: #D4A843;
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s;
+/* ── Contenu principal — 2 colonnes ────────────────────────── */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.navAdmin:hover {
-  background: rgba(194, 120, 42, 0.3);
-}
-
-/* ── Hero ───────────────────────────────────────────────────── */
+/* ── Colonne gauche — Hero ──────────────────────────────────── */
 .hero {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: clamp(60px, 10vh, 120px) clamp(24px, 5vw, 80px);
-  background: radial-gradient(ellipse at 50% 0%, rgba(194,120,42,0.18) 0%, transparent 70%);
+  padding: clamp(24px, 4vh, 56px) clamp(24px, 4vw, 60px);
+  background: radial-gradient(ellipse at 30% 50%, rgba(194,120,42,0.14) 0%, transparent 70%);
+  border-right: 1px solid rgba(194, 120, 42, 0.15);
 }
 
 .heroEyebrow {
-  font-size: 0.78rem;
+  font-size: clamp(0.65rem, 1vh, 0.78rem);
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #C2782A;
-  margin-bottom: 16px;
+  margin-bottom: clamp(10px, 1.5vh, 20px);
 }
 
 .heroTitle {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-size: clamp(1.6rem, 3.5vw, 3rem);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.18;
   color: #F5E6C8;
-  margin: 0 0 20px;
-  max-width: 750px;
+  margin: 0 0 clamp(12px, 2vh, 24px);
 }
 
 .heroTitle span {
@@ -94,30 +79,24 @@
 }
 
 .heroSub {
-  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  font-size: clamp(0.82rem, 1.3vw, 1rem);
   color: #A08060;
-  max-width: 520px;
-  line-height: 1.7;
-  margin: 0 0 36px;
-}
-
-.heroActions {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  justify-content: center;
+  line-height: 1.65;
+  margin: 0 0 clamp(20px, 3vh, 36px);
 }
 
 .btnPrimary {
-  padding: 13px 28px;
+  display: inline-flex;
+  align-self: flex-start;
+  padding: clamp(10px, 1.5vh, 14px) clamp(20px, 2.5vw, 32px);
   background: linear-gradient(135deg, #C2782A, #D4A843);
   border-radius: 10px;
   color: #1A1208;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.2vw, 0.95rem);
   text-decoration: none;
-  transition: transform 0.15s, box-shadow 0.15s;
   box-shadow: 0 4px 16px rgba(194,120,42,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .btnPrimary:hover {
@@ -125,219 +104,314 @@
   box-shadow: 0 6px 22px rgba(194,120,42,0.5);
 }
 
-.btnSecondary {
-  padding: 13px 28px;
-  background: transparent;
-  border: 1px solid rgba(194,120,42,0.4);
-  border-radius: 10px;
-  color: #D4A843;
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition: background 0.2s;
+/* ── Colonne droite — Aside ─────────────────────────────────── */
+.aside {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.btnSecondary:hover {
-  background: rgba(194,120,42,0.1);
+.asideBlock {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(14px, 2.2vh, 32px) clamp(20px, 3vw, 52px);
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* ── Features ───────────────────────────────────────────────── */
-.section {
-  padding: clamp(48px, 7vh, 80px) clamp(24px, 5vw, 80px);
+/* Fonctionnalités — prend 60 % de la hauteur */
+.asideBlock:first-child {
+  flex: 3;
 }
 
-.sectionTitle {
-  text-align: center;
-  font-size: 0.75rem;
+/* Bornes actives — prend 40 % de la hauteur */
+.asideBlock:last-child {
+  flex: 2;
+  background: rgba(44, 30, 10, 0.35);
+}
+
+.blockLabel {
+  font-size: clamp(0.65rem, 1vh, 0.75rem);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #C2782A;
-  margin-bottom: 14px;
+  margin-bottom: clamp(10px, 1.5vh, 20px);
+  flex-shrink: 0;
 }
 
-.sectionHeading {
-  text-align: center;
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
-  font-weight: 700;
-  color: #F5E6C8;
-  margin: 0 0 48px;
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(194,120,42,0.25), transparent);
+  flex-shrink: 0;
 }
 
+/* ── Features — grille 3×2 avec cartes interactives ────────── */
 .featuresGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  max-width: 900px;
-  margin: 0 auto;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(8px, 1.2vh, 16px);
+  flex: 1;
+  align-content: stretch;
 }
 
 .featureCard {
-  background: rgba(44, 30, 10, 0.6);
-  border: 1px solid rgba(194,120,42,0.18);
+  background: rgba(44, 30, 10, 0.7);
+  border: 1px solid rgba(194, 120, 42, 0.18);
   border-radius: 14px;
-  padding: 28px 24px;
+  padding: clamp(12px, 1.8vh, 22px) clamp(10px, 1.2vw, 18px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1vh, 10px);
+  text-align: center;
+  cursor: default;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  /* Animation principale */
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+/* Halo de lumière au survol */
+.featureCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 20%, rgba(212, 168, 67, 0.14) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.featureCard:hover {
+  transform: translateY(-6px) scale(1.04);
+  border-color: rgba(194, 120, 42, 0.55);
+  box-shadow:
+    0 12px 32px rgba(194, 120, 42, 0.22),
+    0 0 0 1px rgba(194, 120, 42, 0.12);
+  background: rgba(58, 38, 10, 0.95);
+}
+
+.featureCard:hover::after {
+  opacity: 1;
+}
+
+/* Effet "press" au clic */
+.featureCard:active {
+  transform: translateY(-1px) scale(0.97);
+  box-shadow: 0 4px 12px rgba(194, 120, 42, 0.14);
+  transition-duration: 0.1s;
 }
 
 .featureIcon {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 2.4vh, 2.2rem);
   line-height: 1;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: block;
+}
+
+.featureCard:hover .featureIcon {
+  transform: scale(1.3) rotate(8deg);
+}
+
+.featureText {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.4vh, 4px);
+  align-items: center;
 }
 
 .featureTitle {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: clamp(0.7rem, 1.08vh, 0.86rem);
   color: #D4A843;
+  line-height: 1.2;
+  transition: color 0.2s;
+}
+
+.featureCard:hover .featureTitle {
+  color: #F0C060;
 }
 
 .featureDesc {
-  font-size: 0.88rem;
-  color: #A08060;
-  line-height: 1.6;
+  font-size: clamp(0.62rem, 0.9vh, 0.74rem);
+  color: #7A6040;
+  line-height: 1.35;
+  transition: color 0.22s ease;
 }
 
-/* ── Hôtels ─────────────────────────────────────────────────── */
-.hotelsSectionBg {
+.featureCard:hover .featureDesc {
+  color: #A08060;
+}
+
+/* Carte teaser "Et bien d'autres…" */
+.featureCard:last-child {
+  border-style: dashed;
+  border-color: rgba(194, 120, 42, 0.25);
   background: rgba(44, 30, 10, 0.35);
 }
 
-.hotelsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  max-width: 900px;
-  margin: 0 auto;
+.featureCard:last-child .featureTitle {
+  color: #A08060;
 }
 
-.hotelCard {
-  background: #2C1E0A;
-  border: 1px solid rgba(194,120,42,0.2);
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.15s, border-color 0.15s;
+.featureCard:last-child:hover {
+  border-color: rgba(194, 120, 42, 0.45);
+  border-style: dashed;
 }
 
-.hotelCard:hover {
-  transform: translateY(-3px);
-  border-color: rgba(194,120,42,0.5);
-}
-
-.hotelCardHeader {
-  height: 80px;
-  background: linear-gradient(135deg, rgba(194,120,42,0.2), rgba(212,168,67,0.1));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.hotelCardLogo {
-  height: 48px;
-  object-fit: contain;
-  opacity: 0.9;
-}
-
-.hotelCardLogoPlaceholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(194,120,42,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-}
-
-.hotelCardBody {
-  padding: 18px 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.hotelCardName {
-  font-weight: 700;
-  font-size: 0.98rem;
-  color: #F5E6C8;
-}
-
-.hotelCardAddr {
-  font-size: 0.8rem;
-  color: #7A6040;
-  flex: 1;
-}
-
-.hotelCardLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 12px;
-  padding: 8px 14px;
-  background: rgba(194,120,42,0.15);
-  border: 1px solid rgba(194,120,42,0.35);
-  border-radius: 8px;
+.featureCard:last-child:hover .featureTitle {
   color: #D4A843;
-  font-size: 0.83rem;
-  font-weight: 600;
+}
+
+/* ── Hotels — chips compacts ────────────────────────────────── */
+.hotelsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vh, 10px);
+  flex: 1;
+  overflow: hidden;
+}
+
+.hotelChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(8px, 1.2vh, 12px) clamp(10px, 1.5vw, 16px);
+  background: rgba(44, 30, 10, 0.8);
+  border: 1px solid rgba(194, 120, 42, 0.2);
+  border-radius: 10px;
   text-decoration: none;
-  transition: background 0.2s;
-  align-self: flex-start;
+  transition: border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
 }
 
-.hotelCardLink:hover {
-  background: rgba(194,120,42,0.3);
+.hotelChip:hover {
+  border-color: rgba(194, 120, 42, 0.5);
+  background: rgba(44, 30, 10, 1);
 }
 
-/* ── Erreur / chargement hôtels ─────────────────────────────── */
+.hotelChipLogo {
+  height: clamp(22px, 3vh, 32px);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.hotelChipEmoji {
+  font-size: clamp(1rem, 1.6vh, 1.3rem);
+  flex-shrink: 0;
+}
+
+.hotelChipName {
+  flex: 1;
+  font-size: clamp(0.78rem, 1.15vh, 0.92rem);
+  font-weight: 600;
+  color: #F5E6C8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hotelChipArrow {
+  color: #D4A843;
+  font-size: clamp(0.85rem, 1.2vh, 1rem);
+  flex-shrink: 0;
+}
+
+/* ── Chargement / vide ──────────────────────────────────────── */
 .hotelsLoading, .hotelsEmpty {
-  text-align: center;
+  font-size: 0.88rem;
   color: #7A6040;
-  padding: 32px 0;
-  font-size: 0.95rem;
 }
 
 /* ── Footer ─────────────────────────────────────────────────── */
 .footer {
-  margin-top: auto;
-  padding: 24px clamp(24px, 5vw, 80px);
-  border-top: 1px solid rgba(194,120,42,0.15);
+  height: clamp(36px, 4.5vh, 52px);
+  padding: 0 clamp(20px, 4vw, 60px);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.footerCopy {
-  font-size: 0.82rem;
+  border-top: 1px solid rgba(194, 120, 42, 0.15);
+  font-size: clamp(0.7rem, 1vh, 0.82rem);
   color: #5A4020;
+  flex-shrink: 0;
 }
 
-.footerAdminLink {
-  font-size: 0.82rem;
-  color: #7A6040;
-  text-decoration: none;
-}
+/* ── Mobile — colonne unique compressée (≤ 768px) ───────────── */
+@media (max-width: 768px) {
+  .page {
+    height: 100dvh;
+    overflow: hidden;
+  }
 
-.footerAdminLink:hover {
-  color: #D4A843;
-}
+  .content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
 
-/* ── Divider ────────────────────────────────────────────────── */
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(194,120,42,0.25), transparent);
-  margin: 0 clamp(24px, 5vw, 80px);
-}
+  .hero {
+    border-right: none;
+    border-bottom: 1px solid rgba(194, 120, 42, 0.15);
+    padding: clamp(14px, 2.5vh, 28px) 16px;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
-@media (max-width: 600px) {
-  .heroActions { flex-direction: column; align-items: center; }
-  .footer { flex-direction: column; text-align: center; }
+  .heroTitle {
+    font-size: clamp(1.25rem, 4.5vw, 1.8rem);
+  }
+
+  .heroSub {
+    margin-bottom: clamp(12px, 2vh, 20px);
+  }
+
+  .aside {
+    overflow: hidden;
+  }
+
+  .asideBlock {
+    padding: clamp(10px, 1.8vh, 20px) 16px;
+  }
+
+  .featuresGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .featureCard {
+    padding: 10px 6px;
+    gap: 5px;
+    border-radius: 10px;
+  }
+
+  .featureIcon {
+    font-size: 1.2rem;
+  }
+
+  .featureTitle {
+    font-size: 0.66rem;
+  }
+
+  .featureDesc {
+    font-size: 0.6rem;
+  }
+
+  .hotelsGrid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hotelChip {
+    flex: 1 1 auto;
+    min-width: 140px;
+  }
 }

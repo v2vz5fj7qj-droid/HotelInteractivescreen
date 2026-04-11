@@ -3,14 +3,16 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { token, role, hotel_id, email }
+  const [user,      setUser]      = useState(null); // { token, role, hotel_id, email }
+  const [hydrated,  setHydrated]  = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('admin_token');
-    const role  = sessionStorage.getItem('admin_role');
+    const token    = sessionStorage.getItem('admin_token');
+    const role     = sessionStorage.getItem('admin_role');
     const hotel_id = sessionStorage.getItem('admin_hotel_id');
-    const email = sessionStorage.getItem('admin_email');
+    const email    = sessionStorage.getItem('admin_email');
     if (token) setUser({ token, role, hotel_id: hotel_id ? Number(hotel_id) : null, email });
+    setHydrated(true);
   }, []);
 
   const login = (data) => {
@@ -32,7 +34,7 @@ export function AuthProvider({ children }) {
   const isContributor  = () => user?.role === 'contributor';
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isSuperAdmin, isHotelAdmin, isHotelStaff, isContributor }}>
+    <AuthContext.Provider value={{ user, hydrated, login, logout, isSuperAdmin, isHotelAdmin, isHotelStaff, isContributor }}>
       {children}
     </AuthContext.Provider>
   );

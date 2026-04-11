@@ -1,16 +1,18 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './BackButton.module.css';
 
-export default function BackButton({ to = '/', label }) {
-  const navigate  = useNavigate();
-  const { t }     = useLanguage();
+export default function BackButton({ to, label }) {
+  const navigate        = useNavigate();
+  const { t }           = useLanguage();
+  const { hotelSlug }   = useParams();
+  const destination     = to ?? `/${hotelSlug}`;
 
   return (
     <button
       className={styles.btn}
-      onClick={() => navigate(to, { state: { direction: 'back' } })}
+      onClick={() => navigate(destination, { state: { direction: 'back' } })}
       aria-label={label || t('common.back')}
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">

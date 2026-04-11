@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../useAdminApi';
 import ConfirmModal from '../../components/ConfirmModal';
 import Pagination from '../../components/Pagination';
@@ -8,6 +9,7 @@ const EMPTY = { nom: '', slug: '' };
 const PER_PAGE = 25;
 
 export default function HotelsManager() {
+  const navigate = useNavigate();
   const [hotels,   setHotels]   = useState([]);
   const [total,    setTotal]    = useState(0);
   const [page,     setPage]     = useState(1);
@@ -123,6 +125,14 @@ export default function HotelsManager() {
                 </span></td>
                 <td>
                   <div className={styles.tdActions}>
+                    <button className={styles.btnPrimary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
+                      onClick={() => navigate(`/admin/super/hotels/${h.id}/config`)}>
+                      Configurer
+                    </button>
+                    <a href={`/${h.slug}`} target="_blank" rel="noreferrer"
+                      className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem', textDecoration: 'none' }}>
+                      Aperçu
+                    </a>
                     <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}
                       onClick={() => openEdit(h)}>Modifier</button>
                     <button className={styles.btnSecondary} style={{ padding: '5px 12px', fontSize: '0.78rem' }}

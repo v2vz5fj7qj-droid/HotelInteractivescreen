@@ -17,6 +17,7 @@ import ServiceCategoriesManager from './pages/super/ServiceCategoriesManager';
 import WeatherManager          from './pages/super/WeatherManager';
 import TokensManager           from './pages/super/TokensManager';
 import AuditLog               from './pages/super/AuditLog';
+import HotelConfig            from './pages/super/HotelConfig';
 
 // Pages hotel-admin
 import HotelDashboard       from './pages/hotel/Dashboard';
@@ -35,14 +36,16 @@ import MyInfo           from './pages/contributor/MyInfo';
 // ── Guards ──────────────────────────────────────────────────────
 
 function RequireAuth({ children }) {
-  const { user }   = useAuth();
-  const location   = useLocation();
+  const { user, hydrated } = useAuth();
+  const location           = useLocation();
+  if (!hydrated) return null;
   if (!user) return <Navigate to="/admin/login" state={{ from: location }} replace />;
   return children;
 }
 
 function RequireRole({ roles, children }) {
-  const { user } = useAuth();
+  const { user, hydrated } = useAuth();
+  if (!hydrated) return null;
   if (!user || !roles.includes(user.role)) return <Navigate to="/admin/login" replace />;
   return children;
 }
@@ -50,7 +53,8 @@ function RequireRole({ roles, children }) {
 // ── Root redirect selon le rôle ─────────────────────────────────
 
 function AdminRoot() {
-  const { user } = useAuth();
+  const { user, hydrated } = useAuth();
+  if (!hydrated) return null;
   if (!user) return <Navigate to="/admin/login" replace />;
   if (user.role === 'super_admin')  return <Navigate to="/admin/super"       replace />;
   if (user.role === 'hotel_admin' ||
@@ -80,7 +84,8 @@ export default function AdminApp() {
           }
         >
           <Route index                  element={<SuperDashboard />} />
-          <Route path="hotels"          element={<HotelsManager />} />
+          <Route path="hotels"              element={<HotelsManager />} />
+          <Route path="hotels/:id/config" element={<HotelConfig />} />
           <Route path="users"           element={<UsersManager />} />
           <Route path="airports"        element={<AirportsManager />} />
           <Route path="places"          element={<SuperPlacesManager />} />

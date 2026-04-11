@@ -81,23 +81,46 @@ npm run dev    # Borne sur http://localhost:5173
 
 ## Backoffice admin
 
-| URL                         | Login   | Mot de passe    |
-|-----------------------------|---------|-----------------|
-| http://localhost:5173/admin | `admin` | `connectbe2026` |
+La plateforme dispose de **3 niveaux d'accès** distincts :
 
-Fonctionnalités disponibles dans le backoffice :
+| Rôle | URL d'accès | Login par défaut | Mot de passe |
+|----|---|---|---|
+| Super-admin | http://localhost:5173/admin | `admin@connectbe.com` | `connectbe2026` |
+| Hotel-admin | http://localhost:5173/admin | selon création | selon création |
+| Contributeur | http://localhost:5173/admin | selon création | selon création |
 
-- **Tableau de bord** — statistiques d'utilisation (7 jours), compteurs de contenu
-- **Bien-être** — CRUD des services spa/massage/piscine (FR + EN, images, horaires, tarifs)
-- **Agenda** — CRUD des événements (catégories, dates, lieu, mise en avant)
-- **Bon à savoir** — Notifications affichées en rotation sur la borne (FR + EN)
-- **Carte & POI** — Points d'intérêt sur la carte Leaflet (restaurants, pharmacies, taxis…)
-- **Infos utiles** — Contacts de taxi, médecins, urgences, ambassades (FR + EN)
-- **Localités météo** — Villes affichées dans la section météo + rafraîchissement manuel
-- **Vols** — Aéroport IATA, intervalle de rafraîchissement, scheduler automatique, compteur de crédits FlightAPI
-- **Thème** — Couleurs, logo, nom de l'hôtel, mot de passe plein écran (sans redéploiement)
+### Super-admin — fonctionnalités
 
-> Les identifiants sont modifiables dans `backend/.env` via `ADMIN_USERNAME` et `ADMIN_PASSWORD` (valeurs par défaut : `admin` / `connectbe2026`).
+- **Tableau de bord** — vue globale, notifications de workflow (soumissions en attente)
+- **Hôtels** — CRUD des hôtels, bouton **Configurer** par hôtel
+  - Onglet **Paramètres** : logo, image de fond, couleurs, messages d'accueil FR/EN, contacts, WiFi, check-in/check-out
+  - Onglet **Météo** : affectation des localités météo (max 5), localité par défaut, refresh manuel
+  - Onglet **Aéroports** : affectation/retrait des aéroports du système à l'hôtel
+- **Carte & Lieux** — validation des soumissions avec **vue détaillée** (coords GPS + lien OpenStreetMap) avant publication ou rejet motivé
+- **Agenda** — validation des soumissions avec **vue détaillée** (titre, description, dates, lieu, contributeur) avant publication ou rejet motivé
+- **Infos utiles** — validation des soumissions avec **vue détaillée** (contacts, description) avant publication ou rejet motivé
+- **Météo** — gestion centralisée des localités météo disponibles
+- **Aéroports** — CRUD aéroports, planification (intervalle ou heures fixes), refresh forcé
+- **Utilisateurs** — création/gestion des comptes (tous rôles), permissions contributeurs
+- **Tokens FlightAPI** — suivi de consommation de crédits
+- **Audit log** — historique de toutes les actions
+
+### Hotel-admin — fonctionnalités
+
+- **Paramètres hôtel** — logo, fond, thème couleurs, contacts, WiFi, horaires
+- **Services et bien-être** — CRUD services avec catégories
+- **Agenda** — CRUD événements propres à l'hôtel
+- **Bon à savoir** — notifications rotatives affichées sur la borne
+- **Dashboard** — soumissions en attente de pré-validation
+
+### Contributeur — fonctionnalités
+
+- **Mes lieux** — soumettre/corriger des points d'intérêt (si permission accordée)
+- **Mes événements** — soumettre/corriger des événements (si permission accordée)
+- **Mes infos utiles** — soumettre/corriger des contacts utiles (si permission accordée)
+- Suivi du statut de chaque soumission (en attente / pré-approuvé / publié / rejeté + motif)
+
+> Les comptes sont créés et gérés par le super-admin depuis la page **Utilisateurs**.
 
 > **Important :** Après avoir saisi des données via le backoffice, ne jamais relancer avec `docker compose down -v` — le flag `-v` supprime les volumes et efface la base de données. Utiliser simplement `docker compose down` puis `docker compose up -d`.
 

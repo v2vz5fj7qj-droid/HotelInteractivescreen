@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation }  from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useLanguage }  from '../../contexts/LanguageContext';
 import { useTheme }     from '../../contexts/ThemeContext';
 import styles           from './AttractScreen.module.css';
@@ -13,7 +13,9 @@ export default function AttractScreen() {
   const { t, locale }           = useLanguage();
   const { config }              = useTheme();
   const location                = useLocation();
-  const isHome                  = location.pathname === '/';
+  const { hotelSlug }           = useParams();
+  // L'écran d'attraction s'affiche uniquement sur l'accueil du kiosque (/:slug)
+  const isHome = location.pathname === `/${hotelSlug}` || location.pathname === `/${hotelSlug}/`;
 
   useEffect(() => {
     // Réinitialise et relance le timer

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate }   from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage }   from '../../contexts/LanguageContext';
 import { useTheme }      from '../../contexts/ThemeContext';
 import { trackEvent }    from '../../services/analytics';
@@ -13,21 +13,21 @@ import {
 } from 'lucide-react';
 import styles from './RadialMenu.module.css';
 
-/* ─── Configuration des sections ──────────────────────── */
+/* ─── Configuration des sections (section = nom sans slash) ── */
 const NAV_ITEMS = [
-  { id: 'mobile',   Icon: Smartphone,    route: '/mobile',   labelKey: 'menu.mobile'   },
-  { id: 'flights',  Icon: PlaneTakeoff,  route: '/flights',  labelKey: 'menu.flights'  },
-  { id: 'wellness', Icon: Sparkles,      route: '/wellness', labelKey: 'menu.wellness' },
-  { id: 'events',   Icon: CalendarDays,  route: '/events',   labelKey: 'menu.events'   },
-  { id: 'map',      Icon: MapPin,        route: '/map',      labelKey: 'menu.map'      },
-  { id: 'info',     Icon: Phone,         route: '/info',     labelKey: 'menu.info'     },
+  { id: 'mobile',   Icon: Smartphone,    section: 'mobile',   labelKey: 'menu.mobile'   },
+  { id: 'flights',  Icon: PlaneTakeoff,  section: 'flights',  labelKey: 'menu.flights'  },
+  { id: 'wellness', Icon: Sparkles,      section: 'wellness', labelKey: 'menu.wellness' },
+  { id: 'events',   Icon: CalendarDays,  section: 'events',   labelKey: 'menu.events'   },
+  { id: 'map',      Icon: MapPin,        section: 'map',      labelKey: 'menu.map'      },
+  { id: 'info',     Icon: Phone,         section: 'info',     labelKey: 'menu.info'     },
 ];
 
 /* Cards de service dans la grille (4 cartes principales) */
 const SERVICE_CARDS = [
   {
     id: 'wellness',
-    route: '/wellness',
+    section: 'wellness',
     labelKey: 'menu.wellness',
     subKey:   'menu.wellness_sub',
     Icon:  Sparkles,
@@ -36,7 +36,7 @@ const SERVICE_CARDS = [
   },
   {
     id: 'flights',
-    route: '/flights',
+    section: 'flights',
     labelKey: 'menu.flights',
     subKey:   'menu.flights_sub',
     Icon:  PlaneTakeoff,
@@ -45,7 +45,7 @@ const SERVICE_CARDS = [
   },
   {
     id: 'events',
-    route: '/events',
+    section: 'events',
     labelKey: 'menu.events',
     subKey:   'menu.events_sub',
     Icon:  CalendarDays,
@@ -54,7 +54,7 @@ const SERVICE_CARDS = [
   },
   {
     id: 'map',
-    route: '/map',
+    section: 'map',
     labelKey: 'menu.map',
     subKey:   'menu.map_sub',
     Icon:  MapPin,
@@ -66,6 +66,7 @@ const SERVICE_CARDS = [
 /* ─── Composant principal ──────────────────────────────── */
 export default function RadialMenu() {
   const navigate          = useNavigate();
+  const { hotelSlug }     = useParams();
   const { t, locale, setLocale, supportedLocales, localesMeta } = useLanguage();
   const { config }        = useTheme();
   const [activeNav,    setActiveNav]    = useState(null);
@@ -94,7 +95,7 @@ export default function RadialMenu() {
     clearTimeout(tapTimer.current);
     if (tapCount.current >= 5) {
       tapCount.current = 0;
-      navigate('/admin');
+      navigate('/admin'); // chemin absolu intentionnel vers le backoffice
       return;
     }
     tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
@@ -166,11 +167,11 @@ export default function RadialMenu() {
     ? (currentNotif[`message_${locale}`] || currentNotif.message_en || currentNotif.message_fr)
     : t('menu.notif_msg');
 
-  const go = (id, route) => {
+  const go = (id, section) => {
     if (activeNav) return;
     setActiveNav(id);
     trackEvent(id, 'open');
-    setTimeout(() => { navigate(route); setActiveNav(null); }, 280);
+    setTimeout(() => { navigate(`/${hotelSlug}/${section}`); setActiveNav(null); }, 280);
   };
 
   return (
@@ -231,7 +232,7 @@ export default function RadialMenu() {
               </h2>
             </div>
             {/* Widget météo rapide dans la bannière */}
-            <div className={styles.bannerWeatherCard} onClick={() => go('weather', '/weather')}>
+            <div className={styles.bannerWeatherCard} onClick={() => go('weather', 'weather')}>
               <CloudSun size={28} className={styles.bannerWeatherIcon} />
               <div>
                 <p className={styles.bannerWeatherLabel}>{t('menu.weather')}</p>
@@ -251,7 +252,7 @@ export default function RadialMenu() {
               label={t(card.labelKey)}
               sub={t(card.subKey)}
               active={activeNav === card.id}
-              onPress={() => go(card.id, card.route)}
+              onPress={() => go(card.id, card.section)}
             />
           ))}
         </section>
@@ -302,7 +303,7 @@ export default function RadialMenu() {
           className={styles.weatherCard}
           role="button"
           aria-label={t('menu.weather')}
-          onClick={() => { if (!didSwipe.current) go('weather', '/weather'); }}
+          onClick={() => { if (!didSwipe.current) go('weather', 'weather'); }}
           onTouchStart={(e) => {
             didSwipe.current = false;
             wTouchStart.current = e.touches[0].clientX;
@@ -365,7 +366,7 @@ export default function RadialMenu() {
           <button
             key={item.id}
             className={`${styles.navBtn} ${activeNav === item.id ? styles.navBtnPressing : ''}`}
-            onClick={() => go(item.id, item.route)}
+            onClick={() => go(item.id, item.section)}
             aria-label={t(item.labelKey)}
           >
             <item.Icon size={26} />

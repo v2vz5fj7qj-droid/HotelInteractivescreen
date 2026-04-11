@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate }  from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { CloudSun }     from 'lucide-react';
 import api              from '../../services/api';
 import styles           from './WeatherBadge.module.css';
@@ -23,7 +23,8 @@ const weatherIcon = (icon) => {
 const CACHE_TTL = 10 * 60 * 1000; // 10 min
 
 export default function WeatherBadge() {
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
+  const { hotelSlug } = useParams();
   const [weather, setWeather] = useState(() => {
     try {
       const raw = sessionStorage.getItem('weather_badge');
@@ -55,7 +56,7 @@ export default function WeatherBadge() {
   return (
     <button
       className={styles.badge}
-      onClick={() => navigate('/weather')}
+      onClick={() => navigate(`/${hotelSlug}/weather`)}
       aria-label={`Météo Ouagadougou : ${temp}°C`}
     >
       <span className={styles.icon}>{icon}</span>
