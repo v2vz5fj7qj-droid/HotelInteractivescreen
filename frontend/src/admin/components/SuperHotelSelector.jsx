@@ -16,16 +16,20 @@ export default function SuperHotelSelector() {
       setHotels(list);
       // Si aucun hôtel sélectionné, prendre le premier
       if (!selected && list.length > 0) {
-        const first = String(list[0].id);
-        setSelected(first);
-        sessionStorage.setItem('super_hotel_id', first);
+        const first = list[0];
+        setSelected(String(first.id));
+        sessionStorage.setItem('super_hotel_id',   String(first.id));
+        sessionStorage.setItem('super_hotel_slug', first.slug || '');
       }
     }).catch(() => {});
   }, []); // eslint-disable-line
 
   const handleChange = (e) => {
-    setSelected(e.target.value);
-    sessionStorage.setItem('super_hotel_id', e.target.value);
+    const id   = e.target.value;
+    const hotel = hotels.find(h => String(h.id) === id);
+    setSelected(id);
+    sessionStorage.setItem('super_hotel_id',   id);
+    sessionStorage.setItem('super_hotel_slug', hotel?.slug || '');
     // Recharger la page pour que les données se rafraîchissent
     window.location.reload();
   };
@@ -60,4 +64,12 @@ export function useSuperHotelId(user) {
     return stored ? parseInt(stored) : null;
   }
   return user?.hotel_id || null;
+}
+
+/** Retourne le slug de l'hôtel courant selon le rôle */
+export function useHotelSlug(user) {
+  if (user?.role === 'super_admin') {
+    return sessionStorage.getItem('super_hotel_slug') || null;
+  }
+  return user?.hotel_slug || null;
 }

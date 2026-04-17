@@ -104,6 +104,8 @@
   font-size: clamp(0.65rem, 1vh, 0.78rem);
   font-weight: 600;
   color: var(--c-text-muted);
+  user-select: none;
+  -webkit-user-select: none;
 }
 .pillPrimary { color: var(--c-primary); border-color: var(--c-primary); }
 
@@ -217,6 +219,8 @@
   font-size: clamp(0.9rem, 1.5vh, 1.1rem);
   font-weight: 700;
   color: var(--c-text);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .priceValue { color: var(--c-primary); }

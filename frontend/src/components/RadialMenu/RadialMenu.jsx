@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLanguage }   from '../../contexts/LanguageContext';
 import { useTheme }      from '../../contexts/ThemeContext';
+import { useHotel }      from '../../contexts/HotelContext';
 import { trackEvent }    from '../../services/analytics';
 import api               from '../../services/api';
 import {
-  Hotel, Search, Mic,
+  Hotel,
   CloudSun, PlaneTakeoff, MapPin,
   Sparkles, CalendarDays, Phone,
   Smartphone, Home, Bell, ChevronRight,
@@ -69,6 +70,7 @@ export default function RadialMenu() {
   const { hotelSlug }     = useParams();
   const { t, locale, setLocale, supportedLocales, localesMeta } = useLanguage();
   const { config }        = useTheme();
+  const { bannerImages }  = useHotel();
   const [activeNav,    setActiveNav]    = useState(null);
   const [notifIndex,   setNotifIndex]   = useState(0);
   const [notifs,       setNotifs]       = useState([]);
@@ -81,7 +83,32 @@ export default function RadialMenu() {
   const wTouchStart    = useRef(null);
   const didSwipe       = useRef(false);
 
-  // Défilement vertical du texte "Bon à savoir"
+  // ── Slideshow bannière ──
+  const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80';
+  const slides = bannerImages?.length > 0
+    ? bannerImages.map(b => b.url)
+    : config?.banner_image_url
+      ? [config.banner_image_url]
+      : [DEFAULT_BANNER];
+
+  const [bannerIdx, setBannerIdx] = useState(0);
+  const bannerTimer = useRef(null);
+
+  const advanceBanner = useCallback(() => {
+    setBannerIdx(i => (i + 1) % slides.length);
+  }, [slides.length]);
+
+  useEffect(() => {
+    setBannerIdx(0);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    bannerTimer.current = setInterval(advanceBanner, 8000);
+    return () => clearInterval(bannerTimer.current);
+  }, [slides.length, advanceBanner]);
+
+  // ── Défilement vertical du texte "Bon à savoir"
   const clipRef        = useRef(null);
   const msgRef         = useRef(null);
   const [scrollDist,   setScrollDist]   = useState(0);
@@ -101,12 +128,12 @@ export default function RadialMenu() {
     tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
   };
 
-  // Charger les notifications depuis l'API
+  // Charger les bons à savoir depuis l'API
   useEffect(() => {
-    api.get('/notifications').then(r => {
+    api.get('/tips', { params: { locale } }).then(r => {
       if (r.data?.length) setNotifs(r.data);
     }).catch(() => {});
-  }, []);
+  }, [locale]);
 
   // Charger la liste des localités
   useEffect(() => {
@@ -162,9 +189,15 @@ export default function RadialMenu() {
     return () => clearTimeout(id);
   }, [notifIndex, notifs]);
 
+  // Message de bienvenu : version localisée depuis les settings hôtel, avec fallback i18n
+  const welcomeMessage = (() => {
+    const msgs = config.welcome_messages || {};
+    return msgs[locale] || msgs['fr'] || msgs['en'] || null;
+  })();
+
   const currentNotif = notifs[notifIndex];
   const notifMsg = currentNotif
-    ? (currentNotif[`message_${locale}`] || currentNotif.message_en || currentNotif.message_fr)
+    ? [currentNotif.titre, currentNotif.contenu].filter(Boolean).join(' — ')
     : t('menu.notif_msg');
 
   const go = (id, section) => {
@@ -182,12 +215,16 @@ export default function RadialMenu() {
         {/* Logo + nom */}
         <div className={styles.brand}>
           <div
-            className={styles.brandIcon}
+            className={`${styles.brandIcon} ${config.logo_url ? styles.brandIconLogo : ''}`}
             onClick={handleLogoTap}
             aria-hidden="true"
             style={{ cursor: 'default' }}
           >
-            <Hotel size={36} />
+            {config.logo_url
+              ? <img src={config.logo_url} alt={config.hotel_name} className={styles.brandLogoImg} onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+              : null
+            }
+            <Hotel size={36} style={config.logo_url ? { display: 'none' } : undefined} />
           </div>
           <div>
             <h1 className={styles.brandName}>{config.hotel_name || 'ConnectBé'}</h1>
@@ -195,21 +232,6 @@ export default function RadialMenu() {
           </div>
         </div>
 
-        {/* Barre de recherche */}
-        <div className={styles.searchWrap}>
-          <Search size={22} className={styles.searchIcon} aria-hidden="true" />
-          <input
-            type="text"
-            placeholder={t('menu.search_placeholder')}
-            className={styles.searchInput}
-            aria-label={t('menu.search_placeholder')}
-            readOnly
-            onFocus={e => e.target.blur()} /* kiosque — placeholder visuel */
-          />
-          <button className={styles.micBtn} aria-label="Recherche vocale">
-            <Mic size={20} />
-          </button>
-        </div>
       </header>
 
       {/* ══ GRILLE PRINCIPALE ═══════════════════════════ */}
@@ -217,20 +239,40 @@ export default function RadialMenu() {
 
         {/* A — Bannière immersive */}
         <section className={styles.banner} aria-label={t('menu.welcome')}>
+          {/* Image précédente (fond visible pendant le slide) */}
           <img
-            src={config?.banner_image_url || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80'}
-            alt={t('menu.welcome')}
-            className={styles.bannerImg}
+            src={slides[(bannerIdx - 1 + slides.length) % slides.length]}
+            alt=""
+            className={styles.bannerBg}
+            aria-hidden="true"
           />
+          {/* Image active — anime en entrée depuis la droite + Ken Burns */}
+          <div key={bannerIdx} className={styles.bannerSlide}>
+            <img src={slides[bannerIdx]} alt={t('menu.welcome')} className={styles.bannerSlideImg} />
+          </div>
+
           <div className={styles.bannerOverlay} />
           <div className={styles.bannerContent}>
             <div>
-              <span className={styles.bannerBadge}>{t('menu.live_badge')}</span>
               <h2 className={styles.bannerTitle}>
-                {t('menu.banner_line1')}<br />
-                {t('menu.banner_line2')} <span className={styles.bannerAccent}>{t('menu.banner_accent')}</span>
+                {welcomeMessage
+                  ? welcomeMessage
+                  : <>{t('menu.banner_line1')}<br />{t('menu.banner_line2')} <span className={styles.bannerAccent}>{t('menu.banner_accent')}</span></>
+                }
               </h2>
             </div>
+            {/* Indicateurs de slide */}
+            {slides.length > 1 && (
+              <div className={styles.bannerDots} aria-hidden="true">
+                {slides.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`${styles.bannerDot} ${i === bannerIdx ? styles.bannerDotActive : ''}`}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Widget météo rapide dans la bannière */}
             <div className={styles.bannerWeatherCard} onClick={() => go('weather', 'weather')}>
               <CloudSun size={28} className={styles.bannerWeatherIcon} />

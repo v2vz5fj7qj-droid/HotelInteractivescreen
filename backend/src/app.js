@@ -41,8 +41,11 @@ const superAirportsRoutes   = require('./routes/admin/super/airports');
 const superPlacesRoutes     = require('./routes/admin/super/places');
 const superEventsRoutes     = require('./routes/admin/super/events');
 const superInfoRoutes       = require('./routes/admin/super/info');
-const superCategoriesRoutes = require('./routes/admin/super/serviceCategories');
-const superWeatherRoutes    = require('./routes/admin/super/weather');
+const superCategoriesRoutes    = require('./routes/admin/super/serviceCategories');
+const superPoiCatRoutes        = require('./routes/admin/super/poiCategories');
+const superEventCatRoutes      = require('./routes/admin/super/eventCategories');
+const superInfoCatRoutes       = require('./routes/admin/super/infoCategories');
+const superWeatherRoutes       = require('./routes/admin/super/weather');
 const superTokensRoutes     = require('./routes/admin/super/tokens');
 
 // Hotel-admin
@@ -65,6 +68,7 @@ const superAuditLogRoutes   = require('./routes/admin/super/auditLog');
 const { startWeatherScheduler }  = require('./services/weatherRefresh');
 const { startFlightScheduler }   = require('./services/flightRefresh');
 const { startArchiveScheduler }  = require('./services/archiveService');
+const { runMigrations }          = require('./services/runMigrations');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -106,12 +110,16 @@ adminV2.use('/super/airports',          requireRole('super_admin'), superAirport
 adminV2.use('/super/places',            requireRole('super_admin'), superPlacesRoutes);
 adminV2.use('/super/events',            requireRole('super_admin'), superEventsRoutes);
 adminV2.use('/super/info',              requireRole('super_admin'), superInfoRoutes);
-adminV2.use('/super/service-categories',requireRole('super_admin'), superCategoriesRoutes);
+adminV2.use('/super/service-categories', requireRole('super_admin'), superCategoriesRoutes);
+adminV2.use('/super/poi-categories',    requireRole('super_admin'), superPoiCatRoutes);
+adminV2.use('/super/event-categories',  requireRole('super_admin'), superEventCatRoutes);
+adminV2.use('/super/info-categories',   requireRole('super_admin'), superInfoCatRoutes);
 adminV2.use('/super/weather',           requireRole('super_admin'), superWeatherRoutes);
 adminV2.use('/super/tokens',            requireRole('super_admin'), superTokensRoutes);
 
 // Hotel-admin (+ super-admin peut tout faire)
 adminV2.use('/hotel/settings',          requireRole('super_admin','hotel_admin'), hotelSettingsRoutes);
+adminV2.use('/hotel/banner-images',     requireRole('super_admin','hotel_admin'), require('./routes/admin/hotel/bannerImages'));
 adminV2.use('/hotel/services',          requireRole('super_admin','hotel_admin'), hotelServicesRoutes);
 adminV2.use('/hotel/tips',              requireRole('super_admin','hotel_admin'), hotelTipsRoutes);
 adminV2.use('/hotel/events',            requireRole('super_admin','hotel_admin','hotel_staff'), hotelEventsRoutes);
@@ -147,8 +155,9 @@ app.use((err, _req, res, _next) => {
 });
 
 // ── Démarrage ─────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`✅ ConnectBé API démarrée sur le port ${PORT}`);
+  await runMigrations();
   startWeatherScheduler();
   startFlightScheduler().catch(e => console.error('[Flights Scheduler]', e.message));
   startArchiveScheduler();

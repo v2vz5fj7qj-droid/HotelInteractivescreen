@@ -8,8 +8,10 @@ const HotelContext = createContext(null);
 export function HotelProvider({ children }) {
   const { hotelSlug } = useParams();
 
-  const [hotel,    setHotel]    = useState(null);   // { id, slug, nom }
-  const [settings, setSettings] = useState(null);   // theme_colors, wifi, etc.
+  const [hotel,        setHotel]        = useState(null);
+  const [settings,     setSettings]     = useState(null);
+  const [airports,     setAirports]     = useState([]);
+  const [bannerImages, setBannerImages] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -21,9 +23,11 @@ export function HotelProvider({ children }) {
 
     api.get(`/kiosk/${hotelSlug}/config`)
       .then(res => {
-        const { hotel: h, settings: s } = res.data;
+        const { hotel: h, settings: s, airports: a, banner_images: b } = res.data;
         setHotel(h);
         setSettings(s);
+        setAirports(a || []);
+        setBannerImages(b || []);
         setHotelId(h.id);   // expose au singleton pour l'intercepteur Axios
       })
       .catch(err => {
@@ -35,7 +39,7 @@ export function HotelProvider({ children }) {
   }, [hotelSlug]);
 
   return (
-    <HotelContext.Provider value={{ hotel, settings, loading, notFound }}>
+    <HotelContext.Provider value={{ hotel, settings, airports, bannerImages, loading, notFound }}>
       {children}
     </HotelContext.Provider>
   );

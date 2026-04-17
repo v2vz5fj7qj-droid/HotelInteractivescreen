@@ -2,23 +2,31 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import NotificationBell from './components/NotificationBell';
-import SuperHotelSelector from './components/SuperHotelSelector';
+import SuperHotelSelector, { useHotelSlug } from './components/SuperHotelSelector';
 import styles from './Admin.module.css';
 
 // ── Menus par section ─────────────────────────────────────────────
 
 const NAV_SUPER = [
-  { to: '/admin/super',                   icon: '📊', label: 'Tableau de bord', end: true },
-  { to: '/admin/super/hotels',            icon: '🏨', label: 'Hôtels'                     },
-  { to: '/admin/super/users',             icon: '👤', label: 'Utilisateurs'                },
-  { to: '/admin/super/places',            icon: '🗺️', label: 'Carte & Lieux'               },
-  { to: '/admin/super/events',            icon: '🗓️', label: 'Agenda'                      },
-  { to: '/admin/super/info',              icon: '📞', label: 'Infos utiles'                },
-  { to: '/admin/super/service-categories',icon: '🏷️', label: 'Catégories services'         },
-  { to: '/admin/super/weather',           icon: '🌍', label: 'Météo'                       },
-  { to: '/admin/super/airports',          icon: '✈️', label: 'Aéroports'                   },
-  { to: '/admin/super/tokens',            icon: '🔑', label: 'Tokens API'                  },
-  { to: '/admin/super/audit-log',        icon: '📋', label: 'Journal d\'activité'           },
+  { to: '/admin/super',                    icon: '📊', label: 'Tableau de bord', end: true },
+  { to: '/admin/super/hotels',             icon: '🏨', label: 'Hôtels'                     },
+  { to: '/admin/super/users',              icon: '👤', label: 'Utilisateurs'                },
+  { to: '/admin/super/places',             icon: '🗺️', label: 'Carte & Lieux'              },
+  { to: '/admin/super/events',             icon: '🗓️', label: 'Agenda'                     },
+  { to: '/admin/super/info',               icon: '📞', label: 'Infos utiles'               },
+  {
+    group: 'categories', icon: '🏷️', label: 'Catégories',
+    children: [
+      { to: '/admin/super/poi-categories',     icon: '📍', label: 'Lieux'        },
+      { to: '/admin/super/event-categories',   icon: '🗓️', label: 'Agenda'       },
+      { to: '/admin/super/info-categories',    icon: '🔖', label: 'Infos utiles' },
+      { to: '/admin/super/service-categories', icon: '💆', label: 'Services'     },
+    ],
+  },
+  { to: '/admin/super/weather',            icon: '🌍', label: 'Météo'                      },
+  { to: '/admin/super/airports',           icon: '✈️', label: 'Aéroports'                  },
+  { to: '/admin/super/tokens',             icon: '🔑', label: 'Tokens API'                 },
+  { to: '/admin/super/audit-log',          icon: '📋', label: "Journal d'activité"          },
 ];
 
 const NAV_HOTEL = [
@@ -51,10 +59,26 @@ function navBySection(section) {
   return [];
 }
 
+function flatItems(nav) {
+  return nav.flatMap(n => n.children ? n.children : [n]);
+}
+
 function usePageTitle(nav) {
   const { pathname } = useLocation();
-  const match = nav.find(n => n.end ? pathname === n.to : pathname.startsWith(n.to));
+  const all = flatItems(nav);
+  const match = all.find(n => n.end ? pathname === n.to : pathname.startsWith(n.to));
   return match ? match.label : 'Backoffice';
+}
+
+function useOpenGroups(nav) {
+  const { pathname } = useLocation();
+  const initial = {};
+  nav.forEach(n => {
+    if (n.group) {
+      initial[n.group] = n.children.some(c => pathname.startsWith(c.to));
+    }
+  });
+  return useState(initial);
 }
 
 // ── Layout ───────────────────────────────────────────────────────
@@ -65,9 +89,15 @@ export default function AdminLayout({ section }) {
   const [collapsed, setCollapsed]  = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav       = navBySection(section);
-  const pageTitle = usePageTitle(nav);
-  const roleInfo  = ROLE_LABELS[user?.role] || { label: user?.role, color: '#6B7280' };
+  const nav        = navBySection(section);
+  const pageTitle  = usePageTitle(nav);
+  const roleInfo   = ROLE_LABELS[user?.role] || { label: user?.role, color: '#6B7280' };
+  const hotelSlug  = useHotelSlug(user);
+  const borneHref  = hotelSlug ? `/${hotelSlug}` : null;
+  const [openGroups, setOpenGroups] = useOpenGroups(nav);
+
+  const toggleGroup = group =>
+    setOpenGroups(prev => ({ ...prev, [group]: !prev[group] }));
 
   const handleLogout = () => {
     logout();
@@ -119,20 +149,67 @@ export default function AdminLayout({ section }) {
         )}
 
         <nav className={styles.sidebarNav} style={{ marginTop: 12 }}>
-          {nav.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
-              }
-            >
-              <span className={styles.navIcon}>{item.icon}</span>
-              {(!collapsed || mobileOpen) && <span className={styles.navLabel}>{item.label}</span>}
-            </NavLink>
-          ))}
+          {nav.map(item => {
+            if (item.children) {
+              const isOpen = openGroups[item.group];
+              const hasActive = item.children.some(c => window.location.pathname.startsWith(c.to));
+              return (
+                <React.Fragment key={item.group}>
+                  <button
+                    onClick={() => toggleGroup(item.group)}
+                    className={styles.navItem}
+                    style={{
+                      width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                      textAlign: 'left', display: 'flex', alignItems: 'center',
+                      color: hasActive ? 'var(--a-primary, #C2782A)' : undefined,
+                    }}
+                  >
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    {(!collapsed || mobileOpen) && (
+                      <>
+                        <span className={styles.navLabel} style={{ flex: 1 }}>{item.label}</span>
+                        <span style={{ fontSize: '0.7rem', opacity: 0.6, marginRight: 4 }}>
+                          {isOpen ? '▲' : '▼'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  {(isOpen || hasActive) && (!collapsed || mobileOpen) && (
+                    <div style={{ borderLeft: '2px solid rgba(194,120,42,0.3)', marginLeft: 20, marginBottom: 2 }}>
+                      {item.children.map(child => (
+                        <NavLink
+                          key={child.to}
+                          to={child.to}
+                          onClick={() => setMobileOpen(false)}
+                          className={({ isActive }) =>
+                            `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                          }
+                          style={{ paddingLeft: 12, fontSize: '0.88rem' }}
+                        >
+                          <span className={styles.navIcon} style={{ fontSize: '0.85rem' }}>{child.icon}</span>
+                          <span className={styles.navLabel}>{child.label}</span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            }
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.navItemActive : ''}`
+                }
+              >
+                <span className={styles.navIcon}>{item.icon}</span>
+                {(!collapsed || mobileOpen) && <span className={styles.navLabel}>{item.label}</span>}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div className={styles.sidebarFooter}>
@@ -165,9 +242,11 @@ export default function AdminLayout({ section }) {
             {switchLinks}
             {section === 'hotel' && user?.role === 'super_admin' && <SuperHotelSelector />}
             <NotificationBell />
-            <a href="/" target="_blank" rel="noreferrer" className={styles.previewLink}>
-              👁 Voir la borne
-            </a>
+            {borneHref && (
+              <a href={borneHref} target="_blank" rel="noreferrer" className={styles.previewLink}>
+                👁 Voir la borne
+              </a>
+            )}
           </div>
         </header>
         <div className={styles.content}>

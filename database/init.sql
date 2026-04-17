@@ -80,14 +80,17 @@ CREATE TABLE IF NOT EXISTS wellness_service_translations (
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS poi_categories (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    key_name     VARCHAR(50)  NOT NULL,
     label_fr     VARCHAR(100) NOT NULL,
-    label_en     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100),
     icon         VARCHAR(10)  NOT NULL DEFAULT '📍',
     color        VARCHAR(7)   NOT NULL DEFAULT '#C2782A',
     display_order INT DEFAULT 0,
     is_active    BOOLEAN DEFAULT TRUE,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    hotel_id     INT  NULL DEFAULT NULL,
+    created_by   INT  NULL DEFAULT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_poi_cat_key_hotel (key_name, hotel_id)
 );
 
 INSERT IGNORE INTO poi_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES
@@ -139,14 +142,17 @@ CREATE TABLE IF NOT EXISTS poi_images (
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS info_categories (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    key_name     VARCHAR(50)  NOT NULL,
     label_fr     VARCHAR(100) NOT NULL,
-    label_en     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100),
     icon         VARCHAR(10)  NOT NULL DEFAULT '📋',
     color        VARCHAR(7)   NOT NULL DEFAULT '#6B7280',
     display_order INT DEFAULT 0,
     is_active    BOOLEAN DEFAULT TRUE,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    hotel_id     INT  NULL DEFAULT NULL,
+    created_by   INT  NULL DEFAULT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_info_cat_key_hotel (key_name, hotel_id)
 );
 
 INSERT IGNORE INTO info_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES
@@ -188,14 +194,17 @@ CREATE TABLE IF NOT EXISTS useful_contact_translations (
 -- ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS event_categories (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    key_name     VARCHAR(50)  NOT NULL UNIQUE,
+    key_name     VARCHAR(50)  NOT NULL,
     label_fr     VARCHAR(100) NOT NULL,
-    label_en     VARCHAR(100) NOT NULL,
+    label_en     VARCHAR(100),
     icon         VARCHAR(10)  NOT NULL DEFAULT '🗓️',
     color        VARCHAR(7)   NOT NULL DEFAULT '#6B7280',
     display_order INT DEFAULT 0,
     is_active    BOOLEAN DEFAULT TRUE,
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    hotel_id     INT  NULL DEFAULT NULL,
+    created_by   INT  NULL DEFAULT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_event_cat_key_hotel (key_name, hotel_id)
 );
 
 INSERT IGNORE INTO event_categories (key_name, label_fr, label_en, icon, color, display_order) VALUES

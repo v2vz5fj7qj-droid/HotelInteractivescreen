@@ -77,13 +77,22 @@ async function fetchAndCacheLocality(locality) {
   if (!c?.main) return false;
 
   const month = new Date().getMonth();
+
+  // Calcul min/max du jour à partir des prévisions 3h (plus fiable que c.main.temp_min/max)
+  const todayStr   = new Date().toISOString().split('T')[0];
+  const todayTemps = f
+    .filter(e => new Date(e.dt * 1000).toISOString().split('T')[0] === todayStr)
+    .map(e => e.main.temp);
+  const todayMin = todayTemps.length > 0 ? Math.round(Math.min(...todayTemps)) : Math.round(c.main.temp_min);
+  const todayMax = todayTemps.length > 0 ? Math.round(Math.max(...todayTemps)) : Math.round(c.main.temp_max);
+
   const payload = {
     locality: { name: locality.name, country: locality.country },
     current: {
       temp:        Math.round(c.main.temp),
       feels_like:  Math.round(c.main.feels_like),
-      temp_min:    Math.round(c.main.temp_min),
-      temp_max:    Math.round(c.main.temp_max),
+      temp_min:    todayMin,
+      temp_max:    todayMax,
       humidity:    c.main.humidity,
       pressure:    c.main.pressure,
       wind_speed:  Math.round((c.wind.speed || 0) * 3.6),

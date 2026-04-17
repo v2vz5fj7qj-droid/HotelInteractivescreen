@@ -277,9 +277,7 @@ export default function MapSection() {
             aria-label={selected.name}
             onClick={e => e.stopPropagation()}
           >
-            <button className={styles.bubbleClose} onClick={closeBubble} aria-label="Fermer">✕</button>
-
-            {/* En-tête */}
+            {/* En-tête : icône + titres + bouton fermer sur la même ligne */}
             <div className={styles.bubbleHeader}>
               <span className={styles.bubbleIcon}>{catMeta[selected.category]?.icon ?? '📍'}</span>
               <div className={styles.bubbleTitles}>
@@ -294,53 +292,54 @@ export default function MapSection() {
                   </p>
                 )}
               </div>
+              <button className={styles.bubbleClose} onClick={closeBubble} aria-label="Fermer">✕</button>
             </div>
 
-            {/* Méta */}
-            {(selected.phone || selected.rating || selected.website) && (
-              <div className={styles.bubbleMeta}>
-                {selected.phone   && <span>📞 {selected.phone}</span>}
-                {selected.rating  && <span>{'⭐'.repeat(Math.round(selected.rating))} {selected.rating}</span>}
-                {selected.website && <span>🌐 {selected.website}</span>}
-              </div>
-            )}
+              {/* Méta */}
+              {(selected.phone || selected.rating || selected.website) && (
+                <div className={styles.bubbleMeta}>
+                  {selected.phone   && <span>📞 {selected.phone}</span>}
+                  {selected.rating  && <span>{'⭐'.repeat(Math.round(selected.rating))} {selected.rating}</span>}
+                  {selected.website && <span>🌐 {selected.website}</span>}
+                </div>
+              )}
 
-            {/* Description */}
-            {selected.description && (
-              <p className={styles.bubbleDesc}>{selected.description}</p>
-            )}
+              {/* Description */}
+              {selected.description && (
+                <p className={styles.bubbleDesc}>{selected.description}</p>
+              )}
 
-            {/* Galerie */}
-            {selected.images?.length > 0 && (
-              <div className={styles.gallery}>
-                {selected.images.map((url, i) => (
-                  <button
-                    key={i}
-                    className={styles.galleryThumb}
-                    onClick={() => setLightbox(i)}
-                    aria-label={`Image ${i + 1}`}
-                  >
-                    <img src={url} alt={`${selected.name} — photo ${i + 1}`} loading="lazy" />
-                  </button>
-                ))}
-              </div>
-            )}
+              {/* Galerie */}
+              {selected.images?.length > 0 && (
+                <div className={styles.gallery}>
+                  {selected.images.map((url, i) => (
+                    <button
+                      key={i}
+                      className={styles.galleryThumb}
+                      onClick={() => setLightbox(i)}
+                      aria-label={`Image ${i + 1}`}
+                    >
+                      <img src={url} alt={`${selected.name} — photo ${i + 1}`} loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            {/* QR Google Maps */}
-            {selected.lat && selected.lng && (
-              <div className={styles.bubbleQr}>
-                <QRCodeSVG
-                  value={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
-                  size={56}
-                  level="M"
-                  bgColor="transparent"
-                  fgColor="#C2782A"
-                />
-                <span className={styles.bubbleQrLabel}>
-                  {locale === 'fr' ? '📱 Scanner pour ouvrir dans Maps' : '📱 Scan to open in Maps'}
-                </span>
-              </div>
-            )}
+              {/* QR Google Maps */}
+              {selected.lat && selected.lng && (
+                <div className={styles.bubbleQr}>
+                  <QRCodeSVG
+                    value={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
+                    size={96}
+                    level="M"
+                    bgColor="transparent"
+                    fgColor="#C2782A"
+                  />
+                  <span className={styles.bubbleQrLabel}>
+                    {locale === 'fr' ? '📱 Scanner pour ouvrir dans Maps' : '📱 Scan to open in Maps'}
+                  </span>
+                </div>
+              )}
           </aside>
         )}
       </div>

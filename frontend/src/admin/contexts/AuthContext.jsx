@@ -7,19 +7,21 @@ export function AuthProvider({ children }) {
   const [hydrated,  setHydrated]  = useState(false);
 
   useEffect(() => {
-    const token    = sessionStorage.getItem('admin_token');
-    const role     = sessionStorage.getItem('admin_role');
-    const hotel_id = sessionStorage.getItem('admin_hotel_id');
-    const email    = sessionStorage.getItem('admin_email');
-    if (token) setUser({ token, role, hotel_id: hotel_id ? Number(hotel_id) : null, email });
+    const token      = sessionStorage.getItem('admin_token');
+    const role       = sessionStorage.getItem('admin_role');
+    const hotel_id   = sessionStorage.getItem('admin_hotel_id');
+    const hotel_slug = sessionStorage.getItem('admin_hotel_slug');
+    const email      = sessionStorage.getItem('admin_email');
+    if (token) setUser({ token, role, hotel_id: hotel_id ? Number(hotel_id) : null, hotel_slug: hotel_slug || null, email });
     setHydrated(true);
   }, []);
 
   const login = (data) => {
-    sessionStorage.setItem('admin_token',    data.token);
-    sessionStorage.setItem('admin_role',     data.role);
-    sessionStorage.setItem('admin_hotel_id', data.hotel_id ?? '');
-    sessionStorage.setItem('admin_email',    data.email);
+    sessionStorage.setItem('admin_token',      data.token);
+    sessionStorage.setItem('admin_role',       data.role);
+    sessionStorage.setItem('admin_hotel_id',   data.hotel_id ?? '');
+    sessionStorage.setItem('admin_hotel_slug', data.hotel_slug ?? '');
+    sessionStorage.setItem('admin_email',      data.email);
     setUser(data);
   };
 

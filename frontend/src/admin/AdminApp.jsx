@@ -13,8 +13,11 @@ import AirportsManager         from './pages/super/AirportsManager';
 import SuperPlacesManager      from './pages/super/PlacesManager';
 import SuperEventsManager      from './pages/super/EventsManager';
 import SuperInfoManager        from './pages/super/InfoManager';
-import ServiceCategoriesManager from './pages/super/ServiceCategoriesManager';
-import WeatherManager          from './pages/super/WeatherManager';
+import ServiceCategoriesManager  from './pages/super/ServiceCategoriesManager';
+import PoiCategoriesManager      from './pages/super/PoiCategoriesManager';
+import EventCategoriesManager    from './pages/super/EventCategoriesManager';
+import InfoCategoriesManager     from './pages/super/InfoCategoriesManager';
+import WeatherManager            from './pages/super/WeatherManager';
 import TokensManager           from './pages/super/TokensManager';
 import AuditLog               from './pages/super/AuditLog';
 import HotelConfig            from './pages/super/HotelConfig';
@@ -91,8 +94,11 @@ export default function AdminApp() {
           <Route path="places"          element={<SuperPlacesManager />} />
           <Route path="events"          element={<SuperEventsManager />} />
           <Route path="info"            element={<SuperInfoManager />} />
-          <Route path="service-categories" element={<ServiceCategoriesManager />} />
-          <Route path="weather"         element={<WeatherManager />} />
+          <Route path="service-categories"  element={<ServiceCategoriesManager />} />
+          <Route path="poi-categories"     element={<PoiCategoriesManager />} />
+          <Route path="event-categories"   element={<EventCategoriesManager />} />
+          <Route path="info-categories"    element={<InfoCategoriesManager />} />
+          <Route path="weather"            element={<WeatherManager />} />
           <Route path="tokens"          element={<TokensManager />} />
           <Route path="audit-log"       element={<AuditLog />} />
           <Route path="*"               element={<Navigate to="/admin/super" replace />} />

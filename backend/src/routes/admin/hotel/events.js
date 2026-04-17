@@ -5,6 +5,7 @@
 // PUT    /api/admin/hotel/events/:id
 // DELETE /api/admin/hotel/events/:id
 // POST   /api/admin/hotel/events/:id/archive
+// POST   /api/admin/hotel/events/:id/unarchive
 // POST   /api/admin/hotel/events/:id/pre-approve
 // POST   /api/admin/hotel/events/:id/reject
 const express = require('express');
@@ -178,6 +179,39 @@ router.post('/:id/archive', async (req, res) => {
     res.json({ message: 'Événement archivé' });
   } catch (err) {
     console.error('[hotel/events POST /archive]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Désarchiver manuellement (hotel_admin de l'hôtel OU créateur original)
+router.post('/:id/unarchive', async (req, res) => {
+  try {
+    const hotelId = resolveHotelId(req);
+    const [rows] = await db.query(
+      `SELECT * FROM events WHERE id = ? AND status = 'archived' AND (hotel_id = ? OR created_by = ?)`,
+      [req.params.id, hotelId, req.user.id]
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ error: "Événement introuvable, non archivé ou accès non autorisé" });
+    }
+
+    // Vérifier que la date de référence n'est pas passée
+    const refDate = rows[0].end_date || rows[0].start_date;
+    const [[{ today }]] = await db.query('SELECT CURDATE() AS today');
+    if (refDate && new Date(refDate) < new Date(today)) {
+      return res.status(422).json({
+        code: 'date_passed',
+        error: "La date de l'événement est passée. Mettez à jour la date avant de désarchiver.",
+      });
+    }
+
+    await db.query(
+      `UPDATE events SET status='published', archived_at=NULL WHERE id=?`,
+      [req.params.id]
+    );
+    res.json({ message: 'Événement désarchivé' });
+  } catch (err) {
+    console.error('[hotel/events POST /unarchive]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

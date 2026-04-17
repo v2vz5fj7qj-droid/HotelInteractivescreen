@@ -16,7 +16,10 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await db.query(
-      'SELECT * FROM admin_users WHERE email = ? AND is_active = 1',
+      `SELECT u.*, h.slug AS hotel_slug
+       FROM admin_users u
+       LEFT JOIN hotels h ON h.id = u.hotel_id
+       WHERE u.email = ? AND u.is_active = 1`,
       [email]
     );
     const user = rows[0];
@@ -38,9 +41,10 @@ router.post('/login', async (req, res) => {
 
     res.json({
       token,
-      role:     user.role,
-      hotel_id: user.hotel_id,
-      email:    user.email,
+      role:        user.role,
+      hotel_id:    user.hotel_id,
+      hotel_slug:  user.hotel_slug || null,
+      email:       user.email,
     });
   } catch (err) {
     console.error('[auth/login]', err);

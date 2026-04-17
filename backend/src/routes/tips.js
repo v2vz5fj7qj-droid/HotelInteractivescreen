@@ -17,18 +17,25 @@ router.get('/', async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const [rows] = await db.query(
-      `SELECT
-         id, categorie, display_order,
-         CASE WHEN ? = 'en' AND titre_en IS NOT NULL THEN titre_en ELSE titre_fr END AS titre,
-         CASE WHEN ? = 'en' AND contenu_en IS NOT NULL THEN contenu_en ELSE contenu_fr END AS contenu
+      `SELECT id, categorie, display_order, titre_fr, titre_en, contenu_fr, contenu_en, translations_json
        FROM hotel_tips
        WHERE hotel_id = ? AND is_active = 1
        ORDER BY display_order ASC, created_at DESC`,
-      [locale, locale, hotelId]
+      [hotelId]
     );
 
-    await cache.set(cacheKey, JSON.stringify(rows), 300); // 5 min
-    res.json(rows);
+    const resolved = rows.map(row => {
+      let extra = {};
+      try { extra = JSON.parse(row.translations_json || '{}'); } catch {}
+
+      const titre   = extra[locale]?.titre   || (locale === 'en' ? row.titre_en   : null) || row.titre_fr;
+      const contenu = extra[locale]?.contenu || (locale === 'en' ? row.contenu_en : null) || row.contenu_fr;
+
+      return { id: row.id, categorie: row.categorie, display_order: row.display_order, titre, contenu };
+    });
+
+    await cache.set(cacheKey, JSON.stringify(resolved), 300); // 5 min
+    res.json(resolved);
   } catch (err) {
     console.error('[tips public]', err.message);
     res.json([]);

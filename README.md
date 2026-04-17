@@ -36,19 +36,21 @@ HotelInteractivescreen/
 | Backend API      | **4001**  | 4000         |
 | MySQL            | **3307**  | 3306         |
 | Redis            | **6380**  | 6379         |
+| LibreTranslate   | interne   | 5000         |
 
 ---
 
 ## Stack technique
 
-| Couche    | Technologies                                                       |
-|-----------|--------------------------------------------------------------------|
-| Frontend  | React 18, Vite 6, React Router 6, CSS Modules, Lucide              |
-| Carte     | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB Voyager (gratuit)  |
-| Backend   | Node.js, Express, JWT (jsonwebtoken), multer                       |
-| BDD       | MySQL 8, Redis (cache partagé inter-hôtels), ioredis               |
-| Infra     | Docker Compose, Nginx (production)                                 |
-| APIs      | OpenWeatherMap, FlightAPI.io                                       |
+| Couche    | Technologies                                                                    |
+|-----------|---------------------------------------------------------------------------------|
+| Frontend  | React 18, Vite 6, React Router 6, CSS Modules, Lucide                           |
+| Carte     | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB Voyager (gratuit)               |
+| Backend   | Node.js, Express, JWT (jsonwebtoken), multer                                    |
+| BDD       | MySQL 8, Redis (cache partagé inter-hôtels), ioredis                            |
+| Traduction| LibreTranslate (auto-hébergé, 9 langues, aucune clé API requise)                |
+| Infra     | Docker Compose, Nginx (production)                                              |
+| APIs      | OpenWeatherMap, FlightAPI.io, OpenRouteService                                  |
 
 ---
 
@@ -171,7 +173,8 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Page | Fonctionnalité |
 |---|---|
 | Tableau de bord | Notifications de workflow, compteurs de contenu |
-| Paramètres hôtel | Logo, image de fond, thème couleurs, nom, contacts |
+| Paramètres hôtel | Logo, image de fond, thème couleurs, nom, contacts, WiFi, check-in/check-out |
+| Images de bannière | Galerie carrousel (max 10 images) affichée à l'accueil de la borne |
 | Services et bien-être | Catégories propres + CRUD services |
 | Bon à savoir | CRUD informations propres à l'hôtel |
 | Agenda | CRUD événements propres (visibles hôtel uniquement) |
@@ -251,17 +254,21 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 
 ## Variables d'environnement
 
-| Variable                  | Description                                | Obligatoire      |
-|---------------------------|--------------------------------------------|------------------|
-| `DB_ROOT_PASSWORD`        | Mot de passe root MySQL                    | Oui              |
-| `DB_PASSWORD`             | Mot de passe utilisateur MySQL             | Oui              |
-| `OPENWEATHERMAP_API_KEY`  | Clé OpenWeatherMap (météo)                 | Non (mock)       |
-| `FLIGHTAPI_KEY`           | Clé FlightAPI.io (vols temps réel)         | Non (mock)       |
-| `JWT_SECRET`              | Secret de signature JWT                    | Non (défaut dev) |
-| `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS de l'hôtel (mono-hôtel)  | Non (Ouaga)      |
-| `IDLE_TIMEOUT_MS`         | Délai inactivité avant retour accueil      | Non (30000)      |
-| `QR_TOKEN_TTL_MIN`        | Durée de vie des tokens QR (minutes)       | Non (10)         |
-| `VITE_ORS_API_KEY`        | Clé OpenRouteService (itinéraires carte)   | Non              |
+| Variable                  | Description                                   | Obligatoire      |
+|---------------------------|-----------------------------------------------|------------------|
+| `DB_ROOT_PASSWORD`        | Mot de passe root MySQL                       | Oui              |
+| `DB_PASSWORD`             | Mot de passe utilisateur MySQL                | Oui              |
+| `JWT_SECRET`              | Secret de signature JWT (32 car. min.)        | Non (défaut dev) |
+| `ADMIN_PASSWORD`          | Mot de passe du compte super-admin            | Non (connectbe2026) |
+| `OPENWEATHERMAP_API_KEY`  | Clé OpenWeatherMap (météo)                    | Non (mock)       |
+| `FLIGHTAPI_KEY`           | Clé FlightAPI.io (vols temps réel)            | Non (mock)       |
+| `VITE_ORS_API_KEY`        | Clé OpenRouteService (itinéraires carte)      | Non              |
+| `HOTEL_NAME`              | Nom de l'hôtel par défaut                     | Non (ConnectBé)  |
+| `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS par défaut (héritage v1)     | Non (Ouaga)      |
+| `HOTEL_CITY_OWM_ID`       | ID OpenWeatherMap de la ville (héritage v1)   | Non (Ouaga)      |
+| `HOTEL_AIRPORT_IATA`      | Code IATA aéroport par défaut (héritage v1)   | Non (OUA)        |
+| `IDLE_TIMEOUT_MS`         | Délai inactivité avant retour accueil (ms)    | Non (60000)      |
+| `QR_TOKEN_TTL_MIN`        | Durée de vie des tokens QR (minutes)          | Non (10)         |
 
 ---
 
@@ -396,3 +403,5 @@ git push origin feat/multi-hotel
 | Audit trail                                     | ✅ Complet  |
 | Notifications dashboard workflow                | ✅ Complet  |
 | Archivage automatique agenda                    | ✅ Complet  |
+| Images bannière carrousel par hôtel (max 10)    | ✅ Complet  |
+| Traduction automatique LibreTranslate           | ✅ Complet  |

@@ -20,9 +20,12 @@ Ouvrir `.env` et remplir au minimum :
 ```
 DB_ROOT_PASSWORD=motdepasse_root
 DB_PASSWORD=motdepasse_db
+JWT_SECRET=une_chaine_aleatoire_32_caracteres
 ```
 
-> Les clés API (météo, vols) sont **facultatives** — l'app fonctionne avec des données de démo sans elles.
+> Les clés API (météo, vols, carte) sont **facultatives** — l'app fonctionne avec des données de démo sans elles.
+
+> **Mot de passe admin par défaut :** `connectbe2026` (variable `ADMIN_PASSWORD` dans `.env`). Changer en production.
 
 ---
 
@@ -34,7 +37,7 @@ Tout démarre en une seule commande :
 docker compose up --build
 ```
 
-> La première fois prend 2-3 minutes (téléchargement des images Docker).
+> **La première fois prend 5-10 minutes** : téléchargement des images Docker + chargement des modèles de langue LibreTranslate (traduction automatique). Les démarrages suivants sont instantanés.
 
 > **Après toute modification du code frontend**, relancer avec `docker compose up --build frontend -d` pour reconstruire l'image.
 
@@ -44,6 +47,7 @@ docker compose up --build
 | Backoffice admin | http://localhost:5173/admin  |
 | API backend      | http://localhost:4001        |
 | MySQL            | localhost:3307               |
+| Redis            | localhost:6380               |
 
 Pour arrêter :
 
@@ -55,10 +59,11 @@ docker compose down
 
 ## Mode B — Dev local avec hot-reload (recommandé pour coder)
 
-**Terminal 1 — Base de données (Docker uniquement)**
+**Terminal 1 — Services Docker (BDD + traduction)**
 ```bash
-docker compose up mysql redis -d
+docker compose up mysql redis libretranslate -d
 # Attendre ~20s que MySQL soit prêt
+# LibreTranslate démarre en arrière-plan (lent la première fois)
 ```
 
 **Terminal 2 — Backend**
@@ -107,7 +112,8 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 
 ### Hotel-admin — fonctionnalités
 
-- **Paramètres hôtel** — logo, fond, thème couleurs, contacts, WiFi, horaires
+- **Paramètres hôtel** — logo, fond, thème couleurs, contacts, WiFi, code check-in/check-out
+- **Images de bannière** — galerie carrousel affichée sur la borne (upload, réordonnancement, max 10 images)
 - **Services et bien-être** — CRUD services avec catégories
 - **Agenda** — CRUD événements propres à l'hôtel
 - **Bon à savoir** — notifications rotatives affichées sur la borne

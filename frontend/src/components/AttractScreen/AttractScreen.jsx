@@ -2,35 +2,58 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useLanguage }  from '../../contexts/LanguageContext';
 import { useTheme }     from '../../contexts/ThemeContext';
-import styles           from './AttractScreen.module.css';
+import {
+  CloudSun, PlaneTakeoff, MapPin,
+  Sparkles, CalendarDays, Phone, Smartphone,
+} from 'lucide-react';
+import styles from './AttractScreen.module.css';
 
-const ATTRACT_DELAY = 60_000;
+const ATTRACT_DELAY = 45_000;
+const BG_INTERVAL   = 5_000;
 const EVENTS = ['touchstart', 'touchmove', 'mousedown', 'keydown', 'scroll', 'wheel'];
 
+/* Images des sections du kiosque — donnent envie d'explorer */
+const BG_SLIDES = [
+  'https://images.unsplash.com/photo-1604938814491-c696899ec59b?auto=format&fit=crop&w=1400&q=70', // wellness
+  'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1400&q=70', // flights
+  'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=1400&q=70', // events
+  'https://images.unsplash.com/photo-1569144157591-c60f3f82f137?auto=format&fit=crop&w=1400&q=70', // map
+];
+
+/* Sections affichées dans la bande défilante */
+const TEASER_ITEMS = [
+  { Icon: CloudSun,     labelKey: 'menu.weather'  },
+  { Icon: PlaneTakeoff, labelKey: 'menu.flights'  },
+  { Icon: Sparkles,     labelKey: 'menu.wellness' },
+  { Icon: CalendarDays, labelKey: 'menu.events'   },
+  { Icon: MapPin,       labelKey: 'menu.map'      },
+  { Icon: Phone,        labelKey: 'menu.info'     },
+  { Icon: Smartphone,   labelKey: 'menu.mobile'   },
+];
+
 export default function AttractScreen() {
-  const [visible, setVisible]   = useState(false);
-  const timerRef                = useRef(null);   // useRef — stable entre les renders
-  const { t, locale }           = useLanguage();
-  const { config }              = useTheme();
-  const location                = useLocation();
-  const { hotelSlug }           = useParams();
-  // L'écran d'attraction s'affiche uniquement sur l'accueil du kiosque (/:slug)
+  const [visible, setVisible] = useState(false);
+  const [bgIndex, setBgIndex] = useState(0);
+  const timerRef   = useRef(null);
+  const bgTimerRef = useRef(null);
+  const { t, locale }  = useLanguage();
+  const { config }     = useTheme();
+  const location       = useLocation();
+  const { hotelSlug }  = useParams();
+
   const isHome = location.pathname === `/${hotelSlug}` || location.pathname === `/${hotelSlug}/`;
 
   useEffect(() => {
-    // Réinitialise et relance le timer
     const reset = () => {
       clearTimeout(timerRef.current);
       setVisible(false);
       timerRef.current = setTimeout(() => setVisible(true), ATTRACT_DELAY);
     };
 
-    // Démarre uniquement si on est sur l'accueil
     if (isHome) {
       reset();
       EVENTS.forEach(e => window.addEventListener(e, reset, { passive: true }));
     } else {
-      // Sur une autre page : cache l'écran et stoppe le timer
       clearTimeout(timerRef.current);
       setVisible(false);
     }
@@ -39,16 +62,24 @@ export default function AttractScreen() {
       clearTimeout(timerRef.current);
       EVENTS.forEach(e => window.removeEventListener(e, reset));
     };
-  }, [isHome]); // se re-exécute uniquement quand on change de page
+  }, [isHome]);
+
+  /* Cycle des images de fond — uniquement quand l'écran est visible */
+  useEffect(() => {
+    if (!visible) return;
+    bgTimerRef.current = setInterval(
+      () => setBgIndex(i => (i + 1) % BG_SLIDES.length),
+      BG_INTERVAL,
+    );
+    return () => clearInterval(bgTimerRef.current);
+  }, [visible]);
 
   const dismiss = () => {
     clearTimeout(timerRef.current);
     setVisible(false);
-    // Redémarre le timer après dismiss
     timerRef.current = setTimeout(() => setVisible(true), ATTRACT_DELAY);
   };
 
-  // Toujours dans le DOM — visibilité gérée par CSS (pas de return null)
   return (
     <div
       className={`${styles.overlay} ${visible && isHome ? styles.visible : ''}`}
@@ -58,12 +89,28 @@ export default function AttractScreen() {
       aria-label={t('attract.dismiss')}
       aria-hidden={!visible}
     >
+      {/* ── Fond slideshow : images des sections du kiosque ── */}
+      <div className={styles.bgSlideshow} aria-hidden="true">
+        {BG_SLIDES.map((src, i) => (
+          <div
+            key={src}
+            className={`${styles.bgSlide} ${i === bgIndex ? styles.bgSlideActive : ''}`}
+            style={{ backgroundImage: `url(${src})` }}
+          />
+        ))}
+      </div>
+
+      {/* ── Vignette : sombre aux bords, laisse voir le fond au centre ── */}
+      <div className={styles.vignette} aria-hidden="true" />
+
+      {/* ── Particules flottantes ── */}
       <div className={styles.particles} aria-hidden="true">
         {Array.from({ length: 12 }).map((_, i) => (
           <span key={i} className={styles.particle} style={{ '--i': i }} />
         ))}
       </div>
 
+      {/* ── Contenu central (carte frosted-glass) ── */}
       <div className={styles.content}>
         <div className={styles.brand}>
           <p className={styles.hotelName}>{config?.hotel_name || 'ConnectBé'}</p>
@@ -86,6 +133,19 @@ export default function AttractScreen() {
 
         <Clock locale={locale} active={visible} />
       </div>
+
+      {/* ── Bande défilante : aperçu des sections disponibles ── */}
+      <div className={styles.teaser} aria-hidden="true">
+        <div className={styles.teaserTrack}>
+          {/* Doublé pour le défilement infini seamless */}
+          {[...TEASER_ITEMS, ...TEASER_ITEMS].map((item, i) => (
+            <span key={i} className={styles.teaserChip}>
+              <item.Icon size={18} />
+              <span>{t(item.labelKey)}</span>
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -105,7 +165,7 @@ function Clock({ locale, active }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    if (!active) return; // n'tick que quand l'écran est visible
+    if (!active) return;
     const id = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(id);
   }, [active]);

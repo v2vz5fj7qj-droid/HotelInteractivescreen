@@ -113,7 +113,6 @@
 .bubble {
   position: absolute;
   width: 300px;
-  max-height: 460px;
   background: #ffffff;
   border-radius: 16px;
   border-top: 3px solid #C2782A;
@@ -125,8 +124,7 @@
   flex-direction: column;
   gap: 0.6rem;
   padding: 0.9rem 0.9rem 0.75rem;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   animation: bubbleIn 0.22s cubic-bezier(0.34, 1.3, 0.64, 1);
   pointer-events: all;
 }
@@ -172,13 +170,12 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Bouton fermer */
+/* Bouton fermer — dans le flux de l'en-tête, jamais par-dessus le texte */
 .bubbleClose {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  width: 24px;
-  height: 24px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 1px solid #e5e7eb;
   background: #f9fafb;
@@ -189,8 +186,7 @@
   align-items: center;
   justify-content: center;
   transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-  z-index: 1;
+  margin-left: auto;
 }
 .bubbleClose:hover { background: #C2782A; color: #fff; border-color: #C2782A; }
 
@@ -199,7 +195,6 @@
   display: flex;
   align-items: flex-start;
   gap: 0.55rem;
-  padding-right: 1.8rem;
 }
 .bubbleIcon {
   font-size: 1.4rem;
@@ -213,9 +208,7 @@
   color: #C2782A;
   margin: 0 0 0.15rem;
   line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-word;
 }
 .bubbleAddr {
   font-size: 0.72rem;
@@ -341,12 +334,13 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.5rem 0.6rem;
+  gap: 0.75rem;
+  padding: 0.6rem 0.6rem;
   border-top: 1px solid #f0f0f0;
   background: #fafafa;
   border-radius: 0 0 13px 13px;
   margin: 0 -0.9rem -0.75rem;  /* colle aux bords et au bas de la bulle */
+  flex-shrink: 0;
 }
 
 .bubbleQrLabel {

@@ -89,6 +89,9 @@ router.put('/', async (req, res) => {
       'nom', 'adresse', 'telephone', 'email_contact', 'lat', 'lng',
       'theme_colors', 'font_primary', 'font_secondary',
       'idle_timeout_ms', 'fullscreen_password',
+      'welcome_message_fr', 'welcome_message_en', 'welcome_message_de',
+      'welcome_message_es', 'welcome_message_pt', 'welcome_message_ar',
+      'welcome_message_zh', 'welcome_message_ja', 'welcome_message_ru',
     ];
     const fields = {};
     for (const key of allowed) {

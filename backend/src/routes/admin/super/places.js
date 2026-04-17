@@ -6,11 +6,32 @@
 // DELETE /api/admin/super/places/:id
 // POST   /api/admin/super/places/:id/publish
 // POST   /api/admin/super/places/:id/reject
+// PUT    /api/admin/super/places/:id/hotels    — remplace toutes les affectations (bulk)
 // POST   /api/admin/super/places/:id/assign
 // DELETE /api/admin/super/places/:id/assign/:hotelId
+// POST   /api/admin/super/places/:id/images   — upload image (max 3)
+// DELETE /api/admin/super/places/images/:imageId
 const express = require('express');
+const path    = require('path');
+const fs      = require('fs');
+const multer  = require('multer');
 const router  = express.Router();
 const db      = require('../../../services/db');
+
+const poiImgDir = path.resolve(__dirname, '../../../../../uploads/poi');
+if (!fs.existsSync(poiImgDir)) fs.mkdirSync(poiImgDir, { recursive: true });
+
+const uploadPoiImg = multer({
+  storage: multer.diskStorage({
+    destination: poiImgDir,
+    filename: (req, file, cb) => cb(null, `poi_${Date.now()}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/image\/(jpeg|png|webp)/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Format non supporté (JPG, PNG, WebP)'));
+  },
+});
 
 async function notifyAuthor(userId, type, entityId, messageFr) {
   if (!userId) return;
@@ -42,22 +63,25 @@ router.get('/', async (req, res) => {
     const conditions = [];
     const params = [];
     if (status) { conditions.push('p.status = ?'); params.push(status); }
-    if (search) { conditions.push('(pt.name LIKE ? OR p.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    if (search) { conditions.push('(COALESCE(pt_fr.name, pt_en.name) LIKE ? OR p.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
     const [[{ total }]] = await db.query(
       `SELECT COUNT(DISTINCT p.id) AS total FROM points_of_interest p
-       LEFT JOIN poi_translations pt ON pt.poi_id = p.id AND pt.locale = 'fr'
+       LEFT JOIN poi_translations pt_fr ON pt_fr.poi_id = p.id AND pt_fr.locale = 'fr'
+       LEFT JOIN poi_translations pt_en ON pt_en.poi_id = p.id AND pt_en.locale = 'en'
        ${where}`,
       params
     );
 
     const [places] = await db.query(`
       SELECT p.*,
-             pt.name, pt.address,
+             COALESCE(pt_fr.name,    pt_en.name)    AS name,
+             COALESCE(pt_fr.address, pt_en.address) AS address,
              u.email AS created_by_email
       FROM points_of_interest p
-      LEFT JOIN poi_translations pt ON pt.poi_id = p.id AND pt.locale = 'fr'
+      LEFT JOIN poi_translations pt_fr ON pt_fr.poi_id = p.id AND pt_fr.locale = 'fr'
+      LEFT JOIN poi_translations pt_en ON pt_en.poi_id = p.id AND pt_en.locale = 'en'
       LEFT JOIN admin_users u ON u.id = p.created_by
       ${where}
       GROUP BY p.id
@@ -231,6 +255,31 @@ router.post('/:id/reject', async (req, res) => {
   }
 });
 
+// Remplacer toutes les affectations hôtels d'un lieu (bulk)
+router.put('/:id/hotels', async (req, res) => {
+  try {
+    const { hotel_ids } = req.body;
+    if (!Array.isArray(hotel_ids)) return res.status(400).json({ error: 'hotel_ids (array) requis' });
+    const [rows] = await db.query('SELECT id FROM points_of_interest WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+
+    await db.query('DELETE FROM hotel_places WHERE place_id = ?', [req.params.id]);
+    for (const hid of hotel_ids) {
+      await db.query('INSERT IGNORE INTO hotel_places (hotel_id, place_id) VALUES (?, ?)', [hid, req.params.id]);
+    }
+    await auditLog(req.user.id, 'assign_hotels', req.params.id, null, { hotel_ids });
+    const [hotels] = await db.query(
+      `SELECT hp.hotel_id, h.nom FROM hotel_places hp
+       JOIN hotels h ON h.id = hp.hotel_id WHERE hp.place_id = ?`,
+      [req.params.id]
+    );
+    res.json({ hotels });
+  } catch (err) {
+    console.error('[super/places PUT /:id/hotels]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // Affecter un lieu à un hôtel
 router.post('/:id/assign', async (req, res) => {
   try {
@@ -257,6 +306,48 @@ router.delete('/:id/assign/:hotelId', async (req, res) => {
     res.json({ message: 'Lieu retiré de l\'hôtel' });
   } catch (err) {
     console.error('[super/places DELETE /assign]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/super/places/:id/images — upload image (max 3 par lieu)
+router.post('/:id/images', uploadPoiImg.single('image'), async (req, res) => {
+  try {
+    const poiId = req.params.id;
+    const [rows] = await db.query('SELECT id FROM points_of_interest WHERE id = ?', [poiId]);
+    if (!rows[0]) return res.status(404).json({ error: 'Lieu introuvable' });
+
+    const [[{ count }]] = await db.query('SELECT COUNT(*) AS count FROM poi_images WHERE poi_id = ?', [poiId]);
+    if (count >= 3) {
+      if (req.file) fs.unlink(path.join(poiImgDir, req.file.filename), () => {});
+      return res.status(400).json({ error: 'Maximum 3 images par lieu' });
+    }
+
+    const url = `/uploads/poi/${req.file.filename}`;
+    const [result] = await db.query(
+      'INSERT INTO poi_images (poi_id, url, display_order) VALUES (?, ?, ?)',
+      [poiId, url, count]
+    );
+    res.status(201).json({ id: result.insertId, url });
+  } catch (err) {
+    console.error('[super/places POST /:id/images]', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur' });
+  }
+});
+
+// DELETE /api/admin/super/places/images/:imageId
+router.delete('/images/:imageId', async (req, res) => {
+  try {
+    const [[img]] = await db.query('SELECT * FROM poi_images WHERE id = ?', [req.params.imageId]);
+    if (!img) return res.status(404).json({ error: 'Image introuvable' });
+
+    const filePath = path.join(poiImgDir, path.basename(img.url));
+    if (fs.existsSync(filePath)) fs.unlink(filePath, () => {});
+
+    await db.query('DELETE FROM poi_images WHERE id = ?', [req.params.imageId]);
+    res.json({ message: 'Image supprimée' });
+  } catch (err) {
+    console.error('[super/places DELETE /images/:imageId]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

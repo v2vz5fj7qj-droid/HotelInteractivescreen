@@ -29,13 +29,15 @@ router.get('/', async (req, res) => {
       FROM events e
       LEFT JOIN event_translations t  ON t.event_id = e.id AND t.locale = ?
       LEFT JOIN event_translations tf ON tf.event_id = e.id AND tf.locale = 'fr'
-      WHERE e.status = 'published'
     `;
     const params = [locale];
 
     if (hotelId) {
-      query += ' AND e.hotel_id = ?'; params.push(hotelId);
+      // Filtrer via la table de liaison N:N (migration 005 — events.hotel_id renommé en owner_hotel_id)
+      query += ' JOIN hotel_events he ON he.event_id = e.id AND he.hotel_id = ?'; params.push(hotelId);
     }
+
+    query += ' WHERE e.status = \'published\'';
     if (upcoming) {
       query += ' AND (e.end_date >= CURDATE() OR (e.end_date IS NULL AND e.start_date >= CURDATE()))';
     }
@@ -62,15 +64,25 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/events/categories  (public, cached 1h)
+// GET /api/events/categories?hotel_id=  (public, cached 1h)
 router.get('/categories', async (req, res) => {
-  const cached = await cache.get('events:categories');
+  const hotelId  = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
+  const cacheKey = `events:categories:${hotelId || 'global'}`;
+  const cached   = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM event_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC'
-    );
-    await cache.set('events:categories', JSON.stringify(rows), 3600);
+    let rows;
+    if (hotelId) {
+      [rows] = await db.query(
+        'SELECT * FROM event_categories WHERE is_active = 1 AND (hotel_id IS NULL OR hotel_id = ?) ORDER BY display_order ASC, id ASC',
+        [hotelId]
+      );
+    } else {
+      [rows] = await db.query(
+        'SELECT * FROM event_categories WHERE is_active = 1 ORDER BY display_order ASC, id ASC'
+      );
+    }
+    await cache.set(cacheKey, JSON.stringify(rows), 3600);
     res.json(rows);
   } catch (err) {
     console.error('[Events/categories]', err.message);

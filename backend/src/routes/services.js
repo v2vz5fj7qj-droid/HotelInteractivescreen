@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
       `SELECT
          s.id, s.slug, s.image_url, s.contact_phone,
          s.available_hours, s.available_days, s.display_order,
-         s.price_fcfa, s.duration_min,
+         s.price_fcfa, s.duration_min, s.booking_info,
          COALESCE(sc_h.label_fr, sc_g.label_fr) AS category_label_fr,
          COALESCE(sc_h.label_en, sc_g.label_en) AS category_label_en,
          COALESCE(sc_h.icon,     sc_g.icon)     AS category_icon,

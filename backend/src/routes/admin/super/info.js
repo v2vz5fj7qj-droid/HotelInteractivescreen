@@ -3,6 +3,7 @@
 // GET    /api/admin/super/info/:id
 // POST   /api/admin/super/info
 // PUT    /api/admin/super/info/:id
+// PUT    /api/admin/super/info/:id/hotels   — remplace toutes les affectations hôtels
 // DELETE /api/admin/super/info/:id
 // POST   /api/admin/super/info/:id/publish
 // POST   /api/admin/super/info/:id/reject
@@ -40,21 +41,26 @@ router.get('/', async (req, res) => {
     const conditions = [];
     const params = [];
     if (status) { conditions.push('u.status = ?'); params.push(status); }
-    if (search) { conditions.push('(uct.name LIKE ? OR u.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    if (search) { conditions.push('(COALESCE(uct_fr.name, uct_en.name) LIKE ? OR u.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
     const [[{ total }]] = await db.query(
       `SELECT COUNT(DISTINCT u.id) AS total FROM useful_contacts u
-       LEFT JOIN useful_contact_translations uct ON uct.contact_id = u.id AND uct.locale = 'fr'
+       LEFT JOIN useful_contact_translations uct_fr ON uct_fr.contact_id = u.id AND uct_fr.locale = 'fr'
+       LEFT JOIN useful_contact_translations uct_en ON uct_en.contact_id = u.id AND uct_en.locale = 'en'
        ${where}`,
       params
     );
 
     const [rows] = await db.query(`
-      SELECT u.*, uct.name, uct.description, uct.address,
+      SELECT u.*,
+             COALESCE(uct_fr.name,        uct_en.name)        AS name,
+             COALESCE(uct_fr.description, uct_en.description) AS description,
+             COALESCE(uct_fr.address,     uct_en.address)     AS address,
              au.email AS created_by_email
       FROM useful_contacts u
-      LEFT JOIN useful_contact_translations uct ON uct.contact_id = u.id AND uct.locale = 'fr'
+      LEFT JOIN useful_contact_translations uct_fr ON uct_fr.contact_id = u.id AND uct_fr.locale = 'fr'
+      LEFT JOIN useful_contact_translations uct_en ON uct_en.contact_id = u.id AND uct_en.locale = 'en'
       LEFT JOIN admin_users au ON au.id = u.created_by
       ${where}
       GROUP BY u.id
@@ -69,13 +75,18 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Détail avec traductions
+// Détail avec traductions et hôtels associés
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM useful_contacts WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Info introuvable' });
     const [translations] = await db.query('SELECT * FROM useful_contact_translations WHERE contact_id = ?', [req.params.id]);
-    res.json({ ...rows[0], translations });
+    const [hotels] = await db.query(
+      `SELECT hi.hotel_id, h.nom FROM hotel_info hi
+       JOIN hotels h ON h.id = hi.hotel_id WHERE hi.info_id = ?`,
+      [req.params.id]
+    );
+    res.json({ ...rows[0], translations, hotels });
   } catch (err) {
     console.error('[super/info GET/:id]', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -104,6 +115,14 @@ router.post('/', async (req, res) => {
           'INSERT INTO useful_contact_translations (contact_id, locale, name, description, address) VALUES (?, ?, ?, ?, ?)',
           [id, t.locale, t.name, t.description || null, t.address || null]
         );
+      }
+    }
+
+    // Affecter aux hôtels sélectionnés
+    const hotel_ids = req.body.hotel_ids;
+    if (Array.isArray(hotel_ids) && hotel_ids.length) {
+      for (const hid of hotel_ids) {
+        await db.query('INSERT IGNORE INTO hotel_info (hotel_id, info_id) VALUES (?, ?)', [hid, id]);
       }
     }
 
@@ -146,6 +165,31 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[super/info PUT]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Remplacer toutes les affectations hôtels d'une info utile
+router.put('/:id/hotels', async (req, res) => {
+  try {
+    const { hotel_ids } = req.body;
+    if (!Array.isArray(hotel_ids)) return res.status(400).json({ error: 'hotel_ids (array) requis' });
+    const [rows] = await db.query('SELECT id FROM useful_contacts WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Info introuvable' });
+
+    await db.query('DELETE FROM hotel_info WHERE info_id = ?', [req.params.id]);
+    for (const hid of hotel_ids) {
+      await db.query('INSERT IGNORE INTO hotel_info (hotel_id, info_id) VALUES (?, ?)', [hid, req.params.id]);
+    }
+    await auditLog(req.user.id, 'assign_hotels', req.params.id, null, { hotel_ids });
+    const [hotels] = await db.query(
+      `SELECT hi.hotel_id, h.nom FROM hotel_info hi
+       JOIN hotels h ON h.id = hi.hotel_id WHERE hi.info_id = ?`,
+      [req.params.id]
+    );
+    res.json({ hotels });
+  } catch (err) {
+    console.error('[super/info PUT /:id/hotels]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

@@ -7,15 +7,37 @@ const router  = express.Router();
 const OWM_KEY   = process.env.OPENWEATHERMAP_API_KEY;
 const CACHE_TTL = 600; // 10 min
 
-// Récupère la localité active (par défaut ou via ?locality_id=)
-async function getLocality(localityId) {
+// Récupère la localité active (par défaut ou via ?locality_id=), filtrée par hôtel si fourni
+async function getLocality(localityId, hotelId) {
   try {
-    const query = localityId
-      ? 'SELECT * FROM localities WHERE id = ? AND is_active = 1 LIMIT 1'
-      : 'SELECT * FROM localities WHERE is_default = 1 AND is_active = 1 LIMIT 1';
-    const params = localityId ? [localityId] : [];
-    const [rows] = await db.query(query, params);
-    if (rows.length) return rows[0];
+    let rows;
+    if (localityId && hotelId) {
+      // Vérifier que la localité appartient bien à cet hôtel
+      [rows] = await db.query(
+        `SELECT l.* FROM localities l
+           JOIN hotel_weather_localities hwl ON hwl.locality_id = l.id
+          WHERE l.id = ? AND hwl.hotel_id = ? AND l.is_active = 1 LIMIT 1`,
+        [localityId, hotelId]
+      );
+    } else if (localityId) {
+      [rows] = await db.query(
+        'SELECT * FROM localities WHERE id = ? AND is_active = 1 LIMIT 1',
+        [localityId]
+      );
+    } else if (hotelId) {
+      // Localité par défaut de l'hôtel
+      [rows] = await db.query(
+        `SELECT l.* FROM localities l
+           JOIN hotel_weather_localities hwl ON hwl.locality_id = l.id
+          WHERE hwl.hotel_id = ? AND hwl.is_default = 1 AND l.is_active = 1 LIMIT 1`,
+        [hotelId]
+      );
+    } else {
+      [rows] = await db.query(
+        'SELECT * FROM localities WHERE is_default = 1 AND is_active = 1 LIMIT 1'
+      );
+    }
+    if (rows?.length) return rows[0];
   } catch (_) {}
   // Fallback sur env var
   return {
@@ -85,9 +107,10 @@ async function getStaleWeather(cacheKey) {
   return payload;
 }
 
-// GET /api/weather/current?locality_id=
+// GET /api/weather/current?locality_id=&hotel_id=
 router.get('/current', async (req, res) => {
-  const locality   = await getLocality(req.query.locality_id);
+  const hotelId  = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
+  const locality = await getLocality(req.query.locality_id, hotelId);
   const cacheKey   = `weather:current:${locality.owm_city_id || locality.id}`;
   const cached     = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
@@ -120,13 +143,21 @@ router.get('/current', async (req, res) => {
       throw new Error(`Réponse OWM invalide (HTTP ${status}) — ${msg}`);
     }
 
+    // Calcul min/max du jour à partir des prévisions 3h (plus fiable que c.main.temp_min/max)
+    const todayStr   = new Date().toISOString().split('T')[0];
+    const todayTemps = f
+      .filter(e => new Date(e.dt * 1000).toISOString().split('T')[0] === todayStr)
+      .map(e => e.main.temp);
+    const todayMin = todayTemps.length > 0 ? Math.round(Math.min(...todayTemps)) : Math.round(c.main.temp_min);
+    const todayMax = todayTemps.length > 0 ? Math.round(Math.max(...todayTemps)) : Math.round(c.main.temp_max);
+
     const payload = {
       locality: { name: locality.name, country: locality.country },
       current: {
         temp:        Math.round(c.main.temp),
         feels_like:  Math.round(c.main.feels_like),
-        temp_min:    Math.round(c.main.temp_min),
-        temp_max:    Math.round(c.main.temp_max),
+        temp_min:    todayMin,
+        temp_max:    todayMax,
         humidity:    c.main.humidity,
         pressure:    c.main.pressure,
         wind_speed:  Math.round((c.wind.speed || 0) * 3.6),
@@ -163,12 +194,27 @@ router.get('/current', async (req, res) => {
   }
 });
 
-// GET /api/weather/localities — liste publique des localités actives
+// GET /api/weather/localities — liste des localités actives filtrée par hôtel
 router.get('/localities', async (req, res) => {
+  const hotelId = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
   try {
-    const [rows] = await db.query(
-      'SELECT id, name, country, is_default FROM localities WHERE is_active = 1 ORDER BY display_order, name'
-    );
+    let rows;
+    if (hotelId) {
+      // Retourner uniquement les localités affectées à cet hôtel
+      [rows] = await db.query(
+        `SELECT l.id, l.name, l.country, hwl.is_default
+           FROM localities l
+           JOIN hotel_weather_localities hwl ON hwl.locality_id = l.id
+          WHERE hwl.hotel_id = ? AND l.is_active = 1
+          ORDER BY hwl.display_order, l.name`,
+        [hotelId]
+      );
+    } else {
+      // Fallback sans hôtel : toutes les localités actives
+      [rows] = await db.query(
+        'SELECT id, name, country, is_default FROM localities WHERE is_active = 1 ORDER BY display_order, name'
+      );
+    }
     res.json(rows);
   } catch { res.json([]); }
 });

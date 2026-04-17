@@ -87,6 +87,67 @@
   color: var(--c-text-muted);
 }
 
+/* ─── Sélecteur d'aéroport ─────────────────────────────── */
+.airportSelector {
+  display: flex;
+  gap: clamp(8px, 1.2vw, 16px);
+  align-self: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.airportTab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: clamp(10px, 1.5vh, 16px) clamp(20px, 3vw, 40px);
+  background: var(--c-surface);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  min-width: clamp(100px, 14vw, 160px);
+}
+
+.airportTab:hover {
+  border-color: var(--c-primary);
+  background: rgba(var(--c-primary-rgb, 194 120 42), 0.06);
+}
+
+.airportTabActive {
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+}
+
+.airportCode {
+  font-size: clamp(1.1rem, 2.2vh, 1.6rem);
+  font-weight: 800;
+  color: var(--c-secondary);
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.airportTabActive .airportCode {
+  color: #fff;
+}
+
+.airportLabel {
+  font-size: clamp(0.6rem, 0.9vh, 0.75rem);
+  color: var(--c-text-muted);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.airportTabActive .airportLabel {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ─── Onglets arrivées/départs ─────────────────────────── */
 /* Onglets */
 .tabs {
   display: flex;
@@ -179,6 +240,13 @@
 
   /* Barre de recherche pleine largeur */
   .searchBar { max-width: 100%; }
+
+  /* Sélecteur d'aéroport : réduire le padding */
+  .airportTab {
+    min-width: clamp(80px, 22vw, 120px);
+    padding: 10px 16px;
+  }
+  .airportLabel { max-width: 90px; }
 
   /* Rangée de vol : réduire la colonne de gauche */
   .flightRow {

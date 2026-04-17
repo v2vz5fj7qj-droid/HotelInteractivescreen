@@ -2,6 +2,17 @@ import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../useAdminApi';
 import styles from '../../Admin.module.css';
 
+const TIMEZONES = [
+  'Africa/Ouagadougou','Africa/Abidjan','Africa/Dakar','Africa/Bamako',
+  'Africa/Lagos','Africa/Nairobi','Africa/Accra','Africa/Douala',
+  'Europe/Paris','America/New_York','Asia/Dubai',
+];
+
+const EMPTY_NEW_LOC = {
+  name: '', country: 'Burkina Faso', owm_city_id: '',
+  lat: '', lng: '', timezone: 'Africa/Ouagadougou', is_active: true, is_default: false, display_order: 0,
+};
+
 export default function WeatherManager() {
   const [hotels,     setHotels]     = useState([]);
   const [localities, setLocalities] = useState([]);
@@ -10,6 +21,8 @@ export default function WeatherManager() {
   const [loading,    setLoading]    = useState(true);
   const [addForm,    setAddForm]    = useState({ locality_id: '', is_default: false });
   const [toast,      setToast]      = useState('');
+  const [newLoc,     setNewLoc]     = useState(EMPTY_NEW_LOC);
+  const [creatingLoc, setCreatingLoc] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -32,17 +45,38 @@ export default function WeatherManager() {
     setHotelLocs(data);
   };
 
-  const addLocality = async () => {
-    if (!addForm.locality_id) return;
+  const addLocality = async (localityId) => {
+    const id = localityId ?? addForm.locality_id;
+    if (!id) return;
     try {
       const { data } = await api.post(`/super/weather/hotels/${selected.id}`, {
-        locality_id: parseInt(addForm.locality_id),
+        locality_id: parseInt(id),
         is_default: addForm.is_default,
       });
       setHotelLocs(data);
       setAddForm({ locality_id: '', is_default: false });
       showToast('Localité ajoutée');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
+  };
+
+  const createAndAddLocality = async () => {
+    if (!newLoc.name.trim()) return;
+    setCreatingLoc(true);
+    try {
+      const { data: created } = await api.post('/localities', newLoc);
+      // Rafraîchir la liste globale des localités
+      const { data: locs } = await api.get('/super/weather/localities');
+      setLocalities(locs);
+      // Remettre à zéro le formulaire de création
+      setNewLoc(EMPTY_NEW_LOC);
+      setAddForm(f => ({ ...f, locality_id: '' }));
+      // Ajouter directement la nouvelle localité à l'hôtel
+      await addLocality(created.id);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erreur création localité');
+    } finally {
+      setCreatingLoc(false);
+    }
   };
 
   const removeLocality = async (localityId) => {
@@ -147,24 +181,96 @@ export default function WeatherManager() {
                 </tbody>
               </table>
               {hotelLocs.length < 5 && (
-                <div style={{ padding: '16px 20px', borderTop: '1px solid #E5E7EB', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                  <div className={styles.field} style={{ flex: 1 }}>
-                    <label className={styles.label}>Ajouter une localité</label>
-                    <select className={styles.select} value={addForm.locality_id}
-                      onChange={e => setAddForm(f => ({ ...f, locality_id: e.target.value }))}>
-                      <option value="">— Sélectionner —</option>
-                      {available.map(l => <option key={l.id} value={l.id}>{l.name} ({l.country})</option>)}
-                    </select>
+                <div style={{ padding: '16px 20px', borderTop: '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                    <div className={styles.field} style={{ flex: 1 }}>
+                      <label className={styles.label}>Ajouter une localité</label>
+                      <select className={styles.select} value={addForm.locality_id}
+                        onChange={e => setAddForm(f => ({ ...f, locality_id: e.target.value }))}>
+                        <option value="">— Sélectionner —</option>
+                        {available.map(l => <option key={l.id} value={l.id}>{l.name} ({l.country})</option>)}
+                        <option value="__new__">+ Créer une nouvelle localité…</option>
+                      </select>
+                    </div>
+                    {addForm.locality_id && addForm.locality_id !== '__new__' && (
+                      <>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer', paddingBottom: 10 }}>
+                          <input type="checkbox" checked={addForm.is_default}
+                            onChange={e => setAddForm(f => ({ ...f, is_default: e.target.checked }))} />
+                          Défaut
+                        </label>
+                        <button className={styles.btnPrimary} onClick={() => addLocality()} style={{ paddingBottom: 10 }}>
+                          Ajouter
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer', paddingBottom: 10 }}>
-                    <input type="checkbox" checked={addForm.is_default}
-                      onChange={e => setAddForm(f => ({ ...f, is_default: e.target.checked }))} />
-                    Défaut
-                  </label>
-                  <button className={styles.btnPrimary} onClick={addLocality}
-                    disabled={!addForm.locality_id} style={{ paddingBottom: 10 }}>
-                    Ajouter
-                  </button>
+
+                  {addForm.locality_id === '__new__' && (
+                    <div style={{ marginTop: 14, padding: 16, background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 12, color: '#374151' }}>
+                        Nouvelle localité
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Nom de la ville *</label>
+                          <input className={styles.input} value={newLoc.name}
+                            onChange={e => setNewLoc(p => ({ ...p, name: e.target.value }))}
+                            placeholder="ex: Ouagadougou" />
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Pays</label>
+                          <input className={styles.input} value={newLoc.country}
+                            onChange={e => setNewLoc(p => ({ ...p, country: e.target.value }))}
+                            placeholder="ex: Burkina Faso" />
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>OWM City ID</label>
+                          <input className={styles.input} value={newLoc.owm_city_id}
+                            onChange={e => setNewLoc(p => ({ ...p, owm_city_id: e.target.value }))}
+                            placeholder="ex: 2355426" />
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Fuseau horaire</label>
+                          <select className={styles.select} value={newLoc.timezone}
+                            onChange={e => setNewLoc(p => ({ ...p, timezone: e.target.value }))}>
+                            {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                          </select>
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Latitude</label>
+                          <input className={styles.input} type="number" step="0.0001"
+                            value={newLoc.lat}
+                            onChange={e => setNewLoc(p => ({ ...p, lat: e.target.value }))}
+                            placeholder="ex: 12.3641" />
+                        </div>
+                        <div className={styles.field}>
+                          <label className={styles.label}>Longitude</label>
+                          <input className={styles.input} type="number" step="0.0001"
+                            value={newLoc.lng}
+                            onChange={e => setNewLoc(p => ({ ...p, lng: e.target.value }))}
+                            placeholder="ex: -1.5332" />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={addForm.is_default}
+                            onChange={e => setAddForm(f => ({ ...f, is_default: e.target.checked }))} />
+                          Définir comme défaut
+                        </label>
+                        <div style={{ flex: 1 }} />
+                        <button className={styles.btnSecondary}
+                          onClick={() => { setAddForm(f => ({ ...f, locality_id: '' })); setNewLoc(EMPTY_NEW_LOC); }}>
+                          Annuler
+                        </button>
+                        <button className={styles.btnPrimary}
+                          onClick={createAndAddLocality}
+                          disabled={!newLoc.name.trim() || creatingLoc}>
+                          {creatingLoc ? 'Création…' : 'Créer et ajouter'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

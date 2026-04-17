@@ -9,7 +9,7 @@ import styles           from './Wellness.module.css';
 
 export default function Wellness() {
   const { t, locale }               = useLanguage();
-  const { data, loading, error }    = useApi('/wellness', { locale });
+  const { data, loading, error }    = useApi('/services', { locale });
   const [selected, setSelected]     = useState(null);
 
   useEffect(() => { trackEvent('wellness', 'open'); }, []);

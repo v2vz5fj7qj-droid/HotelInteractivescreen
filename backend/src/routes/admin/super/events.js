@@ -3,13 +3,35 @@
 // GET    /api/admin/super/events/:id
 // POST   /api/admin/super/events
 // PUT    /api/admin/super/events/:id
+// PUT    /api/admin/super/events/:id/hotels   — remplace toutes les affectations hôtels
 // DELETE /api/admin/super/events/:id
 // POST   /api/admin/super/events/:id/publish
 // POST   /api/admin/super/events/:id/reject
 // POST   /api/admin/super/events/:id/archive
+// POST   /api/admin/super/events/:id/unarchive
+// POST   /api/admin/super/events/:id/image    — upload image illustration
+// DELETE /api/admin/super/events/:id/image    — supprimer image
 const express = require('express');
+const path    = require('path');
+const fs      = require('fs');
+const multer  = require('multer');
 const router  = express.Router();
 const db      = require('../../../services/db');
+
+const eventImgDir = path.resolve(__dirname, '../../../../../uploads/events');
+if (!fs.existsSync(eventImgDir)) fs.mkdirSync(eventImgDir, { recursive: true });
+
+const uploadEventImg = multer({
+  storage: multer.diskStorage({
+    destination: eventImgDir,
+    filename: (req, file, cb) => cb(null, `event_${Date.now()}${path.extname(file.originalname)}`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/image\/(jpeg|png|webp)/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Format non supporté (JPG, PNG, WebP)'));
+  },
+});
 
 async function notifyAuthor(userId, type, entityId, messageFr) {
   if (!userId) return;
@@ -40,25 +62,32 @@ router.get('/', async (req, res) => {
 
     const conditions = [];
     const params = [];
-    if (status)   { conditions.push('e.status = ?');   params.push(status); }
-    if (hotel_id) { conditions.push('e.hotel_id = ?'); params.push(hotel_id); }
-    if (search)   { conditions.push('(et.title LIKE ? OR e.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    if (status)   { conditions.push('e.status = ?');          params.push(status); }
+    if (hotel_id) { conditions.push('he.hotel_id = ?');       params.push(hotel_id); }
+    if (search)   { conditions.push('(COALESCE(et_fr.title, et_en.title) LIKE ? OR e.category LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
     const [[{ total }]] = await db.query(
       `SELECT COUNT(DISTINCT e.id) AS total FROM events e
-       LEFT JOIN event_translations et ON et.event_id = e.id AND et.locale = 'fr'
+       LEFT JOIN event_translations et_fr ON et_fr.event_id = e.id AND et_fr.locale = 'fr'
+       LEFT JOIN event_translations et_en ON et_en.event_id = e.id AND et_en.locale = 'en'
+       LEFT JOIN hotel_events he ON he.event_id = e.id
        ${where}`,
       params
     );
 
     const [rows] = await db.query(`
-      SELECT e.*, et.title, et.description,
-             u.email AS created_by_email, h.nom AS hotel_nom
+      SELECT e.*,
+             COALESCE(et_fr.title,       et_en.title)       AS title,
+             COALESCE(et_fr.description, et_en.description) AS description,
+             u.email AS created_by_email,
+             GROUP_CONCAT(DISTINCT h.nom ORDER BY h.nom SEPARATOR ', ') AS hotel_noms
       FROM events e
-      LEFT JOIN event_translations et ON et.event_id = e.id AND et.locale = 'fr'
+      LEFT JOIN event_translations et_fr ON et_fr.event_id = e.id AND et_fr.locale = 'fr'
+      LEFT JOIN event_translations et_en ON et_en.event_id = e.id AND et_en.locale = 'en'
       LEFT JOIN admin_users u ON u.id = e.created_by
-      LEFT JOIN hotels h ON h.id = e.hotel_id
+      LEFT JOIN hotel_events he ON he.event_id = e.id
+      LEFT JOIN hotels h ON h.id = he.hotel_id
       ${where}
       GROUP BY e.id
       ORDER BY e.created_at DESC
@@ -72,13 +101,18 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Détail d'un événement avec ses traductions
+// Détail d'un événement avec ses traductions et hôtels associés
 router.get('/:id', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
     const [translations] = await db.query('SELECT * FROM event_translations WHERE event_id = ?', [req.params.id]);
-    res.json({ ...rows[0], translations });
+    const [hotels] = await db.query(
+      `SELECT he.hotel_id, h.nom FROM hotel_events he
+       JOIN hotels h ON h.id = he.hotel_id WHERE he.event_id = ?`,
+      [req.params.id]
+    );
+    res.json({ ...rows[0], translations, hotels });
   } catch (err) {
     console.error('[super/events GET/:id]', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -103,7 +137,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO events
          (slug, category, start_date, end_date, start_time, end_time, location, lat, lng,
           price_fcfa, image_url, is_featured, is_recurrent, recurrence_rule, auto_archive,
-          hotel_id, created_by, status, validated_by, validated_at)
+          owner_hotel_id, created_by, status, validated_by, validated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, 'published', ?, NOW())`,
       [slug, category, start_date, end_date || null, start_time || null, end_time || null,
        location || null, lat || null, lng || null, price_fcfa || 0, image_url || null,
@@ -118,6 +152,14 @@ router.post('/', async (req, res) => {
           'INSERT INTO event_translations (event_id, locale, title, description, tags) VALUES (?, ?, ?, ?, ?)',
           [id, t.locale, t.title, t.description || null, t.tags || null]
         );
+      }
+    }
+
+    // Affecter aux hôtels sélectionnés
+    const hotel_ids = req.body.hotel_ids;
+    if (Array.isArray(hotel_ids) && hotel_ids.length) {
+      for (const hid of hotel_ids) {
+        await db.query('INSERT IGNORE INTO hotel_events (hotel_id, event_id) VALUES (?, ?)', [hid, id]);
       }
     }
 
@@ -165,6 +207,31 @@ router.put('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (err) {
     console.error('[super/events PUT]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Remplacer toutes les affectations hôtels d'un événement
+router.put('/:id/hotels', async (req, res) => {
+  try {
+    const { hotel_ids } = req.body;
+    if (!Array.isArray(hotel_ids)) return res.status(400).json({ error: 'hotel_ids (array) requis' });
+    const [rows] = await db.query('SELECT id FROM events WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
+
+    await db.query('DELETE FROM hotel_events WHERE event_id = ?', [req.params.id]);
+    for (const hid of hotel_ids) {
+      await db.query('INSERT IGNORE INTO hotel_events (hotel_id, event_id) VALUES (?, ?)', [hid, req.params.id]);
+    }
+    await auditLog(req.user.id, 'assign_hotels', req.params.id, null, { hotel_ids });
+    const [hotels] = await db.query(
+      `SELECT he.hotel_id, h.nom FROM hotel_events he
+       JOIN hotels h ON h.id = he.hotel_id WHERE he.event_id = ?`,
+      [req.params.id]
+    );
+    res.json({ hotels });
+  } catch (err) {
+    console.error('[super/events PUT /:id/hotels]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -237,6 +304,83 @@ router.post('/:id/archive', async (req, res) => {
     res.json({ message: 'Événement archivé' });
   } catch (err) {
     console.error('[super/events POST /archive]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Désarchiver manuellement un événement
+router.post('/:id/unarchive', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
+    if (rows[0].status !== 'archived') {
+      return res.status(400).json({ error: "L'événement n'est pas archivé" });
+    }
+
+    // Vérifier que la date de référence n'est pas passée
+    const refDate = rows[0].end_date || rows[0].start_date;
+    const [[{ today }]] = await db.query('SELECT CURDATE() AS today');
+    if (refDate && new Date(refDate) < new Date(today)) {
+      return res.status(422).json({
+        code: 'date_passed',
+        error: "La date de l'événement est passée. Mettez à jour la date avant de désarchiver.",
+      });
+    }
+
+    await db.query(
+      `UPDATE events SET status='published', archived_at=NULL WHERE id=?`,
+      [req.params.id]
+    );
+    await auditLog(req.user.id, 'unarchive', req.params.id, { status: 'archived' }, { status: 'published' });
+    await notifyAuthor(rows[0].created_by, 'unarchived', req.params.id, 'Votre événement a été réactivé et est à nouveau visible sur la borne.');
+    res.json({ message: 'Événement désarchivé' });
+  } catch (err) {
+    console.error('[super/events POST /unarchive]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload image illustration d'un événement
+router.post('/:id/image', uploadEventImg.single('image'), async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+
+    // Supprimer l'ancienne image locale si elle existe
+    const old = rows[0].image_url;
+    if (old && old.startsWith('/uploads/events/')) {
+      const oldPath = path.resolve(__dirname, '../../../../../', old.replace(/^\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    const image_url = `/uploads/events/${req.file.filename}`;
+    await db.query('UPDATE events SET image_url = ? WHERE id = ?', [image_url, req.params.id]);
+    await auditLog(req.user.id, 'upload_image', req.params.id, { image_url: old }, { image_url });
+    res.json({ image_url });
+  } catch (err) {
+    console.error('[super/events POST /:id/image]', err);
+    res.status(500).json({ error: err.message || 'Erreur serveur' });
+  }
+});
+
+// Supprimer l'image d'un événement
+router.delete('/:id/image', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT image_url FROM events WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
+
+    const old = rows[0].image_url;
+    if (old && old.startsWith('/uploads/events/')) {
+      const oldPath = path.resolve(__dirname, '../../../../../', old.replace(/^\//, ''));
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    await db.query('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
+    await auditLog(req.user.id, 'delete_image', req.params.id, { image_url: old }, null);
+    res.json({ message: 'Image supprimée' });
+  } catch (err) {
+    console.error('[super/events DELETE /:id/image]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });

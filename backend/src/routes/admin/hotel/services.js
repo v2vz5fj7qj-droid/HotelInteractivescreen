@@ -3,13 +3,46 @@
 // POST   /api/admin/hotel/services
 // PUT    /api/admin/hotel/services/:id
 // DELETE /api/admin/hotel/services/:id
+// POST   /api/admin/hotel/services/:id/image
 // GET    /api/admin/hotel/services/categories
 // POST   /api/admin/hotel/services/categories
 // PUT    /api/admin/hotel/services/categories/:id
 // DELETE /api/admin/hotel/services/categories/:id
 const express = require('express');
+const multer  = require('multer');
+const path    = require('path');
+const fs      = require('fs');
 const router  = express.Router();
 const db      = require('../../../services/db');
+
+// ── Upload image service ──────────────────────────────
+const IMAGE_SIGNATURES = [
+  { ext: '.jpg',  bytes: [0xFF, 0xD8, 0xFF] },
+  { ext: '.png',  bytes: [0x89, 0x50, 0x4E, 0x47] },
+  { ext: '.webp', bytes: [0x52, 0x49, 0x46, 0x46], also: { bytes: [0x57, 0x45, 0x42, 0x50], offset: 8 } },
+];
+function detectImageType(buffer) {
+  for (const sig of IMAGE_SIGNATURES) {
+    const slice = [...buffer.slice(sig.offset || 0, (sig.offset || 0) + sig.bytes.length)];
+    if (sig.bytes.every((b, i) => slice[i] === b)) {
+      if (sig.also) {
+        const s2 = [...buffer.slice(sig.also.offset, sig.also.offset + sig.also.bytes.length)];
+        if (!sig.also.bytes.every((b, i) => s2[i] === b)) continue;
+      }
+      return sig.ext;
+    }
+  }
+  return null;
+}
+const uploadImg = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) return cb(new Error('Fichier image requis'));
+    cb(null, true);
+  },
+});
+const SERVICES_IMG_DIR = path.resolve(__dirname, '../../../../../uploads/services');
 
 function resolveHotelId(req) {
   if (req.user.role === 'super_admin' && req.query.hotel_id) return parseInt(req.query.hotel_id);
@@ -105,22 +138,32 @@ router.delete('/categories/:id', async (req, res) => {
 
 // ── Services ──────────────────────────────────────────────────────
 
-// Lister les services de l'hôtel
+// Lister les services de l'hôtel (avec toutes les traductions)
 router.get('/', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     if (!hotelId) return res.status(400).json({ error: 'hotel_id manquant' });
 
     const [rows] = await db.query(`
-      SELECT s.*, sc.label_fr AS category_fr, sc.label_en AS category_en, sc.icon AS category_icon,
-             st.name, st.description, st.benefits
+      SELECT s.*,
+             sc.label_fr AS category_fr, sc.label_en AS category_en, sc.icon AS category_icon,
+             JSON_OBJECTAGG(
+               COALESCE(st.locale, '__none__'),
+               JSON_OBJECT('name', st.name, 'description', st.description, 'benefits', st.benefits)
+             ) AS translations
       FROM services s
       JOIN service_categories sc ON sc.id = s.category_id
-      LEFT JOIN service_translations st ON st.service_id = s.id AND st.locale = 'fr'
+      LEFT JOIN service_translations st ON st.service_id = s.id
       WHERE s.hotel_id = ?
+      GROUP BY s.id
       ORDER BY sc.display_order, s.display_order
     `, [hotelId]);
-    res.json(rows);
+
+    res.json(rows.map(r => {
+      let tr = typeof r.translations === 'string' ? JSON.parse(r.translations) : r.translations;
+      if (tr) delete tr['__none__'];
+      return { ...r, translations: tr || {} };
+    }));
   } catch (err) {
     console.error('[hotel/services GET]', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -204,6 +247,30 @@ router.put('/:id', async (req, res) => {
   } catch (err) {
     console.error('[hotel/services PUT]', err);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload image d'aperçu d'un service
+router.post('/:id/image', uploadImg.single('image'), async (req, res) => {
+  try {
+    const hotelId = resolveHotelId(req);
+    const [rows] = await db.query('SELECT * FROM services WHERE id = ? AND hotel_id = ?', [req.params.id, hotelId]);
+    if (!rows[0]) return res.status(404).json({ error: 'Service introuvable' });
+    if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+    const ext = detectImageType(req.file.buffer);
+    if (!ext) return res.status(400).json({ error: 'Format image non reconnu' });
+
+    fs.mkdirSync(SERVICES_IMG_DIR, { recursive: true });
+    const filename = `service_${req.params.id}_${Date.now()}${ext}`;
+    fs.writeFileSync(path.join(SERVICES_IMG_DIR, filename), req.file.buffer);
+    const url = `/uploads/services/${filename}`;
+
+    await db.query('UPDATE services SET image_url = ? WHERE id = ?', [url, req.params.id]);
+    res.json({ url });
+  } catch (err) {
+    console.error('[hotel/services POST /:id/image]', err);
+    res.status(500).json({ error: 'Erreur upload' });
   }
 });
 

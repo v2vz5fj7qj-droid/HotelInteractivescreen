@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
+import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
 import BackButton       from '../../BackButton/BackButton';
@@ -12,11 +13,20 @@ const STALE_THRESHOLD = 35 * 60 * 1000; // 35 min — dépasse l'intervalle de 3
 
 export default function Flights() {
   const { t }                          = useLanguage();
+  const { airports }                   = useHotel();
+  const [selectedAirport, setSelectedAirport] = useState(null);
   const [tab, setTab]                  = useState('arrivals');
   const [search, setSearch]            = useState('');
   const [submitted, setSubmitted]      = useState('');
   const [retryKey, setRetryKey]        = useState(0);
   const [now, setNow]                  = useState(Date.now());
+
+  // Initialiser l'aéroport sélectionné au premier chargement
+  useEffect(() => {
+    if (airports?.length > 0 && !selectedAirport) {
+      setSelectedAirport(airports[0].code);
+    }
+  }, [airports, selectedAirport]);
 
   // Horloge pour rafraîchir l'affichage "il y a X min" toutes les minutes
   useEffect(() => {
@@ -26,7 +36,11 @@ export default function Flights() {
 
   const isSearch = submitted.length > 0;
 
-  const listData   = useApi('/flights', { type: tab }, { enabled: !isSearch, deps: [tab, retryKey] });
+  const listData   = useApi(
+    '/flights',
+    { type: tab, ...(selectedAirport ? { airport: selectedAirport } : {}) },
+    { enabled: !isSearch && !!selectedAirport, deps: [tab, retryKey, selectedAirport] }
+  );
   const searchData = useApi('/flights/search', { flight: submitted }, { enabled: isSearch, deps: [submitted] });
 
   const { data, loading, error } = isSearch ? searchData : listData;
@@ -64,7 +78,31 @@ export default function Flights() {
       <ThemeToggle />
 
       <h1 className={styles.title}>{t('flights.title')}</h1>
-      <p className={styles.airport}>🛫 {t('flights.airport')}</p>
+
+      {/* Sélecteur d'aéroport — visible uniquement si plusieurs aéroports affectés */}
+      {airports?.length > 1 && (
+        <div className={styles.airportSelector} role="tablist" aria-label="Choisir un aéroport">
+          {airports.map(ap => (
+            <button
+              key={ap.code}
+              role="tab"
+              aria-selected={selectedAirport === ap.code}
+              className={`${styles.airportTab} ${selectedAirport === ap.code ? styles.airportTabActive : ''}`}
+              onClick={() => { setSelectedAirport(ap.code); setSubmitted(''); setSearch(''); }}
+            >
+              <span className={styles.airportCode}>{ap.code}</span>
+              <span className={styles.airportLabel}>{ap.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Nom de l'aéroport courant */}
+      {airports?.length > 0 && selectedAirport && (
+        <p className={styles.airport}>
+          🛫 {airports.find(a => a.code === selectedAirport)?.label ?? selectedAirport}
+        </p>
+      )}
 
       {/* Badge dernière mise à jour */}
       {refreshedAt && !isPending && (

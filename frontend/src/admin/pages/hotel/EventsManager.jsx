@@ -103,6 +103,18 @@ export default function HotelEventsManager() {
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
   };
 
+  const unarchive = async (id) => {
+    try {
+      await api.post(`/hotel/events/${id}/unarchive`, {}, { params });
+      showToast('Événement désarchivé'); load();
+    } catch (err) {
+      const msg = err.response?.data?.code === 'date_passed'
+        ? "La date de cet événement est passée. Modifiez la date avant de désarchiver."
+        : (err.response?.data?.error || 'Erreur');
+      alert(msg);
+    }
+  };
+
   const del = async (id, title) => {
     if (!window.confirm(`Supprimer "${title}" ?`)) return;
     await api.delete(`/hotel/events/${id}`, { params });
@@ -161,6 +173,10 @@ export default function HotelEventsManager() {
                         {ev.status === 'published' && (
                           <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             onClick={() => archive(ev.id)}>Archiver</button>
+                        )}
+                        {ev.status === 'archived' && (
+                          <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
+                            onClick={() => unarchive(ev.id)}>Désarchiver</button>
                         )}
                         <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                           onClick={() => del(ev.id, ev.title || ev.slug)}>Supprimer</button>

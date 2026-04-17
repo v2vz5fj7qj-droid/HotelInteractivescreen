@@ -25,7 +25,10 @@ router.get('/:slug/config', async (req, res) => {
          hs.lat, hs.lng,
          hs.idle_timeout_ms, hs.fullscreen_password,
          hs.wifi_name, hs.wifi_password,
-         hs.checkin_time, hs.checkout_time
+         hs.checkin_time, hs.checkout_time,
+         hs.welcome_message_fr, hs.welcome_message_en, hs.welcome_message_de,
+         hs.welcome_message_es, hs.welcome_message_pt, hs.welcome_message_ar,
+         hs.welcome_message_zh, hs.welcome_message_ja, hs.welcome_message_ru
        FROM hotels h
        JOIN hotel_settings hs ON hs.hotel_id = h.id
        WHERE h.slug = ? AND h.is_active = 1
@@ -38,8 +41,28 @@ router.get('/:slug/config', async (req, res) => {
     }
 
     const row = rows[0];
+
+    // Images de bannière (galerie)
+    const [bannerRows] = await db.query(
+      `SELECT id, url, display_order FROM hotel_banner_images
+       WHERE hotel_id = ? ORDER BY display_order ASC`,
+      [row.id]
+    );
+
+    // Aéroports affectés à cet hôtel (ordre d'affichage)
+    const [airportRows] = await db.query(
+      `SELECT a.code, a.label, ha.display_order
+       FROM hotel_airports ha
+       JOIN airports a ON a.code = ha.airport_code
+       WHERE ha.hotel_id = ?
+       ORDER BY ha.display_order ASC`,
+      [row.id]
+    );
+
     const payload = {
       hotel: { id: row.id, slug: row.slug, nom: row.hotel_nom },
+      airports: airportRows.map(a => ({ code: a.code, label: a.label, display_order: a.display_order })),
+      banner_images: bannerRows.map(b => ({ id: b.id, url: b.url })),
       settings: {
         nom:                row.nom,
         logo_url:           row.logo_url,
@@ -57,10 +80,19 @@ router.get('/:slug/config', async (req, res) => {
         lng:                row.lng,
         idle_timeout_ms:    row.idle_timeout_ms ?? 30000,
         fullscreen_password: row.fullscreen_password ?? 'fs1234',
-        wifi_name:          row.wifi_name ?? null,
-        wifi_password:      row.wifi_password ?? null,
-        checkin_time:       row.checkin_time ?? null,
-        checkout_time:      row.checkout_time ?? null,
+        wifi_name:           row.wifi_name ?? null,
+        wifi_password:       row.wifi_password ?? null,
+        checkin_time:        row.checkin_time ?? null,
+        checkout_time:       row.checkout_time ?? null,
+        welcome_message_fr:  row.welcome_message_fr ?? null,
+        welcome_message_en:  row.welcome_message_en ?? null,
+        welcome_message_de:  row.welcome_message_de ?? null,
+        welcome_message_es:  row.welcome_message_es ?? null,
+        welcome_message_pt:  row.welcome_message_pt ?? null,
+        welcome_message_ar:  row.welcome_message_ar ?? null,
+        welcome_message_zh:  row.welcome_message_zh ?? null,
+        welcome_message_ja:  row.welcome_message_ja ?? null,
+        welcome_message_ru:  row.welcome_message_ru ?? null,
       },
     };
 

@@ -3,15 +3,24 @@ const db      = require('../services/db');
 const cache   = require('../services/cacheService');
 const router  = express.Router();
 
-// GET /api/info/categories
+// GET /api/info/categories?hotel_id=
 router.get('/categories', async (req, res) => {
-  const cacheKey = 'info:categories';
+  const hotelId  = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
+  const cacheKey = `info:categories:${hotelId || 'global'}`;
   const cached   = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
   try {
-    const [rows] = await db.query(
-      'SELECT * FROM info_categories WHERE is_active=1 ORDER BY display_order, id'
-    );
+    let rows;
+    if (hotelId) {
+      [rows] = await db.query(
+        'SELECT * FROM info_categories WHERE is_active=1 AND (hotel_id IS NULL OR hotel_id = ?) ORDER BY display_order, id',
+        [hotelId]
+      );
+    } else {
+      [rows] = await db.query(
+        'SELECT * FROM info_categories WHERE is_active=1 ORDER BY display_order, id'
+      );
+    }
     await cache.set(cacheKey, JSON.stringify(rows), 3600);
     res.json(rows);
   } catch (err) {
@@ -19,11 +28,12 @@ router.get('/categories', async (req, res) => {
   }
 });
 
-// GET /api/info?locale=fr&category=taxi
+// GET /api/info?locale=fr&category=taxi&hotel_id=
 router.get('/', async (req, res) => {
   const locale   = req.query.locale   || 'fr';
   const category = req.query.category || null;
-  const cacheKey = `info:${locale}:${category || 'all'}`;
+  const hotelId  = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
+  const cacheKey = `info:${hotelId || 'global'}:${locale}:${category || 'all'}`;
   const cached   = await cache.get(cacheKey);
   if (cached) return res.json(JSON.parse(cached));
 
@@ -38,9 +48,15 @@ router.get('/', async (req, res) => {
       FROM useful_contacts c
       LEFT JOIN useful_contact_translations t  ON t.contact_id = c.id AND t.locale = ?
       LEFT JOIN useful_contact_translations tf ON tf.contact_id = c.id AND tf.locale = 'fr'
-      WHERE c.is_active = 1
     `;
     const params = [locale];
+
+    if (hotelId) {
+      query += ' JOIN hotel_info hi ON hi.info_id = c.id AND hi.hotel_id = ?';
+      params.push(hotelId);
+    }
+
+    query += ' WHERE c.status = \'published\'';
     if (category) { query += ' AND c.category = ?'; params.push(category); }
     query += ' ORDER BY c.display_order';
 

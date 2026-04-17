@@ -51,10 +51,15 @@ function settingsToConfig(settings) {
     banner_image_url:    settings.background_url || DEFAULT_THEME.banner_image_url,
     idle_timeout_ms:     String(settings.idle_timeout_ms ?? DEFAULT_THEME.idle_timeout_ms),
     fullscreen_password: settings.fullscreen_password || 'fs1234',
-    wifi_name:           settings.wifi_name      || null,
-    wifi_password:       settings.wifi_password  || null,
-    checkin_time:        settings.checkin_time   || null,
-    checkout_time:       settings.checkout_time  || null,
+    wifi_name:           settings.wifi_name           || null,
+    wifi_password:       settings.wifi_password       || null,
+    checkin_time:        settings.checkin_time        || null,
+    checkout_time:       settings.checkout_time       || null,
+    welcome_messages: ['fr','en','de','es','pt','ar','zh','ja','ru'].reduce((acc, l) => {
+      const v = settings[`welcome_message_${l}`];
+      if (v) acc[l] = v;
+      return acc;
+    }, {}),
   };
 }
 
