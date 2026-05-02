@@ -1,0 +1,365 @@
+/* ── Shell ─────────────────────────────────────────────────────── */
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--c-bg, #1A1208);
+  color: var(--c-text, #F5E6C8);
+  font-family: var(--font-body, sans-serif);
+  touch-action: manipulation;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(12px, 2vw, 24px) clamp(16px, 3vw, 40px);
+  border-bottom: 1px solid rgba(194,120,42,0.15);
+}
+
+.progress {
+  display: flex;
+  gap: 8px;
+}
+
+.progressDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(194,120,42,0.25);
+  transition: background 0.3s;
+}
+.progressDotActive {
+  background: var(--c-accent, #C2782A);
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 4vw, 60px) clamp(16px, 5vw, 80px);
+}
+
+/* ── Écran d'accueil ──────────────────────────────────────────── */
+.welcomeWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(16px, 2.5vw, 32px);
+  max-width: 600px;
+  animation: fadeUp 0.4s ease;
+}
+
+.welcomeIcon {
+  font-size: clamp(56px, 8vw, 96px);
+  line-height: 1;
+  filter: drop-shadow(0 0 24px rgba(212,168,67,0.6));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+.welcomeTitle {
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  color: var(--c-text, #F5E6C8);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.welcomeSub {
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
+  color: rgba(245,230,200,0.65);
+  margin: 0;
+}
+
+/* ── Étapes ───────────────────────────────────────────────────── */
+.stepWrap {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2.5vw, 28px);
+  width: 100%;
+  max-width: 720px;
+  animation: fadeUp 0.35s ease;
+}
+
+.stepTitle {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 700;
+  color: var(--c-text, #F5E6C8);
+  margin: 0;
+  text-align: center;
+}
+
+.stepSub {
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  color: rgba(245,230,200,0.55);
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Catégories & étoiles ──────────────────────────────────────── */
+.categoriesList {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vw, 18px);
+}
+
+.catRow {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.5vw, 20px);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(194,120,42,0.18);
+  border-radius: 14px;
+  padding: clamp(10px, 1.5vw, 18px) clamp(14px, 2vw, 24px);
+  transition: background 0.2s;
+}
+.catRow:has(.starFilled) {
+  background: rgba(212,168,67,0.08);
+  border-color: rgba(212,168,67,0.3);
+}
+
+.catEmoji {
+  font-size: clamp(22px, 3vw, 34px);
+  flex-shrink: 0;
+  width: clamp(30px, 4vw, 44px);
+  text-align: center;
+}
+
+.catLabel {
+  flex: 1;
+  font-size: clamp(0.9rem, 2vw, 1.15rem);
+  font-weight: 600;
+  color: var(--c-text, #F5E6C8);
+}
+
+.stars {
+  display: flex;
+  gap: clamp(4px, 0.8vw, 10px);
+}
+
+.star {
+  font-size: clamp(28px, 4.5vw, 48px);
+  color: rgba(194,120,42,0.25);
+  -webkit-text-stroke: 1.5px rgba(194,120,42,0.55);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.15s, transform 0.1s, -webkit-text-stroke-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.star:active { transform: scale(0.88); }
+.starFilled {
+  color: #F59E0B;
+  -webkit-text-stroke: 1.5px #D4870A;
+  text-shadow: 0 0 12px rgba(245,158,11,0.5);
+}
+
+/* ── Commentaire ──────────────────────────────────────────────── */
+.emojiRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.emojiBtn {
+  font-size: clamp(22px, 3.5vw, 32px);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(194,120,42,0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.emojiBtn:active { transform: scale(0.9); background: rgba(194,120,42,0.2); }
+
+.textarea {
+  width: 100%;
+  min-height: clamp(100px, 15vw, 160px);
+  padding: clamp(12px, 1.5vw, 18px);
+  border-radius: 14px;
+  border: 1.5px solid rgba(194,120,42,0.3);
+  background: rgba(255,255,255,0.05);
+  color: var(--c-text, #F5E6C8);
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.textarea:focus { border-color: #C2782A; }
+.textarea::placeholder { color: rgba(245,230,200,0.35); }
+
+.charCount {
+  font-size: 0.8rem;
+  color: rgba(245,230,200,0.45);
+  text-align: right;
+  margin: 0;
+}
+.charCountWarn { color: #F59E0B; }
+
+/* ── Navigation ───────────────────────────────────────────────── */
+.navRow {
+  display: flex;
+  gap: clamp(10px, 1.5vw, 16px);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ── Boutons ──────────────────────────────────────────────────── */
+.btnPrimary {
+  padding: clamp(14px, 2vw, 20px) clamp(28px, 4vw, 48px);
+  font-size: clamp(1rem, 2.2vw, 1.2rem);
+  font-weight: 700;
+  background: linear-gradient(135deg, #C2782A, #D4A843);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px rgba(194,120,42,0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+.btnPrimary:active  { transform: scale(0.96); }
+.btnPrimary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btnSecondary {
+  padding: clamp(12px, 1.5vw, 18px) clamp(20px, 3vw, 36px);
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  font-weight: 600;
+  background: rgba(255,255,255,0.07);
+  color: var(--c-text, #F5E6C8);
+  border: 1.5px solid rgba(245,230,200,0.2);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btnSecondary:active { background: rgba(255,255,255,0.12); }
+
+.btnGhost {
+  padding: clamp(12px, 1.5vw, 18px) clamp(20px, 3vw, 36px);
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  color: rgba(245,230,200,0.55);
+  background: none;
+  border: 1.5px solid rgba(245,230,200,0.15);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btnGhost:active { color: var(--c-text); }
+
+/* ── Merci ────────────────────────────────────────────────────── */
+.thanksWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(16px, 2.5vw, 28px);
+  animation: fadeUp 0.45s ease;
+}
+
+.thanksEmoji {
+  font-size: clamp(64px, 10vw, 112px);
+  animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.thanksTitle {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  color: #D4A843;
+  margin: 0;
+}
+
+.thanksSub {
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  color: rgba(245,230,200,0.65);
+  max-width: 480px;
+  margin: 0;
+}
+
+.thanksScore {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.thanksScoreNum {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  color: #F59E0B;
+}
+
+.thanksScoreStars {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  color: #F59E0B;
+  letter-spacing: 2px;
+}
+
+.countdownBar {
+  width: min(320px, 80vw);
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.countdownFill {
+  height: 100%;
+  background: linear-gradient(90deg, #C2782A, #D4A843);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.countdownLabel {
+  font-size: 0.8rem;
+  color: rgba(245,230,200,0.4);
+  margin: 0;
+}
+
+/* ── Erreur ───────────────────────────────────────────────────── */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px clamp(16px, 3vw, 40px);
+  padding: 12px 18px;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 10px;
+  color: #FCA5A5;
+  font-size: 0.9rem;
+}
+
+.errorDismiss {
+  background: none;
+  border: none;
+  color: #FCA5A5;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+}
+
+/* ── Animation ────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

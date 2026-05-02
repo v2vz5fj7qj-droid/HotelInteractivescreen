@@ -56,6 +56,9 @@ function TabSettings({ hotelId }) {
           checkout_time:      data.checkout_time || '',
           primary_color:      theme.primary || '#C2782A',
           secondary_color:    theme.secondary || '#1A1005',
+          adresse:            data.adresse || '',
+          lat:                data.lat != null ? String(data.lat) : '',
+          lng:                data.lng != null ? String(data.lng) : '',
         });
       })
       .catch(() => {})
@@ -107,7 +110,7 @@ function TabSettings({ hotelId }) {
   const save = async () => {
     setSaving(true);
     try {
-      await api.put('/hotel/settings', {
+      const payload = {
         ...Object.fromEntries(ALL_LOCALES.map(l => [`welcome_message_${l}`, form[`welcome_message_${l}`]])),
         contact_phone:      form.contact_phone,
         contact_email:      form.contact_email,
@@ -119,7 +122,11 @@ function TabSettings({ hotelId }) {
           primary:   form.primary_color,
           secondary: form.secondary_color,
         }),
-      }, { params });
+        adresse: form.adresse,
+      };
+      if (form.lat !== '') payload.lat = parseFloat(form.lat);
+      if (form.lng !== '') payload.lng = parseFloat(form.lng);
+      await api.put('/hotel/settings', payload, { params });
       showToast('Paramètres enregistrés');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
     finally { setSaving(false); }
@@ -255,6 +262,64 @@ function TabSettings({ hotelId }) {
             </div>
           ))}
         </div>
+      </Section>
+
+      {/* Localisation */}
+      <Section title="Localisation">
+        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginBottom: 16, marginTop: -8 }}>
+          Utilisée pour centrer la carte du kiosque et calculer les distances jusqu'aux points d'intérêt.
+          Obtenez les coordonnées depuis{' '}
+          <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{ color: '#C2782A' }}>
+            Google Maps
+          </a>{' '}
+          (clic droit → "Copier les coordonnées").
+        </p>
+        <div className={styles.field}>
+          <label className={styles.label}>Adresse</label>
+          <input
+            className={styles.input}
+            value={form.adresse}
+            placeholder="Ex : Avenue Kwamé N'Krumah, Ouagadougou, Burkina Faso"
+            onChange={e => setForm(f => ({ ...f, adresse: e.target.value }))}
+          />
+        </div>
+        <div className={styles.fieldRow} style={{ marginTop: 12 }}>
+          <div className={styles.field}>
+            <label className={styles.label}>Latitude</label>
+            <input
+              className={styles.input}
+              type="number"
+              step="0.000001"
+              value={form.lat}
+              placeholder="Ex : 12.364100"
+              onChange={e => setForm(f => ({ ...f, lat: e.target.value }))}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Longitude</label>
+            <input
+              className={styles.input}
+              type="number"
+              step="0.000001"
+              value={form.lng}
+              placeholder="Ex : -1.533200"
+              onChange={e => setForm(f => ({ ...f, lng: e.target.value }))}
+            />
+          </div>
+        </div>
+        {form.lat && form.lng && (
+          <p style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: 8 }}>
+            Aperçu :{' '}
+            <a
+              href={`https://www.google.com/maps?q=${form.lat},${form.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#C2782A' }}
+            >
+              Voir sur Google Maps
+            </a>
+          </p>
+        )}
       </Section>
 
       {/* Infos pratiques */}

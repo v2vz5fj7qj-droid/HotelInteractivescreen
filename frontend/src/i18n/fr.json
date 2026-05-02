@@ -24,7 +24,9 @@
     "notif_title":          "Bon à savoir",
     "notif_msg":            "Cocktail de bienvenue ce soir à 18h",
     "weather_widget_label": "Météo locale",
-    "weather_widget_desc":  "Ciel dégagé"
+    "weather_widget_desc":  "Ciel dégagé",
+    "feedback":             "Évaluer",
+    "feedback_sub":         "Donnez votre avis"
   },
   "common": {
     "back":       "Retour",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "Pointez l'appareil photo de votre téléphone vers ce code",
     "valid_for":        "Lien valable 24h"
+  },
+  "feedback": {
+    "welcome_title":         "Aidez-nous à améliorer votre séjour !",
+    "welcome_sub":           "Notez-nous en 1 minute — votre avis compte vraiment",
+    "start":                 "Commencer",
+    "step_rating":           "Comment évaluez-vous votre séjour ?",
+    "step_rating_sub":       "Notez uniquement les services dont vous avez bénéficié",
+    "step_comment":          "Un commentaire à partager ?",
+    "comment_optional":      "Facultatif — partagez ce qui vous a marqué",
+    "comment_placeholder":   "Votre expérience, vos suggestions…",
+    "chars_remaining":       "caractères restants",
+    "next":                  "Suivant",
+    "submit":                "Envoyer mon avis",
+    "skip_comment":          "Passer",
+    "thanks_title":          "Merci pour votre avis !",
+    "thanks_sub":            "Vos retours nous aident à vous offrir un séjour exceptionnel.",
+    "redirect_in":           "Retour à l'accueil dans {{n}}s",
+    "back_home":             "Retour à l'accueil",
+    "already_submitted_title": "Vous avez déjà donné votre avis",
+    "already_submitted":     "Vous avez déjà soumis un avis aujourd'hui. Merci !",
+    "error":                 "Une erreur est survenue. Veuillez réessayer.",
+    "category_proprete":     "Propreté",
+    "category_accueil":      "Accueil",
+    "category_chambre":      "Chambre",
+    "category_restauration": "Restauration",
+    "category_services":     "Services"
   }
 }

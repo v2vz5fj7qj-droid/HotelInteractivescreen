@@ -29,6 +29,7 @@ import ServicesManager      from './pages/hotel/ServicesManager';
 import TipsManager          from './pages/hotel/TipsManager';
 import HotelEventsManager   from './pages/hotel/EventsManager';
 import HotelNotifications   from './pages/hotel/NotificationsManager';
+import FeedbackManager      from './pages/hotel/FeedbackManager';
 
 // Pages contributeur
 import ContribDashboard from './pages/contributor/Dashboard';
@@ -119,6 +120,7 @@ export default function AdminApp() {
           <Route path="tips"            element={<TipsManager />} />
           <Route path="events"          element={<HotelEventsManager />} />
           <Route path="notifications"   element={<HotelNotifications />} />
+          <Route path="feedbacks"       element={<FeedbackManager />} />
           <Route path="*"               element={<Navigate to="/admin/hotel" replace />} />
         </Route>
 

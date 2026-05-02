@@ -14,6 +14,7 @@ const Events         = lazy(() => import('./components/sections/Events/Events'))
 const MapSection     = lazy(() => import('./components/sections/Map/MapSection'));
 const UsefulInfo     = lazy(() => import('./components/sections/UsefulInfo/UsefulInfo'));
 const KioskNotFound  = lazy(() => import('./pages/KioskNotFound'));
+const Feedback       = lazy(() => import('./components/sections/Feedback/Feedback'));
 
 // Composant interne — accède à HotelContext pour gérer loading/notFound
 function KioskRoutes() {
@@ -41,7 +42,8 @@ function KioskRoutes() {
         <Route path="/events"   element={<KioskLayout><Events /></KioskLayout>} />
         <Route path="/wellness" element={<KioskLayout><Wellness /></KioskLayout>} />
         <Route path="/info"     element={<KioskLayout><UsefulInfo /></KioskLayout>} />
-        <Route path="/mobile"   element={<KioskLayout><MobileTransfer /></KioskLayout>} />
+        <Route path="/mobile"    element={<KioskLayout><MobileTransfer /></KioskLayout>} />
+        <Route path="/feedback"  element={<KioskLayout><Feedback /></KioskLayout>} />
         <Route path="*"         element={<KioskNotFound />} />
       </Routes>
     </>

@@ -64,6 +64,11 @@ export default function AttractScreen() {
     };
   }, [isHome]);
 
+  /* Nouveau visiteur détecté : l'attract screen s'affiche → reset session feedback */
+  useEffect(() => {
+    if (visible) sessionStorage.removeItem('feedback_submitted');
+  }, [visible]);
+
   /* Cycle des images de fond — uniquement quand l'écran est visible */
   useEffect(() => {
     if (!visible) return;

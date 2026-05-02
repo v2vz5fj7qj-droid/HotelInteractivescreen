@@ -24,7 +24,9 @@
     "notif_title":          "Bueno saber",
     "notif_msg":            "Cóctel de bienvenida esta noche a las 18h",
     "weather_widget_label": "Clima local",
-    "weather_widget_desc":  "Cielo despejado"
+    "weather_widget_desc":  "Cielo despejado",
+    "feedback":             "Valorar",
+    "feedback_sub":         "Comparta su opinión"
   },
   "common": {
     "back":            "Volver",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "Apunte la cámara de su teléfono hacia este código",
     "valid_for":        "Enlace válido 24h"
+  },
+  "feedback": {
+    "welcome_title":         "¡Ayúdenos a mejorar su estancia!",
+    "welcome_sub":           "Valórenos en 1 minuto — su opinión importa",
+    "start":                 "Comenzar",
+    "step_rating":           "¿Cómo valora su estancia?",
+    "step_rating_sub":       "Valore únicamente los servicios que utilizó",
+    "step_comment":          "¿Algún comentario que compartir?",
+    "comment_optional":      "Opcional — cuéntenos lo que le llamó la atención",
+    "comment_placeholder":   "Su experiencia, sus sugerencias…",
+    "chars_remaining":       "caracteres restantes",
+    "next":                  "Siguiente",
+    "submit":                "Enviar mi valoración",
+    "skip_comment":          "Omitir",
+    "thanks_title":          "¡Gracias por su valoración!",
+    "thanks_sub":            "Sus comentarios nos ayudan a ofrecerle una estancia excepcional.",
+    "redirect_in":           "Volver al inicio en {{n}}s",
+    "back_home":             "Volver al inicio",
+    "already_submitted_title": "",
+    "already_submitted":     "Ya ha enviado una valoración hoy. ¡Gracias!",
+    "error":                 "Se ha producido un error. Por favor, inténtelo de nuevo.",
+    "category_proprete":     "Limpieza",
+    "category_accueil":      "Recepción",
+    "category_chambre":      "Habitación",
+    "category_restauration": "Restauración",
+    "category_services":     "Servicios"
   }
 }

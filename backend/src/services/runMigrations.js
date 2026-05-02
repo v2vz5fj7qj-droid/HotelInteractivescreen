@@ -124,6 +124,41 @@ async function migration009() {
   console.log('[migration009] table hotel_banner_images créée');
 }
 
+async function migration010() {
+  const [tables] = await db.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.TABLES
+     WHERE table_schema = DATABASE() AND table_name = 'feedbacks'`
+  );
+  if (tables[0].cnt > 0) return;
+  await db.query(`
+    CREATE TABLE feedbacks (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      hotel_id     INT NOT NULL,
+      categories   JSON NOT NULL,
+      commentaire  TEXT NULL,
+      note_globale DECIMAL(3,2) NOT NULL,
+      locale       VARCHAR(5) NOT NULL DEFAULT 'fr',
+      ip           VARCHAR(45) NULL,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE,
+      INDEX idx_feedbacks_hotel_date (hotel_id, created_at)
+    )
+  `);
+  console.log('[migration010] table feedbacks créée');
+}
+
+async function migration011() {
+  const [[col]] = await db.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 'hotel_settings' AND column_name = 'font_file_url'`
+  );
+  if (col.cnt > 0) return;
+  await db.query(
+    `ALTER TABLE hotel_settings ADD COLUMN font_file_url VARCHAR(500) NULL DEFAULT NULL`
+  );
+  console.log('[migration011] colonne font_file_url ajoutée');
+}
+
 async function runMigrations() {
   try {
     await migration003();
@@ -131,6 +166,8 @@ async function runMigrations() {
     await migration007();
     await migration008();
     await migration009();
+    await migration010();
+    await migration011();
     console.log('✅ Migrations : OK');
   } catch (err) {
     console.error('[runMigrations] Erreur :', err.message);

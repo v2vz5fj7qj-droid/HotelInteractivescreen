@@ -24,7 +24,9 @@
     "notif_title":          "معلومة مفيدة",
     "notif_msg":            "حفل ترحيب الليلة الساعة 6 مساءً",
     "weather_widget_label": "الطقس المحلي",
-    "weather_widget_desc":  "سماء صافية"
+    "weather_widget_desc":  "سماء صافية",
+    "feedback":             "تقييم",
+    "feedback_sub":         "شاركنا رأيك"
   },
   "common": {
     "back":            "رجوع",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "وجّه كاميرا هاتفك نحو هذا الرمز",
     "valid_for":        "الرابط صالح لمدة 24 ساعة"
+  },
+  "feedback": {
+    "welcome_title":         "ساعدنا في تحسين إقامتك!",
+    "welcome_sub":           "قيّمنا في دقيقة واحدة — رأيك يهمنا",
+    "start":                 "ابدأ",
+    "step_rating":           "كيف تقيّم إقامتك؟",
+    "step_rating_sub":       "قيّم فقط الخدمات التي استفدت منها",
+    "step_comment":          "هل لديك تعليق لمشاركته؟",
+    "comment_optional":      "اختياري — أخبرنا بما لفت انتباهك",
+    "comment_placeholder":   "تجربتك، اقتراحاتك…",
+    "chars_remaining":       "حرف متبقٍ",
+    "next":                  "التالي",
+    "submit":                "إرسال تقييمي",
+    "skip_comment":          "تخطي",
+    "thanks_title":          "شكراً على تقييمك!",
+    "thanks_sub":            "ملاحظاتك تساعدنا على تقديم إقامة استثنائية لك.",
+    "redirect_in":           "العودة إلى الرئيسية خلال {{n}} ثانية",
+    "back_home":             "العودة إلى الرئيسية",
+    "already_submitted_title": "",
+    "already_submitted":     "لقد أرسلت تقييماً اليوم بالفعل. شكراً!",
+    "error":                 "حدث خطأ. يرجى المحاولة مرة أخرى.",
+    "category_proprete":     "النظافة",
+    "category_accueil":      "الاستقبال",
+    "category_chambre":      "الغرفة",
+    "category_restauration": "المطعم",
+    "category_services":     "الخدمات"
   }
 }

@@ -10,7 +10,7 @@ import {
   CloudSun, PlaneTakeoff, MapPin,
   Sparkles, CalendarDays, Phone,
   Smartphone, Home, Bell, ChevronRight,
-  Languages,
+  Languages, Star,
 } from 'lucide-react';
 import styles from './RadialMenu.module.css';
 
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { id: 'events',   Icon: CalendarDays,  section: 'events',   labelKey: 'menu.events'   },
   { id: 'map',      Icon: MapPin,        section: 'map',      labelKey: 'menu.map'      },
   { id: 'info',     Icon: Phone,         section: 'info',     labelKey: 'menu.info'     },
+  { id: 'feedback', Icon: Star,          section: 'feedback', labelKey: 'menu.feedback' },
 ];
 
 /* Cards de service dans la grille (4 cartes principales) */
@@ -61,6 +62,15 @@ const SERVICE_CARDS = [
     Icon:  MapPin,
     color: '#10B981',
     img:   'https://images.unsplash.com/photo-1569144157591-c60f3f82f137?auto=format&fit=crop&w=400&q=70',
+  },
+  {
+    id: 'feedback',
+    section: 'feedback',
+    labelKey: 'menu.feedback',
+    subKey:   'menu.feedback_sub',
+    Icon:  Star,
+    color: '#F59E0B',
+    img:   'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=70',
   },
 ];
 

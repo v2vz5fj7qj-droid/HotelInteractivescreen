@@ -1,0 +1,17 @@
+-- ════════════════════════════════════════════════════════════════════
+--  ConnectBé — Données vivantes (data_live.sql)
+--
+--  Ce fichier est généré par scripts/db-export.sh
+--  Il contient les données réelles saisies en backoffice :
+--  hôtels, événements, lieux, services, paramètres...
+--
+--  Pour exporter et commiter les données courantes :
+--    ./scripts/db-export.sh
+--    git add database/seeds/data_live.sql
+--    git commit -m "chore: export données vivantes YYYY-MM-DD"
+--    git push
+--
+--  Sur un déploiement vierge, ce fichier est chargé automatiquement
+--  par docker-entrypoint-initdb.d APRÈS init.sql et les seeds de base.
+-- ════════════════════════════════════════════════════════════════════
+-- (vide — aucune donnée exportée pour l'instant)

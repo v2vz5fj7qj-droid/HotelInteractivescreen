@@ -27,6 +27,7 @@ const translateRoutes    = require('./routes/translate');
 const kioskRoutes        = require('./routes/kiosk');
 const servicesRoutes     = require('./routes/services');
 const tipsRoutes         = require('./routes/tips');
+const feedbackRoutes     = require('./routes/feedback');
 
 // ── Routes admin (ancien monolithe — rétrocompatibilité) ──────────
 const adminRoutesLegacy  = require('./routes/admin');
@@ -54,6 +55,7 @@ const hotelServicesRoutes       = require('./routes/admin/hotel/services');
 const hotelTipsRoutes           = require('./routes/admin/hotel/tips');
 const hotelEventsRoutes         = require('./routes/admin/hotel/events');
 const hotelNotificationsRoutes  = require('./routes/admin/hotel/notifications');
+const hotelFeedbacksRoutes      = require('./routes/admin/hotel/feedbacks');
 
 // Contributeur
 const contribPlacesRoutes = require('./routes/admin/contributor/places');
@@ -95,6 +97,7 @@ app.use('/api/kiosk',         kioskRoutes);
 app.use('/api/hotels',        kioskRoutes);   // /api/hotels/public
 app.use('/api/services',      servicesRoutes);
 app.use('/api/tips',          tipsRoutes);
+app.use('/api/feedback',      feedbackRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────
 app.use('/api/admin', authRoutes);
@@ -124,6 +127,7 @@ adminV2.use('/hotel/services',          requireRole('super_admin','hotel_admin')
 adminV2.use('/hotel/tips',              requireRole('super_admin','hotel_admin'), hotelTipsRoutes);
 adminV2.use('/hotel/events',            requireRole('super_admin','hotel_admin','hotel_staff'), hotelEventsRoutes);
 adminV2.use('/hotel/notifications',     requireRole('super_admin','hotel_admin'), hotelNotificationsRoutes);
+adminV2.use('/hotel/feedbacks',         requireRole('super_admin','hotel_admin','hotel_staff'), hotelFeedbacksRoutes);
 
 // Contributeur
 adminV2.use('/contributor/places', requireRole('contributor'), contribPlacesRoutes);

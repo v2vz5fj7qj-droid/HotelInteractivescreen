@@ -104,8 +104,9 @@ export default function FlightsManager() {
           ? `Rafraîchi (${r.data.message})`
           : `Vols rafraîchis — ${r.data.refreshed}/2 type(s) (${r.data.airport})`
       );
-    } catch {
-      notify('Erreur lors du rafraîchissement', 'err');
+    } catch (err) {
+      const detail = err?.response?.data?.error || err?.message || 'erreur inconnue';
+      notify(`Rafraîchissement échoué — ${detail}`, 'err');
     } finally { setRefreshing(false); }
   };
 

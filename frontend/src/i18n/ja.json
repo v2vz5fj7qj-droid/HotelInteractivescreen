@@ -24,7 +24,9 @@
     "notif_title":          "お知らせ",
     "notif_msg":            "本日18時よりウェルカムカクテルを開催",
     "weather_widget_label": "現地の天気",
-    "weather_widget_desc":  "晴れ"
+    "weather_widget_desc":  "晴れ",
+    "feedback":             "評価",
+    "feedback_sub":         "ご意見をお聞かせください"
   },
   "common": {
     "back":            "戻る",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "スマートフォンのカメラをQRコードに向けてください",
     "valid_for":        "リンクの有効期限：24時間"
+  },
+  "feedback": {
+    "welcome_title":         "ご滞在の改善にご協力ください！",
+    "welcome_sub":           "1分で評価できます — お客様のご意見は大切です",
+    "start":                 "始める",
+    "step_rating":           "ご滞在はいかがでしたか？",
+    "step_rating_sub":       "ご利用になったサービスのみ評価してください",
+    "step_comment":          "コメントはありますか？",
+    "comment_optional":      "任意 — 印象に残ったことをお聞かせください",
+    "comment_placeholder":   "ご体験、ご提案…",
+    "chars_remaining":       "文字残り",
+    "next":                  "次へ",
+    "submit":                "評価を送る",
+    "skip_comment":          "スキップ",
+    "thanks_title":          "ご評価ありがとうございます！",
+    "thanks_sub":            "お客様のフィードバックが素晴らしい滞在の実現につながります。",
+    "redirect_in":           "{{n}}秒後にホームに戻ります",
+    "back_home":             "ホームへ戻る",
+    "already_submitted_title": "",
+    "already_submitted":     "本日すでに評価をお送りいただきました。ありがとうございます！",
+    "error":                 "エラーが発生しました。もう一度お試しください。",
+    "category_proprete":     "清潔さ",
+    "category_accueil":      "フロント",
+    "category_chambre":      "客室",
+    "category_restauration": "レストラン",
+    "category_services":     "サービス"
   }
 }

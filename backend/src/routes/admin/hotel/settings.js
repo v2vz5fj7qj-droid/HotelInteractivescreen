@@ -87,7 +87,7 @@ router.put('/', async (req, res) => {
 
     const allowed = [
       'nom', 'adresse', 'telephone', 'email_contact', 'lat', 'lng',
-      'theme_colors', 'font_primary', 'font_secondary',
+      'theme_colors', 'font_primary', 'font_secondary', 'font_file_url',
       'idle_timeout_ms', 'fullscreen_password',
       'welcome_message_fr', 'welcome_message_en', 'welcome_message_de',
       'welcome_message_es', 'welcome_message_pt', 'welcome_message_ar',
@@ -124,6 +124,41 @@ router.post('/logo', upload.single('logo'), async (req, res) => {
     if (err.message.includes('magic bytes')) return res.status(400).json({ error: err.message });
     console.error('[hotel/settings POST /logo]', err);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Upload police custom (.ttf / .otf / .woff / .woff2)
+const FONT_UPLOAD_DIR = path.resolve(__dirname, '../../../../../uploads/fonts');
+const ALLOWED_FONT_EXTS = ['.ttf', '.otf', '.woff', '.woff2'];
+
+const fontUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024 }, // 4 Mo
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_FONT_EXTS.includes(ext)) {
+      return cb(new Error('Format non supporté (.ttf, .otf, .woff, .woff2 uniquement)'));
+    }
+    cb(null, true);
+  },
+});
+
+router.post('/font', fontUpload.single('font'), async (req, res) => {
+  try {
+    const hotelId = resolveHotelId(req);
+    if (!hotelId) return res.status(400).json({ error: 'hotel_id manquant' });
+    if (!req.file)  return res.status(400).json({ error: 'Fichier manquant' });
+
+    const ext      = path.extname(req.file.originalname).toLowerCase();
+    const filename = `hotel_${hotelId}_font${ext}`;
+    fs.mkdirSync(FONT_UPLOAD_DIR, { recursive: true });
+    fs.writeFileSync(path.join(FONT_UPLOAD_DIR, filename), req.file.buffer);
+    const url = `/uploads/fonts/${filename}`;
+    await db.query('UPDATE hotel_settings SET font_file_url = ? WHERE hotel_id = ?', [url, hotelId]);
+    res.json({ font_file_url: url });
+  } catch (err) {
+    console.error('[hotel/settings POST /font]', err);
+    res.status(err.message.includes('Format') ? 400 : 500).json({ error: err.message });
   }
 });
 

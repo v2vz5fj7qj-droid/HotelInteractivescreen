@@ -27,6 +27,11 @@ npm-debug.log*
 mysql_data/
 redis_data/
 
+# Dumps SQL de backup à la racine (mysqldump manuel, non versionnés)
+# Pour versionner les données : utiliser scripts/db-export.sh → database/seeds/data_live.sql
+/*.sql
+*.backup.*
+
 # IDE
 .vscode/
 .idea/

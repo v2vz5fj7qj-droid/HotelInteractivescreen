@@ -24,7 +24,9 @@
     "notif_title":          "Gut zu wissen",
     "notif_msg":            "Willkommenscocktail heute Abend um 18 Uhr",
     "weather_widget_label": "Lokales Wetter",
-    "weather_widget_desc":  "Klarer Himmel"
+    "weather_widget_desc":  "Klarer Himmel",
+    "feedback":             "Bewerten",
+    "feedback_sub":         "Ihr Feedback"
   },
   "common": {
     "back":            "Zurück",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "Richten Sie Ihre Handykamera auf diesen Code",
     "valid_for":        "Link 24 Stunden gültig"
+  },
+  "feedback": {
+    "welcome_title":         "Helfen Sie uns, Ihren Aufenthalt zu verbessern!",
+    "welcome_sub":           "Bewerten Sie uns in 1 Minute — Ihre Meinung zählt",
+    "start":                 "Beginnen",
+    "step_rating":           "Wie bewerten Sie Ihren Aufenthalt?",
+    "step_rating_sub":       "Bewerten Sie nur die Leistungen, die Sie genutzt haben",
+    "step_comment":          "Möchten Sie einen Kommentar hinterlassen?",
+    "comment_optional":      "Optional — teilen Sie Ihre Eindrücke",
+    "comment_placeholder":   "Ihre Erfahrung, Ihre Vorschläge…",
+    "chars_remaining":       "Zeichen verbleibend",
+    "next":                  "Weiter",
+    "submit":                "Bewertung absenden",
+    "skip_comment":          "Überspringen",
+    "thanks_title":          "Vielen Dank für Ihre Bewertung!",
+    "thanks_sub":            "Ihr Feedback hilft uns, Ihren Aufenthalt unvergesslich zu machen.",
+    "redirect_in":           "Zurück zur Startseite in {{n}}s",
+    "back_home":             "Zurück zur Startseite",
+    "already_submitted_title": "",
+    "already_submitted":     "Sie haben heute bereits eine Bewertung abgegeben. Danke!",
+    "error":                 "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "category_proprete":     "Sauberkeit",
+    "category_accueil":      "Empfang",
+    "category_chambre":      "Zimmer",
+    "category_restauration": "Restaurant",
+    "category_services":     "Services"
   }
 }

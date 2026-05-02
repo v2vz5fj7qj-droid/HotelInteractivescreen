@@ -24,7 +24,9 @@
     "notif_title":          "温馨提示",
     "notif_msg":            "今晚18时欢迎鸡尾酒会",
     "weather_widget_label": "本地天气",
-    "weather_widget_desc":  "晴空万里"
+    "weather_widget_desc":  "晴空万里",
+    "feedback":             "评价",
+    "feedback_sub":         "分享您的意见"
   },
   "common": {
     "back":            "返回",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "将手机摄像头对准此二维码",
     "valid_for":        "链接有效期24小时"
+  },
+  "feedback": {
+    "welcome_title":         "帮助我们改善您的入住体验！",
+    "welcome_sub":           "1分钟评价我们 — 您的意见非常重要",
+    "start":                 "开始",
+    "step_rating":           "您如何评价您的入住体验？",
+    "step_rating_sub":       "仅评价您实际使用过的服务",
+    "step_comment":          "有什么意见想分享吗？",
+    "comment_optional":      "可选 — 告诉我们您印象最深的事",
+    "comment_placeholder":   "您的体验，您的建议…",
+    "chars_remaining":       "剩余字符",
+    "next":                  "下一步",
+    "submit":                "提交评价",
+    "skip_comment":          "跳过",
+    "thanks_title":          "感谢您的评价！",
+    "thanks_sub":            "您的反馈帮助我们为您提供卓越的入住体验。",
+    "redirect_in":           "{{n}}秒后返回首页",
+    "back_home":             "返回首页",
+    "already_submitted_title": "",
+    "already_submitted":     "您今天已提交评价，谢谢！",
+    "error":                 "发生错误，请重试。",
+    "category_proprete":     "清洁度",
+    "category_accueil":      "接待",
+    "category_chambre":      "客房",
+    "category_restauration": "餐饮",
+    "category_services":     "服务"
   }
 }

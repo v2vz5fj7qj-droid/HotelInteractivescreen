@@ -3,6 +3,34 @@ import { useHotel } from './HotelContext';
 
 const ThemeContext = createContext(null);
 
+// Injecte un <link> Google Fonts si pas déjà présent
+function loadGoogleFont(fontName) {
+  if (!fontName) return;
+  const id = `gfont-${fontName.replace(/\s+/g, '-')}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id   = id;
+  link.rel  = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700&display=swap`;
+  document.head.appendChild(link);
+}
+
+// Injecte un @font-face pour la police custom uploadée
+function injectCustomFont(url) {
+  const id = 'hotel-custom-font-face';
+  if (document.getElementById(id)) {
+    // Mettre à jour si l'URL a changé
+    const existing = document.getElementById(id);
+    if (existing.dataset.url === url) return;
+    existing.remove();
+  }
+  const style = document.createElement('style');
+  style.id = id;
+  style.dataset.url = url;
+  style.textContent = `@font-face { font-family: 'HotelCustomFont'; src: url('${url}'); font-display: swap; }`;
+  document.head.appendChild(style);
+}
+
 function isNightTime() {
   const h = new Date().getHours();
   return h >= 20 || h < 7;
@@ -46,6 +74,7 @@ function settingsToConfig(settings) {
     color_accent:        colors.color_accent     || DEFAULT_THEME.color_accent,
     font_primary:        settings.font_primary   || DEFAULT_THEME.font_primary,
     font_secondary:      settings.font_secondary || DEFAULT_THEME.font_secondary,
+    font_file_url:       settings.font_file_url  || null,
     logo_url:            settings.logo_url       || DEFAULT_THEME.logo_url,
     logo_url_dark:       settings.logo_url_dark  || DEFAULT_THEME.logo_url_dark,
     banner_image_url:    settings.background_url || DEFAULT_THEME.banner_image_url,
@@ -99,8 +128,18 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--c-bg',            darkMode ? config.color_bg_dark    : config.color_bg_light);
     root.style.setProperty('--c-surface',       darkMode ? config.color_surface_dark : config.color_surface_light);
     root.style.setProperty('--c-text',          darkMode ? config.color_text_dark   : config.color_text_light);
-    root.style.setProperty('--font-body',       `'${config.font_primary}', sans-serif`);
-    root.style.setProperty('--font-display',    `'${config.font_secondary}', serif`);
+    // Chargement Google Fonts pour les polices curatives
+    loadGoogleFont(config.font_primary);
+    loadGoogleFont(config.font_secondary);
+
+    // Police custom uploadée : @font-face injecté dynamiquement
+    if (config.font_file_url) {
+      injectCustomFont(config.font_file_url);
+      root.style.setProperty('--font-body', `'HotelCustomFont', '${config.font_primary}', sans-serif`);
+    } else {
+      root.style.setProperty('--font-body', `'${config.font_primary}', sans-serif`);
+    }
+    root.style.setProperty('--font-display', `'${config.font_secondary}', serif`);
   }, [config, darkMode]);
 
   const toggleDarkMode = useCallback(() => {

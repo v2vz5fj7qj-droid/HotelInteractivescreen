@@ -24,7 +24,9 @@
     "notif_title":          "Полезно знать",
     "notif_msg":            "Приветственный коктейль сегодня в 18:00",
     "weather_widget_label": "Местная погода",
-    "weather_widget_desc":  "Ясное небо"
+    "weather_widget_desc":  "Ясное небо",
+    "feedback":             "Оценить",
+    "feedback_sub":         "Поделитесь отзывом"
   },
   "common": {
     "back":            "Назад",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "Наведите камеру телефона на этот код",
     "valid_for":        "Ссылка действительна 24 часа"
+  },
+  "feedback": {
+    "welcome_title":         "Помогите нам улучшить ваше пребывание!",
+    "welcome_sub":           "Оцените нас за 1 минуту — ваше мнение важно",
+    "start":                 "Начать",
+    "step_rating":           "Как вы оцениваете своё пребывание?",
+    "step_rating_sub":       "Оценивайте только те услуги, которыми вы воспользовались",
+    "step_comment":          "Есть комментарий?",
+    "comment_optional":      "По желанию — поделитесь впечатлениями",
+    "comment_placeholder":   "Ваш опыт, ваши предложения…",
+    "chars_remaining":       "символов осталось",
+    "next":                  "Далее",
+    "submit":                "Отправить отзыв",
+    "skip_comment":          "Пропустить",
+    "thanks_title":          "Спасибо за ваш отзыв!",
+    "thanks_sub":            "Ваши отзывы помогают нам сделать ваше пребывание исключительным.",
+    "redirect_in":           "Возврат на главную через {{n}}с",
+    "back_home":             "На главную",
+    "already_submitted_title": "",
+    "already_submitted":     "Вы уже оставили отзыв сегодня. Спасибо!",
+    "error":                 "Произошла ошибка. Пожалуйста, попробуйте снова.",
+    "category_proprete":     "Чистота",
+    "category_accueil":      "Приём",
+    "category_chambre":      "Номер",
+    "category_restauration": "Ресторан",
+    "category_services":     "Услуги"
   }
 }

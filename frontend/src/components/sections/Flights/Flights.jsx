@@ -10,6 +10,7 @@ import styles           from './Flights.module.css';
 
 const RETRY_DELAY_MS  = 30_000;
 const STALE_THRESHOLD = 35 * 60 * 1000; // 35 min — dépasse l'intervalle de 30 min
+const POLL_INTERVAL_MS = 2 * 60 * 1000; // re-fetch toutes les 2 min pour capter auto & manuel
 
 export default function Flights() {
   const { t }                          = useLanguage();
@@ -58,6 +59,12 @@ export default function Flights() {
     const timer = setTimeout(() => setRetryKey(k => k + 1), RETRY_DELAY_MS);
     return () => clearTimeout(timer);
   }, [isPending, retryKey]);
+
+  // Polling périodique — capte les mises à jour du scheduler auto et du rafraîchissement manuel
+  useEffect(() => {
+    const t = setInterval(() => setRetryKey(k => k + 1), POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, []);
 
   const flights = data?.flights ?? [];
 

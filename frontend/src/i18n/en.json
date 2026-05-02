@@ -24,7 +24,9 @@
     "notif_title":          "Good to know",
     "notif_msg":            "Welcome cocktail tonight at 6pm",
     "weather_widget_label": "Local weather",
-    "weather_widget_desc":  "Clear sky"
+    "weather_widget_desc":  "Clear sky",
+    "feedback":             "Rate",
+    "feedback_sub":         "Share your feedback"
   },
   "common": {
     "back":       "Back",
@@ -188,5 +190,31 @@
     },
     "scan_instruction": "Point your phone camera at this code",
     "valid_for":        "Link valid for 24h"
+  },
+  "feedback": {
+    "welcome_title":         "Help us improve your stay!",
+    "welcome_sub":           "Rate us in 1 minute — your opinion truly matters",
+    "start":                 "Get started",
+    "step_rating":           "How would you rate your stay?",
+    "step_rating_sub":       "Only rate the services you actually used",
+    "step_comment":          "Any comments to share?",
+    "comment_optional":      "Optional — tell us what stood out",
+    "comment_placeholder":   "Your experience, your suggestions…",
+    "chars_remaining":       "characters remaining",
+    "next":                  "Next",
+    "submit":                "Send my review",
+    "skip_comment":          "Skip",
+    "thanks_title":          "Thank you for your review!",
+    "thanks_sub":            "Your feedback helps us make your stay exceptional.",
+    "redirect_in":           "Back to home in {{n}}s",
+    "back_home":             "Back to home",
+    "already_submitted_title": "",
+    "already_submitted":     "You've already submitted a review today. Thank you!",
+    "error":                 "An error occurred. Please try again.",
+    "category_proprete":     "Cleanliness",
+    "category_accueil":      "Welcome",
+    "category_chambre":      "Room",
+    "category_restauration": "Dining",
+    "category_services":     "Services"
   }
 }

@@ -9,6 +9,19 @@ import styles from '../../Admin.module.css';
 
 const ALL_LOCALES = Object.keys(localesMeta);
 
+const CURATED_FONTS = [
+  { value: 'Poppins',            category: 'Sans-serif' },
+  { value: 'Lato',               category: 'Sans-serif' },
+  { value: 'Montserrat',         category: 'Sans-serif' },
+  { value: 'Open Sans',          category: 'Sans-serif' },
+  { value: 'Raleway',            category: 'Sans-serif' },
+  { value: 'Inter',              category: 'Sans-serif' },
+  { value: 'Nunito',             category: 'Sans-serif' },
+  { value: 'Playfair Display',   category: 'Serif'      },
+  { value: 'Merriweather',       category: 'Serif'      },
+  { value: 'Cormorant Garamond', category: 'Serif'      },
+];
+
 export default function HotelSettings() {
   const { user } = useAuth();
   const hotelId  = useSuperHotelId(user);
@@ -22,6 +35,7 @@ export default function HotelSettings() {
   const [welcomeSrcLang, setWelcomeSrcLang] = useState('fr');
   const [bannerImages,  setBannerImages]  = useState([]);
   const [uploading,     setUploading]     = useState(false);
+  const [fontUploading, setFontUploading] = useState(false);
   const { translateFields, translating } = useTranslate();
 
   useEffect(() => {
@@ -48,6 +62,9 @@ export default function HotelSettings() {
           checkout_time:      data.checkout_time || '',
           primary_color:      theme.primary || '#C2782A',
           secondary_color:    theme.secondary || '#1A1005',
+          font_primary:       data.font_primary   || 'Poppins',
+          font_secondary:     data.font_secondary || 'Playfair Display',
+          font_file_url:      data.font_file_url  || '',
         });
       })
       .catch(() => {})
@@ -107,6 +124,8 @@ export default function HotelSettings() {
         wifi_password:      form.wifi_password,
         checkin_time:       form.checkin_time,
         checkout_time:      form.checkout_time,
+        font_primary:       form.font_primary,
+        font_secondary:     form.font_secondary,
         theme_colors: JSON.stringify({
           primary:   form.primary_color,
           secondary: form.secondary_color,
@@ -115,6 +134,21 @@ export default function HotelSettings() {
       showToast('Paramètres enregistrés');
     } catch (err) { alert(err.response?.data?.error || 'Erreur'); }
     finally { setSaving(false); }
+  };
+
+  const uploadFont = async (file) => {
+    const fd = new FormData();
+    fd.append('font', file);
+    setFontUploading(true);
+    try {
+      const { data } = await api.post('/hotel/settings/font', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }, params,
+      });
+      setSettings(prev => ({ ...prev, font_file_url: data.font_file_url }));
+      setForm(f => ({ ...f, font_file_url: data.font_file_url }));
+      showToast('Police personnalisée uploadée');
+    } catch (err) { alert(err.response?.data?.error || 'Erreur upload police'); }
+    finally { setFontUploading(false); }
   };
 
   const uploadFile = async (field, file) => {
@@ -226,6 +260,79 @@ export default function HotelSettings() {
                 onChange={e => setForm(f => ({ ...f, secondary_color: e.target.value }))} style={{ flex: 1 }} />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Typographie */}
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, padding: 24, marginBottom: 20 }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 4 }}>Typographie</h2>
+        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginBottom: 16 }}>
+          Polices affichées sur le kiosque et utilisées dans les exports PDF.
+        </p>
+
+        <div className={styles.fieldRow}>
+          <div className={styles.field}>
+            <label className={styles.label}>Police principale (corps)</label>
+            <select
+              className={styles.input}
+              value={form.font_primary || 'Poppins'}
+              onChange={e => setForm(f => ({ ...f, font_primary: e.target.value }))}
+            >
+              {CURATED_FONTS.map(f => (
+                <option key={f.value} value={f.value}>{f.value} — {f.category}</option>
+              ))}
+            </select>
+            <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#9CA3AF', fontFamily: `'${form.font_primary}', sans-serif` }}>
+              Aperçu : L'hôtel vous souhaite la bienvenue — Welcome
+            </p>
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Police secondaire (titres)</label>
+            <select
+              className={styles.input}
+              value={form.font_secondary || 'Playfair Display'}
+              onChange={e => setForm(f => ({ ...f, font_secondary: e.target.value }))}
+            >
+              {CURATED_FONTS.map(f => (
+                <option key={f.value} value={f.value}>{f.value} — {f.category}</option>
+              ))}
+            </select>
+            <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#9CA3AF', fontFamily: `'${form.font_secondary}', serif` }}>
+              Aperçu : L'hôtel vous souhaite la bienvenue — Welcome
+            </p>
+          </div>
+        </div>
+
+        <div className={styles.field} style={{ marginTop: 16 }}>
+          <label className={styles.label}>Police personnalisée (.ttf / .otf / .woff / .woff2)</label>
+          <p style={{ fontSize: '0.78rem', color: '#6B7280', margin: '0 0 8px' }}>
+            Uploadez le fichier de la police de votre charte graphique. Elle remplacera la police principale sur le kiosque et dans les PDFs.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              className={styles.btnSecondary}
+              onClick={() => document.getElementById('font-input').click()}
+              disabled={fontUploading}
+              style={{ fontSize: '0.85rem' }}
+            >
+              {fontUploading ? 'Upload…' : '📁 Choisir un fichier'}
+            </button>
+            {form.font_file_url && (
+              <span style={{ fontSize: '0.8rem', color: '#10B981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                ✓ {form.font_file_url.split('/').pop()}
+                <button
+                  onClick={() => {
+                    setForm(f => ({ ...f, font_file_url: '' }));
+                    api.put('/hotel/settings', { font_file_url: null }, { params }).catch(() => {});
+                  }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: '0.8rem', padding: '0 2px' }}
+                  title="Supprimer la police personnalisée"
+                >✕</button>
+              </span>
+            )}
+          </div>
+          <input id="font-input" type="file" accept=".ttf,.otf,.woff,.woff2" style={{ display: 'none' }}
+            onChange={e => { if (e.target.files[0]) { uploadFont(e.target.files[0]); e.target.value = ''; } }} />
         </div>
       </div>
 

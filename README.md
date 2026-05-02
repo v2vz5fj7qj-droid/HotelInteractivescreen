@@ -42,15 +42,17 @@ HotelInteractivescreen/
 
 ## Stack technique
 
-| Couche    | Technologies                                                                    |
-|-----------|---------------------------------------------------------------------------------|
-| Frontend  | React 18, Vite 6, React Router 6, CSS Modules, Lucide                           |
-| Carte     | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB Voyager (gratuit)               |
-| Backend   | Node.js, Express, JWT (jsonwebtoken), multer                                    |
-| BDD       | MySQL 8, Redis (cache partagé inter-hôtels), ioredis                            |
-| Traduction| LibreTranslate (auto-hébergé, 9 langues, aucune clé API requise)                |
-| Infra     | Docker Compose, Nginx (production)                                              |
-| APIs      | OpenWeatherMap, FlightAPI.io, OpenRouteService                                  |
+| Couche      | Technologies                                                                                      |
+|-------------|---------------------------------------------------------------------------------------------------|
+| Frontend    | React 18, Vite 6, React Router 6, CSS Modules, Lucide, axios                                     |
+| Carte       | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB Voyager (gratuit)                                |
+| QR code     | qrcode.react (kiosque) + qrcode (backend) — token signé TTL 10 min                               |
+| Export PDF  | jsPDF 4 + jspdf-autotable 5 — génération PDF côté client (FeedbackManager)                       |
+| Backend     | Node.js, Express, JWT (jsonwebtoken), multer, bcrypt, helmet, express-rate-limit, axios           |
+| BDD         | MySQL 8, Redis (cache partagé inter-hôtels), ioredis                                             |
+| Traduction  | LibreTranslate (auto-hébergé, 9 langues, aucune clé API requise)                                 |
+| Infra       | Docker Compose, Nginx (production)                                                                |
+| APIs        | OpenWeatherMap, FlightAPI.io, OpenRouteService                                                    |
 
 ---
 
@@ -127,6 +129,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Infos utiles         | Contacts urgences, taxis, ambassades, pharmacies                           |
 | Bon à savoir         | Informations propres à l'hôtel (règles, équipements, horaires...)          |
 | Transfert mobile     | QR code avec token TTL (10 min) pour continuer sur smartphone              |
+| Évaluations (Feedback) | Formulaire multi-étapes : notation étoilée par catégorie, commentaire libre, emojis rapides |
 
 **Fonctionnalités transversales :**
 - Multilingue 9 langues : FR, EN, DE, ES, PT, AR (RTL), ZH, JA, RU
@@ -178,6 +181,8 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Services et bien-être | Catégories propres + CRUD services |
 | Bon à savoir | CRUD informations propres à l'hôtel |
 | Agenda | CRUD événements propres (visibles hôtel uniquement) |
+| Évaluations | Consultation des feedbacks kiosque — statistiques par catégorie, filtres date/note, export CSV et PDF |
+| Police personnalisée | Upload d'un fichier `.ttf`/`.otf` pour remplacer la police de la borne |
 
 ### Contributeur
 
@@ -282,14 +287,42 @@ L'application est **offline-first** :
 
 ---
 
+## Versionner les données et déployer
+
+Les données saisies en backoffice (hôtels, événements, lieux, services…) vivent dans le volume
+Docker `mysql_data`. Pour les inclure dans un push et les rejouer sur un nouveau serveur :
+
+```bash
+# Exporter les données vivantes → database/seeds/data_live.sql
+./scripts/db-export.sh
+
+# Commiter et pousser
+git add database/seeds/data_live.sql
+git commit -m "chore: export données vivantes $(date +%Y-%m-%d)"
+git push
+```
+
+Sur un nouveau serveur, `docker compose up --build` recharge automatiquement `data_live.sql`
+dans la BDD vierge via `docker-entrypoint-initdb.d`.
+
+> **Clés API** — le fichier `.env` ne doit jamais être commité. Le transférer manuellement :
+> ```bash
+> scp .env user@serveur:/opt/connectbe/.env
+> ```
+
+---
+
 ## Volumes Docker importants
 
 ```yaml
-# backend — persistence des fichiers uploadés
-- ./uploads:/uploads
+# Base de données — données persistées entre redémarrages
+mysql_data:/var/lib/mysql
 
-# frontend — hot-reload de la config Vite
-- ./frontend/vite.config.js:/app/vite.config.js
+# Backend — persistence des fichiers uploadés (logos, images POI, polices)
+./uploads:/uploads
+
+# Frontend — hot-reload du code source sans rebuild
+./frontend/src:/app/src
 ```
 
 > Si les images uploadées disparaissent après un rebuild, vérifier que le dossier `uploads/` existe sur l'hôte et est bien monté.
@@ -405,3 +438,6 @@ git push origin feat/multi-hotel
 | Archivage automatique agenda                    | ✅ Complet  |
 | Images bannière carrousel par hôtel (max 10)    | ✅ Complet  |
 | Traduction automatique LibreTranslate           | ✅ Complet  |
+| Feedback kiosque (notation + commentaire)       | ✅ Complet  |
+| FeedbackManager backoffice (stats + export)     | ✅ Complet  |
+| Police personnalisée par hôtel (upload TTF/OTF) | ✅ Complet  |

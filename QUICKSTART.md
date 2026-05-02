@@ -39,7 +39,17 @@ docker compose up --build
 
 > **La première fois prend 5-10 minutes** : téléchargement des images Docker + chargement des modèles de langue LibreTranslate (traduction automatique). Les démarrages suivants sont instantanés.
 
-> **Après toute modification du code frontend**, relancer avec `docker compose up --build frontend -d` pour reconstruire l'image.
+> **Après toute modification du code source** (`.jsx`, `.js`), les fichiers sont rechargés à chaud grâce aux volumes Docker — aucun rebuild nécessaire.
+
+> **Après l'ajout ou la mise à jour d'une dépendance npm** (`package.json` modifié), il faut reconstruire le service concerné :
+> ```bash
+> # Dépendance frontend ajoutée (ex. jspdf, leaflet…)
+> docker compose up --build frontend -d
+>
+> # Dépendance backend ajoutée (ex. express-rate-limit, helmet…)
+> docker compose up --build backend -d
+> ```
+> Les `node_modules` sont isolés dans l'image Docker et ne sont pas partagés avec le dossier local — `npm install` en local n'impacte pas le conteneur.
 
 | Service          | URL                          |
 |------------------|------------------------------|
@@ -117,6 +127,8 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 - **Services et bien-être** — CRUD services avec catégories
 - **Agenda** — CRUD événements propres à l'hôtel
 - **Bon à savoir** — notifications rotatives affichées sur la borne
+- **Évaluations** — statistiques et liste des feedbacks soumis depuis la borne (filtres date/note, export CSV et PDF)
+- **Police personnalisée** — upload `.ttf`/`.otf` pour remplacer la police de la borne (section "Paramètres hôtel")
 - **Dashboard** — soumissions en attente de pré-validation
 
 ### Contributeur — fonctionnalités
@@ -165,6 +177,60 @@ pour accéder au backoffice sans lien visible.
 
 ---
 
+## Sauvegarder et versionner les données
+
+Les données saisies en backoffice (hôtels, événements, lieux, services, paramètres…) vivent dans
+le volume Docker `mysql_data` et ne sont pas automatiquement dans git.
+
+**Pour les commiter et les inclure dans un déploiement futur :**
+
+```bash
+# 1. Exporter les données vivantes
+./scripts/db-export.sh
+
+# 2. Commiter le dump
+git add database/seeds/data_live.sql
+git commit -m "chore: export données vivantes $(date +%Y-%m-%d)"
+git push
+```
+
+Sur un **nouveau serveur** (`git clone` + `docker compose up --build`), le fichier
+`database/seeds/data_live.sql` est rechargé automatiquement dans la BDD vierge.
+
+> Le script exclut automatiquement les tables non essentielles au déploiement :
+> `audit_log`, `workflow_notifications`, `feedbacks`.
+
+---
+
+## Clés API et variables d'environnement
+
+Le fichier `.env` n'est **jamais commité** (données sensibles). Pour déployer sur un nouveau serveur :
+
+```bash
+# Sur le nouveau serveur — copier le template et remplir les valeurs
+cp .env.example .env
+nano .env   # ou vim, selon préférence
+```
+
+Les valeurs à renseigner obligatoirement :
+
+| Variable | Description |
+|---|---|
+| `DB_ROOT_PASSWORD` | Mot de passe root MySQL |
+| `DB_PASSWORD` | Mot de passe utilisateur MySQL |
+| `JWT_SECRET` | Chaîne aléatoire ≥ 32 caractères |
+| `ADMIN_PASSWORD` | Mot de passe du compte super-admin |
+| `OPENWEATHERMAP_API_KEY` | Météo (optionnel — mode mock si absent) |
+| `FLIGHTAPI_KEY` | Vols temps réel (optionnel — mode mock si absent) |
+| `VITE_ORS_API_KEY` | Itinéraires carte (optionnel) |
+
+> Pour transférer le `.env` entre machines sans le commiter, utiliser `scp` ou un gestionnaire de secrets (Bitwarden, 1Password, etc.).
+> ```bash
+> scp .env user@serveur:/opt/connectbe/.env
+> ```
+
+---
+
 ## Commandes utiles
 
 ```bash
@@ -177,11 +243,11 @@ docker compose down -v && docker compose up --build
 # Vider le cache Redis
 docker exec -it connectbe_redis redis-cli FLUSHALL
 
-# Sauvegarder la base de données
-docker exec connectbe_mysql mysqldump -u connectbe_user -pchange_me_db connectbe_kiosk > backup.sql
+# Backup manuel ponctuel (hors versioning)
+docker exec connectbe_mysql mysqldump -u connectbe_user -pchange_me_db connectbe_kiosk > backup_$(date +%Y%m%d).sql
 
-# Restaurer une sauvegarde
-docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk < backup.sql
+# Restaurer un backup manuel
+docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk < backup_20260501.sql
 ```
 
 ---

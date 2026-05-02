@@ -3,6 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
+import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
 import BackButton       from '../../BackButton/BackButton';
@@ -10,19 +11,19 @@ import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles           from './MapSection.module.css';
 
-const HOTEL_LAT  = parseFloat(import.meta.env.VITE_HOTEL_LAT  || '12.3641');
-const HOTEL_LNG  = parseFloat(import.meta.env.VITE_HOTEL_LNG  || '-1.5332');
-const HOTEL_NAME = import.meta.env.VITE_HOTEL_NAME || 'ConnectBé';
-
 const ORS_KEY = import.meta.env.VITE_ORS_API_KEY;
 
-function haversine(lat, lng) {
+const FALLBACK_LAT  = parseFloat(import.meta.env.VITE_HOTEL_LAT  || '12.3641');
+const FALLBACK_LNG  = parseFloat(import.meta.env.VITE_HOTEL_LNG  || '-1.5332');
+const FALLBACK_NAME = import.meta.env.VITE_HOTEL_NAME || 'ConnectBé';
+
+function haversine(lat, lng, hotelLat, hotelLng) {
   const R = 6371000;
   const toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat - HOTEL_LAT);
-  const dLng = toRad(lng - HOTEL_LNG);
+  const dLat = toRad(lat - hotelLat);
+  const dLng = toRad(lng - hotelLng);
   const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(toRad(HOTEL_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+    + Math.cos(toRad(hotelLat)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
   const meters = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return { meters, label: formatDist(meters), mode: 'air' };
 }
@@ -33,12 +34,12 @@ function formatDist(meters) {
     : `${(meters / 1000).toFixed(1)} km`;
 }
 
-async function fetchWalkingDistance(lat, lng) {
+async function fetchWalkingDistance(lat, lng, hotelLat, hotelLng) {
   if (!ORS_KEY) return null;
   const url = 'https://api.openrouteservice.org/v2/directions/foot-walking';
   const body = {
     coordinates: [
-      [HOTEL_LNG, HOTEL_LAT],
+      [hotelLng, hotelLat],
       [lng, lat],
     ],
   };
@@ -94,10 +95,15 @@ const HOTEL_ICON = L.divIcon({
 
 export default function MapSection() {
   const { t, locale }  = useLanguage();
+  const { settings }   = useHotel();
   const mapRef         = useRef(null);
   const leafletRef     = useRef(null);
   const markersRef     = useRef([]);
   const selectedRef    = useRef(null); // ref pour éviter les stale closures dans les listeners Leaflet
+
+  const hotelLat  = settings?.lat  != null ? parseFloat(settings.lat)  : FALLBACK_LAT;
+  const hotelLng  = settings?.lng  != null ? parseFloat(settings.lng)  : FALLBACK_LNG;
+  const hotelName = settings?.nom  || FALLBACK_NAME;
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [selected,  setSelected]  = useState(null);  // POI object
@@ -131,12 +137,13 @@ export default function MapSection() {
     setDistance(null); // reset (affiche "…" pendant le chargement)
     let cancelled = false;
     (async () => {
-      const fallback = haversine(selected.lat, selected.lng);
-      const walking  = await fetchWalkingDistance(selected.lat, selected.lng);
+      const fallback = haversine(selected.lat, selected.lng, hotelLat, hotelLng);
+      const walking  = await fetchWalkingDistance(selected.lat, selected.lng, hotelLat, hotelLng);
       if (!cancelled) setDistance(walking ?? fallback);
     })();
     return () => { cancelled = true; };
-  }, [selected]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, hotelLat, hotelLng]);
 
   useEffect(() => { trackEvent('map', 'open'); }, []);
 
@@ -145,7 +152,7 @@ export default function MapSection() {
     if (leafletRef.current || !mapRef.current) return;
 
     const map = L.map(mapRef.current, {
-      center: [HOTEL_LAT, HOTEL_LNG], zoom: 15,
+      center: [hotelLat, hotelLng], zoom: 15,
       zoomControl: false, attributionControl: true,
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -157,10 +164,10 @@ export default function MapSection() {
     }).addTo(map);
 
     // Marqueur hôtel
-    L.marker([HOTEL_LAT, HOTEL_LNG], { icon: HOTEL_ICON })
+    L.marker([hotelLat, hotelLng], { icon: HOTEL_ICON })
       .addTo(map)
       .bindPopup(
-        `<strong>${HOTEL_NAME}</strong><br><small>${locale === 'fr' ? 'Vous êtes ici' : 'You are here'}</small>`,
+        `<strong>${hotelName}</strong><br><small>${locale === 'fr' ? 'Vous êtes ici' : 'You are here'}</small>`,
         { className: 'leaflet-popup-connectbe' }
       );
 
@@ -178,7 +185,7 @@ export default function MapSection() {
     leafletRef.current = map;
     return () => { map.remove(); leafletRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hotelLat, hotelLng]);
 
   // ── Marqueurs POI ───────────────────────────────────────
   useEffect(() => {
