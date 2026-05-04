@@ -22,11 +22,14 @@
     "events_sub":           "Местные мероприятия",
     "map_sub":              "Исследуйте город",
     "notif_title":          "Полезно знать",
+    "notif_title_notif":    "Уведомление",
     "notif_msg":            "Приветственный коктейль сегодня в 18:00",
     "weather_widget_label": "Местная погода",
     "weather_widget_desc":  "Ясное небо",
     "feedback":             "Оценить",
-    "feedback_sub":         "Поделитесь отзывом"
+    "feedback_sub":         "Поделитесь отзывом",
+    "currency":             "Конвертер валют",
+    "currency_sub":         "Актуальные курсы"
   },
   "common": {
     "back":            "Назад",
@@ -216,5 +219,21 @@
     "category_chambre":      "Номер",
     "category_restauration": "Ресторан",
     "category_services":     "Услуги"
+  },
+  "currency": {
+    "title":            "Конвертер валют",
+    "subtitle":         "Актуальные курсы обмена",
+    "calc_subtitle":    "Введите сумму для просмотра эквивалентов",
+    "rates_title":      "Таблица кросс-курсов",
+    "equivalences":     "Эквиваленты",
+    "refresh":          "Обновить",
+    "last_update":      "Обновлено в",
+    "enter_amount":     "Введите сумму для начала",
+    "no_rates":         "Курсы недоступны",
+    "open_calculator":  "Калькулятор",
+    "back_to_rates":    "Таблица курсов",
+    "error_config":     "Конфигурация валют недоступна",
+    "error_rates":      "Не удалось получить курсы валют",
+    "error_refresh":    "Обновление не выполнено"
   }
 }

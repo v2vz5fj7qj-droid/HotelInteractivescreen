@@ -1,0 +1,342 @@
+/* ── Page shell ──────────────────────────────────────────────── */
+.page {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  padding: clamp(72px, 9vh, 110px) clamp(20px, 4vw, 56px) clamp(16px, 3vh, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 18px);
+  overflow: hidden;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.header { text-align: center; }
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.8vh, 2rem);
+  color: var(--c-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.titleIcon { font-size: 1.2em; }
+
+.subtitle {
+  font-size: clamp(0.78rem, 1.3vh, 1rem);
+  color: var(--c-text-muted);
+  margin-top: 3px;
+}
+
+/* ── Calculatrice (vue secondaire) ───────────────────────────── */
+.calcWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 14px);
+  min-height: 0;
+  animation: slideInCalc 220ms ease-out;
+}
+@keyframes slideInCalc {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.backToBoard {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  font-size: clamp(0.72rem, 1.15vh, 0.88rem);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 120ms, color 120ms, transform 100ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.backToBoard:hover  { background: var(--c-bg); color: var(--c-text); }
+.backToBoard:active { transform: scale(0.93); }
+
+/* ── Layout deux colonnes ─────────────────────────────────────── */
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(12px, 2vw, 24px);
+  min-height: 0;
+}
+
+/* ── Colonne gauche : saisie + clavier ───────────────────────── */
+.inputCol {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 14px);
+  min-height: 0;
+}
+
+.inputCard {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-xl);
+  padding: clamp(12px, 2vh, 20px) clamp(14px, 2.5vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.baseLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.flag      { font-size: clamp(1.2rem, 2.2vh, 1.7rem); line-height: 1; }
+.baseName  { font-size: clamp(0.75rem, 1.2vh, 0.95rem); color: var(--c-text-muted); }
+.baseCode  {
+  margin-left: auto;
+  font-size: clamp(0.85rem, 1.5vh, 1.1rem);
+  font-weight: 700;
+  color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 12%, transparent);
+  padding: 2px 10px;
+  border-radius: 999px;
+}
+
+.amountDisplay {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 2px solid var(--c-border);
+  padding-bottom: 6px;
+}
+.amountValue {
+  font-size: clamp(1.8rem, 4vh, 3rem);
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: -0.02em;
+  min-width: 2ch;
+}
+.amountPlaceholder { color: var(--c-text-muted); opacity: 0.5; }
+.amountCursor {
+  width: 2px;
+  height: clamp(1.6rem, 3.5vh, 2.6rem);
+  background: var(--c-primary);
+  border-radius: 2px;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.amountWords {
+  font-size: clamp(0.72rem, 1.1vh, 0.88rem);
+  color: var(--c-text-muted);
+}
+
+/* ── Clavier numérique ───────────────────────────────────────── */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px, 1.1vh, 12px);
+  flex: 1;
+}
+
+.numkey {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  font-size: clamp(1.3rem, 2.8vh, 2.1rem);
+  font-weight: 600;
+  color: var(--c-text);
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1.6 / 1;
+  transition: background 120ms, transform 100ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.numkey:active,
+.numkey:focus-visible {
+  background: color-mix(in srgb, var(--c-primary) 18%, var(--c-surface));
+  transform: scale(0.94);
+  outline: none;
+}
+.numkeyBack {
+  font-size: clamp(1rem, 2.2vh, 1.6rem);
+  background: color-mix(in srgb, var(--c-accent) 8%, var(--c-surface));
+  color: var(--c-accent);
+}
+
+/* ── Raccourcis montants ─────────────────────────────────────── */
+.shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(4px, 0.8vh, 8px);
+}
+.shortcut {
+  background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface));
+  border: 1.5px solid color-mix(in srgb, var(--c-primary) 20%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--c-primary);
+  font-size: clamp(0.72rem, 1.1vh, 0.9rem);
+  font-weight: 600;
+  padding: 6px 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 120ms, transform 100ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.shortcut:active { transform: scale(0.93); }
+
+/* ── Colonne droite : résultats ──────────────────────────────── */
+.resultsCol {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 14px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.resultsTitle {
+  font-size: clamp(0.82rem, 1.4vh, 1rem);
+  font-weight: 700;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-primary) 12%, var(--c-surface));
+  border: 1.5px solid color-mix(in srgb, var(--c-primary) 25%, transparent);
+  color: var(--c-primary);
+  font-size: clamp(0.7rem, 1.1vh, 0.85rem);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 120ms, transform 100ms;
+}
+.refreshBtn:active { transform: scale(0.93); }
+.refreshBtn:disabled { opacity: 0.5; cursor: default; }
+.refreshBtnSpin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.resultsLoading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resultsCta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.resultsCta p {
+  color: var(--c-text-muted);
+  font-size: clamp(0.85rem, 1.4vh, 1rem);
+  max-width: 200px;
+  line-height: 1.5;
+}
+
+/* ── Liste des résultats ─────────────────────────────────────── */
+.resultsList {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 0.9vh, 9px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.resultRow {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(8px, 1.4vh, 14px) clamp(10px, 1.8vw, 16px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  animation: slideIn 220ms ease-out both;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.resultLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.resultFlag { font-size: clamp(1.1rem, 2vh, 1.5rem); flex-shrink: 0; }
+.resultCode {
+  display: block;
+  font-size: clamp(0.85rem, 1.5vh, 1.05rem);
+  font-weight: 700;
+  color: var(--c-text);
+}
+.resultName {
+  display: block;
+  font-size: clamp(0.65rem, 1vh, 0.78rem);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.resultAmount { flex-shrink: 0; }
+.resultValue {
+  font-size: clamp(1.1rem, 2.2vh, 1.6rem);
+  font-weight: 700;
+  color: var(--c-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── Footer infos ────────────────────────────────────────────── */
+.lastUpdate {
+  font-size: clamp(0.62rem, 0.95vh, 0.75rem);
+  color: var(--c-text-muted);
+  opacity: 0.7;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.errorMsg {
+  font-size: clamp(0.78rem, 1.2vh, 0.9rem);
+  color: var(--c-accent);
+  text-align: center;
+  padding: 8px;
+}

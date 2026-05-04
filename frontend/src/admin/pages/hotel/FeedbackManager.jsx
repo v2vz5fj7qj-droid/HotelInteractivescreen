@@ -219,26 +219,24 @@ export default function FeedbackManager() {
       )}
 
       {/* ── Filtres ── */}
-      <div className={styles.card} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 20, padding: '14px 16px' }}>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.82rem', color: '#9CA3AF' }}>
-          Du
-          <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={styles.input} style={{ width: 150 }} />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.82rem', color: '#9CA3AF' }}>
-          Au
-          <input type="date" value={to} onChange={e => setTo(e.target.value)} className={styles.input} style={{ width: 150 }} />
-        </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.82rem', color: '#9CA3AF' }}>
-          Note min.
-          <select value={minNote} onChange={e => setMinNote(e.target.value)} className={styles.input} style={{ width: 120 }}>
+      <div className={styles.card} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16, marginBottom: 20, padding: '16px 20px', flexWrap: 'nowrap' }}>
+        <div className={styles.field}>
+          <span className={styles.label}>Du</span>
+          <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={styles.input} style={{ width: 155 }} />
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Au</span>
+          <input type="date" value={to} onChange={e => setTo(e.target.value)} className={styles.input} style={{ width: 155 }} />
+        </div>
+        <div className={styles.field}>
+          <span className={styles.label}>Note min.</span>
+          <select value={minNote} onChange={e => setMinNote(e.target.value)} className={styles.input} style={{ width: 130 }}>
             <option value="">Toutes</option>
             {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
           </select>
-        </label>
-        <button className={styles.btnSecondary} onClick={() => load(0)}>Filtrer</button>
-        <button className={styles.btnGhost} onClick={() => { setFrom(''); setTo(''); setMinNote(''); }}>
-          Réinitialiser
-        </button>
+        </div>
+        <button className={styles.btnPrimary} onClick={() => load(0)}>Filtrer</button>
+        <button className={styles.btnSecondary} onClick={() => { setFrom(''); setTo(''); setMinNote(''); }}>Réinitialiser</button>
       </div>
 
       {/* ── Tableau ── */}

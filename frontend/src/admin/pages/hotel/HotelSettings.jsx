@@ -54,6 +54,9 @@ export default function HotelSettings() {
         try { theme = JSON.parse(data.theme_colors || '{}'); } catch {}
         setForm({
           ...Object.fromEntries(ALL_LOCALES.map(l => [`welcome_message_${l}`, data[`welcome_message_${l}`] || ''])),
+          adresse:            data.adresse || '',
+          lat:                data.lat != null ? String(data.lat) : '',
+          lng:                data.lng != null ? String(data.lng) : '',
           contact_phone:      data.contact_phone || '',
           contact_email:      data.contact_email || '',
           wifi_name:          data.wifi_name || '',
@@ -118,6 +121,9 @@ export default function HotelSettings() {
     try {
       await api.put('/hotel/settings', {
         ...Object.fromEntries(ALL_LOCALES.map(l => [`welcome_message_${l}`, form[`welcome_message_${l}`]])),
+        adresse:            form.adresse || null,
+        lat:                form.lat !== '' ? parseFloat(form.lat) : null,
+        lng:                form.lng !== '' ? parseFloat(form.lng) : null,
         contact_phone:      form.contact_phone,
         contact_email:      form.contact_email,
         wifi_name:          form.wifi_name,
@@ -364,6 +370,64 @@ export default function HotelSettings() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Localisation */}
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 14, padding: 24, marginBottom: 20 }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 4 }}>Localisation</h2>
+        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginBottom: 16 }}>
+          Adresse et coordonnées GPS affichées sur le kiosque (carte, météo locale, itinéraires).
+        </p>
+        <div className={styles.field}>
+          <label className={styles.label}>Adresse postale</label>
+          <input
+            className={styles.input}
+            placeholder="12 Rue de la Paix, 75001 Paris, France"
+            value={form.adresse}
+            onChange={e => setForm(f => ({ ...f, adresse: e.target.value }))}
+          />
+        </div>
+        <div className={styles.fieldRow} style={{ marginTop: 12 }}>
+          <div className={styles.field}>
+            <label className={styles.label}>Latitude</label>
+            <input
+              className={styles.input}
+              type="number"
+              step="0.0000001"
+              min="-90"
+              max="90"
+              placeholder="48.8698"
+              value={form.lat}
+              onChange={e => setForm(f => ({ ...f, lat: e.target.value }))}
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.label}>Longitude</label>
+            <input
+              className={styles.input}
+              type="number"
+              step="0.0000001"
+              min="-180"
+              max="180"
+              placeholder="2.3310"
+              value={form.lng}
+              onChange={e => setForm(f => ({ ...f, lng: e.target.value }))}
+            />
+          </div>
+        </div>
+        {form.lat && form.lng && !isNaN(parseFloat(form.lat)) && !isNaN(parseFloat(form.lng)) && (
+          <a
+            href={`https://www.google.com/maps?q=${parseFloat(form.lat)},${parseFloat(form.lng)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10, fontSize: '0.82rem', color: '#3B82F6', textDecoration: 'none', fontWeight: 500 }}
+          >
+            ↗ Vérifier sur Google Maps
+          </a>
+        )}
+        <p style={{ fontSize: '0.75rem', color: '#9CA3AF', marginTop: 10 }}>
+          Pour obtenir les coordonnées, faites un clic droit sur votre hôtel dans Google Maps et copiez les chiffres affichés.
+        </p>
       </div>
 
       {/* Infos pratiques */}

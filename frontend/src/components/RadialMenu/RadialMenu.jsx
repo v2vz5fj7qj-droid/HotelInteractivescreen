@@ -10,7 +10,7 @@ import {
   CloudSun, PlaneTakeoff, MapPin,
   Sparkles, CalendarDays, Phone,
   Smartphone, Home, Bell, ChevronRight,
-  Languages, Star,
+  Languages, Star, BadgeDollarSign,
 } from 'lucide-react';
 import styles from './RadialMenu.module.css';
 
@@ -22,7 +22,8 @@ const NAV_ITEMS = [
   { id: 'events',   Icon: CalendarDays,  section: 'events',   labelKey: 'menu.events'   },
   { id: 'map',      Icon: MapPin,        section: 'map',      labelKey: 'menu.map'      },
   { id: 'info',     Icon: Phone,         section: 'info',     labelKey: 'menu.info'     },
-  { id: 'feedback', Icon: Star,          section: 'feedback', labelKey: 'menu.feedback' },
+  { id: 'feedback', Icon: Star,              section: 'feedback', labelKey: 'menu.feedback' },
+  { id: 'currency', Icon: BadgeDollarSign,  section: 'currency', labelKey: 'menu.currency' },
 ];
 
 /* Cards de service dans la grille (4 cartes principales) */
@@ -71,6 +72,15 @@ const SERVICE_CARDS = [
     Icon:  Star,
     color: '#F59E0B',
     img:   'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=400&q=70',
+  },
+  {
+    id: 'currency',
+    section: 'currency',
+    labelKey: 'menu.currency',
+    subKey:   'menu.currency_sub',
+    Icon:  BadgeDollarSign,
+    color: '#059669',
+    img:   'https://images.unsplash.com/photo-1580519542036-c47de6196ba5?auto=format&fit=crop&w=400&q=70',
   },
 ];
 
@@ -205,10 +215,12 @@ export default function RadialMenu() {
     return msgs[locale] || msgs['fr'] || msgs['en'] || null;
   })();
 
-  const currentNotif = notifs[notifIndex];
-  const notifMsg = currentNotif
+  const currentNotif    = notifs[notifIndex];
+  const isNotifCard     = currentNotif?.is_notification ?? false;
+  const notifMsg        = currentNotif
     ? [currentNotif.titre, currentNotif.contenu].filter(Boolean).join(' — ')
     : t('menu.notif_msg');
+  const notifCardTitle  = isNotifCard ? t('menu.notif_title_notif') : t('menu.notif_title');
 
   const go = (id, section) => {
     if (activeNav) return;
@@ -309,15 +321,18 @@ export default function RadialMenu() {
           ))}
         </section>
 
-        {/* C — Notification */}
-        <div className={styles.notifCard}>
+        {/* C — Notification / Bon à savoir */}
+        <div className={`${styles.notifCard} ${isNotifCard ? styles.notifCardAlert : ''}`}>
           <div className={styles.notifLeft}>
             <div className={styles.notifBellWrap}>
-              <Bell size={32} className={styles.notifBell} />
-              {notifs.length > 0 && <span className={styles.notifDot} aria-hidden="true" />}
+              {isNotifCard
+                ? <Bell size={32} className={`${styles.notifBell} ${styles.notifBellActive}`} />
+                : <span style={{ fontSize: 28, lineHeight: 1 }}>💡</span>
+              }
+              {isNotifCard && notifs.length > 0 && <span className={styles.notifDot} aria-hidden="true" />}
             </div>
             <div className={styles.notifTextWrap}>
-              <p className={styles.notifTitle}>{t('menu.notif_title')}</p>
+              <p className={styles.notifTitle}>{notifCardTitle}</p>
               <div className={styles.notifMsgClip} ref={clipRef}>
                 <p
                   key={notifIndex}
@@ -414,7 +429,7 @@ export default function RadialMenu() {
         <div className={styles.navDivider} aria-hidden="true" />
 
         {/* Sections principales */}
-        {NAV_ITEMS.slice(0, 6).map(item => (
+        {NAV_ITEMS.slice(0, 7).map(item => (
           <button
             key={item.id}
             className={`${styles.navBtn} ${activeNav === item.id ? styles.navBtnPressing : ''}`}

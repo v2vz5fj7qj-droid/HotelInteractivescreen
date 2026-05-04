@@ -159,6 +159,58 @@ async function migration011() {
   console.log('[migration011] colonne font_file_url ajoutée');
 }
 
+async function migration012() {
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.TABLES
+     WHERE table_schema = DATABASE() AND table_name = 'devise_config'`
+  );
+  if (row.cnt > 0) {
+    // Table existe déjà — s'assurer que la colonne display_currencies est présente
+    if (!(await columnExists('devise_config', 'display_currencies'))) {
+      await db.query(
+        `ALTER TABLE devise_config
+           ADD COLUMN display_currencies JSON NULL DEFAULT NULL
+           COMMENT 'Sous-ensemble max 5 devises affichées sur le tableau des taux'
+           AFTER target_currencies`
+      );
+      console.log('[migration012] colonne display_currencies ajoutée');
+    }
+    return;
+  }
+  await db.query(`
+    CREATE TABLE devise_config (
+      id                    INT          NOT NULL AUTO_INCREMENT,
+      hotel_id              INT          NOT NULL,
+      base_currency         VARCHAR(3)   NOT NULL DEFAULT 'XOF',
+      target_currencies     JSON         NOT NULL,
+      display_currencies    JSON         NULL DEFAULT NULL,
+      update_mode           ENUM('auto','manual') NOT NULL DEFAULT 'auto',
+      update_interval_hours INT          NOT NULL DEFAULT 6,
+      daily_update_times    JSON         NULL DEFAULT NULL,
+      rates                 JSON         NULL DEFAULT NULL,
+      last_update           TIMESTAMP    NULL DEFAULT NULL,
+      api_provider          VARCHAR(50)  NOT NULL DEFAULT 'open.er-api.com',
+      api_key               VARCHAR(255) NULL DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_hotel (hotel_id),
+      CONSTRAINT fk_devise_hotel FOREIGN KEY (hotel_id)
+        REFERENCES hotels (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  console.log('[migration012] table devise_config créée');
+}
+
+async function migration013() {
+  if (!(await columnExists('hotel_tips', 'is_notification'))) {
+    await db.query(
+      `ALTER TABLE hotel_tips
+         ADD COLUMN is_notification TINYINT(1) NOT NULL DEFAULT 0
+         AFTER is_active`
+    );
+    console.log('[migration013] hotel_tips: colonne is_notification ajoutée');
+  }
+}
+
 async function runMigrations() {
   try {
     await migration003();
@@ -168,6 +220,8 @@ async function runMigrations() {
     await migration009();
     await migration010();
     await migration011();
+    await migration012();
+    await migration013();
     console.log('✅ Migrations : OK');
   } catch (err) {
     console.error('[runMigrations] Erreur :', err.message);

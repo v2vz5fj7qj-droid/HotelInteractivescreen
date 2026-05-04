@@ -299,7 +299,7 @@
   grid-column: 9 / 13;
   grid-row: 1 / 7;
   display: grid;
-  grid-template-rows: repeat(4, 1fr);
+  grid-template-rows: repeat(6, 1fr);
   gap: var(--gap);
 }
 
@@ -417,7 +417,14 @@
 
 .notifLeft { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 22px); }
 .notifBellWrap { position: relative; flex-shrink: 0; }
-.notifBell { color: var(--c-primary); }
+.notifBell      { color: var(--c-primary); }
+.notifBellActive { color: #F59E0B; }
+
+/* Mode notification (clochette) — légère teinte ambre sur le fond */
+.notifCardAlert {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, var(--c-surface) 70%, rgba(245, 158, 11, 0.08));
+}
 
 .notifDot {
   position: absolute;

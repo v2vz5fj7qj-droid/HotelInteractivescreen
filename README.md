@@ -127,9 +127,10 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Agenda               | Événements globaux + événements propres à l'hôtel, filtres par catégorie   |
 | Carte & POI          | Carte Leaflet interactive, bulle de détail avec galerie d'images (max 3)   |
 | Infos utiles         | Contacts urgences, taxis, ambassades, pharmacies                           |
-| Bon à savoir         | Informations propres à l'hôtel (règles, équipements, horaires...)          |
+| Bon à savoir         | Informations propres à l'hôtel (règles, équipements, horaires...) — les fiches cochées "notification" apparaissent avec icône clochette |
 | Transfert mobile     | QR code avec token TTL (10 min) pour continuer sur smartphone              |
 | Évaluations (Feedback) | Formulaire multi-étapes : notation étoilée par catégorie, commentaire libre, emojis rapides |
+| Convertisseur de devises | Convertisseur interactif + tableau des taux de change (40+ devises, MAJ automatique via open.er-api.com) |
 
 **Fonctionnalités transversales :**
 - Multilingue 9 langues : FR, EN, DE, ES, PT, AR (RTL), ZH, JA, RU
@@ -179,10 +180,11 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Paramètres hôtel | Logo, image de fond, thème couleurs, nom, contacts, WiFi, check-in/check-out |
 | Images de bannière | Galerie carrousel (max 10 images) affichée à l'accueil de la borne |
 | Services et bien-être | Catégories propres + CRUD services |
-| Bon à savoir | CRUD informations propres à l'hôtel |
+| Bon à savoir | CRUD informations propres à l'hôtel — flag "notification" pour affichage clochette sur la borne |
 | Agenda | CRUD événements propres (visibles hôtel uniquement) |
 | Évaluations | Consultation des feedbacks kiosque — statistiques par catégorie, filtres date/note, export CSV et PDF |
 | Police personnalisée | Upload d'un fichier `.ttf`/`.otf` pour remplacer la police de la borne |
+| Devises | Devise de base, devises cibles (max 10), tableau des taux affiché sur la borne (max 5), MAJ auto (intervalle ou heures fixes) ou manuelle, refresh forcé |
 
 ### Contributeur
 
@@ -441,3 +443,5 @@ git push origin feat/multi-hotel
 | Feedback kiosque (notation + commentaire)       | ✅ Complet  |
 | FeedbackManager backoffice (stats + export)     | ✅ Complet  |
 | Police personnalisée par hôtel (upload TTF/OTF) | ✅ Complet  |
+| Convertisseur de devises (borne + backoffice)   | ✅ Complet  |
+| Bon à savoir — flag is_notification (clochette) | ✅ Complet  |

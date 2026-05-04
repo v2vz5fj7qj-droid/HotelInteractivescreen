@@ -22,11 +22,14 @@
     "events_sub":           "Agenda local",
     "map_sub":              "Explorar la ciudad",
     "notif_title":          "Bueno saber",
+    "notif_title_notif":    "Notificación",
     "notif_msg":            "Cóctel de bienvenida esta noche a las 18h",
     "weather_widget_label": "Clima local",
     "weather_widget_desc":  "Cielo despejado",
     "feedback":             "Valorar",
-    "feedback_sub":         "Comparta su opinión"
+    "feedback_sub":         "Comparta su opinión",
+    "currency":             "Cambio de divisas",
+    "currency_sub":         "Tipos de cambio"
   },
   "common": {
     "back":            "Volver",
@@ -216,5 +219,21 @@
     "category_chambre":      "Habitación",
     "category_restauration": "Restauración",
     "category_services":     "Servicios"
+  },
+  "currency": {
+    "title":            "Cambio de divisas",
+    "subtitle":         "Tipos de cambio en directo",
+    "calc_subtitle":    "Ingrese un monto para ver equivalencias",
+    "rates_title":      "Tabla de tipos cruzados",
+    "equivalences":     "Equivalencias",
+    "refresh":          "Actualizar",
+    "last_update":      "Actualizado a las",
+    "enter_amount":     "Ingrese un monto para comenzar",
+    "no_rates":         "No hay tipos disponibles",
+    "open_calculator":  "Calculadora",
+    "back_to_rates":    "Tabla de tipos",
+    "error_config":     "Configuración de divisas no disponible",
+    "error_rates":      "No se pueden obtener los tipos de cambio",
+    "error_refresh":    "Actualización fallida"
   }
 }

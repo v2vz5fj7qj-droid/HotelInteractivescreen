@@ -22,11 +22,14 @@
     "events_sub":           "ローカルイベント",
     "map_sub":              "街を探索",
     "notif_title":          "お知らせ",
+    "notif_title_notif":    "通知",
     "notif_msg":            "本日18時よりウェルカムカクテルを開催",
     "weather_widget_label": "現地の天気",
     "weather_widget_desc":  "晴れ",
     "feedback":             "評価",
-    "feedback_sub":         "ご意見をお聞かせください"
+    "feedback_sub":         "ご意見をお聞かせください",
+    "currency":             "通貨換算",
+    "currency_sub":         "為替レート"
   },
   "common": {
     "back":            "戻る",
@@ -216,5 +219,21 @@
     "category_chambre":      "客室",
     "category_restauration": "レストラン",
     "category_services":     "サービス"
+  },
+  "currency": {
+    "title":            "通貨換算",
+    "subtitle":         "リアルタイム為替レート",
+    "calc_subtitle":    "金額を入力して換算結果を確認",
+    "rates_title":      "クロスレート表",
+    "equivalences":     "換算結果",
+    "refresh":          "更新",
+    "last_update":      "更新時刻",
+    "enter_amount":     "金額を入力してください",
+    "no_rates":         "レートなし",
+    "open_calculator":  "電卓",
+    "back_to_rates":    "レート表",
+    "error_config":     "通貨設定が利用できません",
+    "error_rates":      "為替レートの取得に失敗",
+    "error_refresh":    "更新に失敗"
   }
 }

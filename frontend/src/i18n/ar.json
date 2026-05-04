@@ -22,11 +22,14 @@
     "events_sub":           "الأجندة المحلية",
     "map_sub":              "استكشف المدينة",
     "notif_title":          "معلومة مفيدة",
+    "notif_title_notif":    "إشعار",
     "notif_msg":            "حفل ترحيب الليلة الساعة 6 مساءً",
     "weather_widget_label": "الطقس المحلي",
     "weather_widget_desc":  "سماء صافية",
     "feedback":             "تقييم",
-    "feedback_sub":         "شاركنا رأيك"
+    "feedback_sub":         "شاركنا رأيك",
+    "currency":             "تحويل العملات",
+    "currency_sub":         "أسعار الصرف"
   },
   "common": {
     "back":            "رجوع",
@@ -216,5 +219,21 @@
     "category_chambre":      "الغرفة",
     "category_restauration": "المطعم",
     "category_services":     "الخدمات"
+  },
+  "currency": {
+    "title":            "تحويل العملات",
+    "subtitle":         "أسعار الصرف المباشرة",
+    "calc_subtitle":    "أدخل مبلغاً لرؤية المعادلات",
+    "rates_title":      "جدول الأسعار المتقاطعة",
+    "equivalences":     "المعادلات",
+    "refresh":          "تحديث",
+    "last_update":      "تحديث في",
+    "enter_amount":     "أدخل مبلغاً للبدء",
+    "no_rates":         "لا تتوفر أسعار صرف",
+    "open_calculator":  "الحاسبة",
+    "back_to_rates":    "جدول الأسعار",
+    "error_config":     "إعداد العملات غير متاح",
+    "error_rates":      "تعذر جلب أسعار الصرف",
+    "error_refresh":    "فشل التحديث"
   }
 }

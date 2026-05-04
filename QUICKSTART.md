@@ -126,9 +126,10 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 - **Images de bannière** — galerie carrousel affichée sur la borne (upload, réordonnancement, max 10 images)
 - **Services et bien-être** — CRUD services avec catégories
 - **Agenda** — CRUD événements propres à l'hôtel
-- **Bon à savoir** — notifications rotatives affichées sur la borne
+- **Bon à savoir** — informations propres à l'hôtel ; les fiches marquées "notification" apparaissent avec une icône clochette sur la borne
 - **Évaluations** — statistiques et liste des feedbacks soumis depuis la borne (filtres date/note, export CSV et PDF)
 - **Police personnalisée** — upload `.ttf`/`.otf` pour remplacer la police de la borne (section "Paramètres hôtel")
+- **Devises** — convertisseur de devises affiché sur la borne : devise de base, devises cibles (max 10), tableau des taux (max 5), mise à jour automatique via [open.er-api.com](https://www.exchangerate-api.com/) (sans clé par défaut) ou manuelle
 - **Dashboard** — soumissions en attente de pré-validation
 
 ### Contributeur — fonctionnalités
@@ -259,6 +260,7 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 | OpenWeatherMap     | openweathermap.org/api         | 1 000 appels/jour    |
 | FlightAPI          | flightapi.io                   | 30 crédits (trial)   |
 | OpenRouteService   | openrouteservice.org           | 2 000 req/jour       |
+| ExchangeRate-API   | open.er-api.com                | Gratuit sans clé (1 500 req/mois avec clé) |
 
 > **FlightAPI — points importants :**
 > - L'endpoint correct est `/compschedule/{API_KEY}` (clé dans le chemin, pas en query param)

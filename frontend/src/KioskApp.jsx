@@ -14,7 +14,8 @@ const Events         = lazy(() => import('./components/sections/Events/Events'))
 const MapSection     = lazy(() => import('./components/sections/Map/MapSection'));
 const UsefulInfo     = lazy(() => import('./components/sections/UsefulInfo/UsefulInfo'));
 const KioskNotFound  = lazy(() => import('./pages/KioskNotFound'));
-const Feedback       = lazy(() => import('./components/sections/Feedback/Feedback'));
+const Feedback          = lazy(() => import('./components/sections/Feedback/Feedback'));
+const CurrencyConverter = lazy(() => import('./components/sections/Currency/CurrencyConverter'));
 
 // Composant interne — accède à HotelContext pour gérer loading/notFound
 function KioskRoutes() {
@@ -44,6 +45,7 @@ function KioskRoutes() {
         <Route path="/info"     element={<KioskLayout><UsefulInfo /></KioskLayout>} />
         <Route path="/mobile"    element={<KioskLayout><MobileTransfer /></KioskLayout>} />
         <Route path="/feedback"  element={<KioskLayout><Feedback /></KioskLayout>} />
+        <Route path="/currency"  element={<KioskLayout><CurrencyConverter /></KioskLayout>} />
         <Route path="*"         element={<KioskNotFound />} />
       </Routes>
     </>

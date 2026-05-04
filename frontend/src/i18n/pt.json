@@ -22,11 +22,14 @@
     "events_sub":           "Agenda local",
     "map_sub":              "Explorar a cidade",
     "notif_title":          "Bom saber",
+    "notif_title_notif":    "Notificação",
     "notif_msg":            "Cocktail de boas-vindas esta noite às 18h",
     "weather_widget_label": "Clima local",
     "weather_widget_desc":  "Céu limpo",
     "feedback":             "Avaliar",
-    "feedback_sub":         "Partilhe a sua opinião"
+    "feedback_sub":         "Partilhe a sua opinião",
+    "currency":             "Câmbio de moedas",
+    "currency_sub":         "Taxas de câmbio"
   },
   "common": {
     "back":            "Voltar",
@@ -216,5 +219,21 @@
     "category_chambre":      "Quarto",
     "category_restauration": "Restauração",
     "category_services":     "Serviços"
+  },
+  "currency": {
+    "title":            "Câmbio de moedas",
+    "subtitle":         "Taxas de câmbio ao vivo",
+    "calc_subtitle":    "Insira um valor para ver as equivalências",
+    "rates_title":      "Tabela de taxas cruzadas",
+    "equivalences":     "Equivalências",
+    "refresh":          "Atualizar",
+    "last_update":      "Atualizado às",
+    "enter_amount":     "Insira um valor para começar",
+    "no_rates":         "Sem taxas disponíveis",
+    "open_calculator":  "Calculadora",
+    "back_to_rates":    "Tabela de taxas",
+    "error_config":     "Configuração de câmbio indisponível",
+    "error_rates":      "Impossível obter taxas de câmbio",
+    "error_refresh":    "Atualização falhou"
   }
 }

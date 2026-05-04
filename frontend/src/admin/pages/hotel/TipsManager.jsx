@@ -32,12 +32,13 @@ function initTrans(tip) {
 function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
   const isEdit = !!tip;
 
-  const [trans,      setTrans]      = useState(() => initTrans(tip));
-  const [activeLang, setActiveLang] = useState('fr');
-  const [sourceLang, setSourceLang] = useState('fr');
-  const [categorie,  setCategorie]  = useState(tip?.categorie || '');
-  const [order,      setOrder]      = useState(tip?.display_order ?? 0);
-  const [saving,     setSaving]     = useState(false);
+  const [trans,          setTrans]          = useState(() => initTrans(tip));
+  const [activeLang,     setActiveLang]     = useState('fr');
+  const [sourceLang,     setSourceLang]     = useState('fr');
+  const [categorie,      setCategorie]      = useState(tip?.categorie || '');
+  const [order,          setOrder]          = useState(tip?.display_order ?? 0);
+  const [isNotification, setIsNotification] = useState(!!tip?.is_notification);
+  const [saving,         setSaving]         = useState(false);
 
   const { translateFields, translating } = useTranslate();
 
@@ -75,6 +76,7 @@ function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
         contenu_en: trans.en.contenu || null,
         categorie:  categorie || null,
         display_order: order,
+        is_notification: isNotification ? 1 : 0,
         translations_extra,
       };
 
@@ -114,6 +116,15 @@ function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
               <input className={styles.input} type="number" value={order}
                 onChange={e => setOrder(parseInt(e.target.value) || 0)} />
             </div>
+          </div>
+          <div className={styles.field}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+              <input type="checkbox" checked={isNotification} onChange={e => setIsNotification(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#F59E0B', cursor: 'pointer' }} />
+              <span className={styles.label} style={{ margin: 0 }}>
+                🔔 Afficher comme notification (icône clochette sur la borne)
+              </span>
+            </label>
           </div>
 
           {/* Onglets de langues */}
@@ -223,11 +234,11 @@ export default function TipsManager() {
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
-            <tr><th>Titre (FR)</th><th>Catégorie</th><th>Langues</th><th>Ordre</th><th>Statut</th><th>Actions</th></tr>
+            <tr><th>Titre (FR)</th><th>Catégorie</th><th>Langues</th><th>Ordre</th><th>Notif</th><th>Statut</th><th>Actions</th></tr>
           </thead>
           <tbody>
             {tips.length === 0 ? (
-              <tr><td colSpan={6}><div className={styles.empty}><div className={styles.emptyIcon}>💡</div><div className={styles.emptyText}>Aucun conseil</div></div></td></tr>
+              <tr><td colSpan={7}><div className={styles.empty}><div className={styles.emptyIcon}>💡</div><div className={styles.emptyText}>Aucun conseil</div></div></td></tr>
             ) : tips.map(t => {
               const langs = (t.translations || []).filter(tr => tr.titre?.trim()).map(tr => localesMeta[tr.locale]?.flag || tr.locale);
               return (
@@ -236,6 +247,7 @@ export default function TipsManager() {
                   <td style={{ color: '#6B7280' }}>{t.categorie || '—'}</td>
                   <td style={{ fontSize: '1rem', letterSpacing: 2 }}>{langs.join(' ') || '—'}</td>
                   <td>{t.display_order}</td>
+                  <td style={{ textAlign: 'center', fontSize: '1.1rem' }}>{t.is_notification ? '🔔' : '—'}</td>
                   <td>
                     <span className={`${styles.badge} ${t.is_active ? styles.badgeActive : styles.badgeInactive}`}>
                       {t.is_active ? 'Actif' : 'Inactif'}

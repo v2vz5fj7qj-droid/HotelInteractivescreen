@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     if (cached) return res.json(JSON.parse(cached));
 
     const [rows] = await db.query(
-      `SELECT id, categorie, display_order, titre_fr, titre_en, contenu_fr, contenu_en, translations_json
+      `SELECT id, categorie, display_order, is_notification, titre_fr, titre_en, contenu_fr, contenu_en, translations_json
        FROM hotel_tips
        WHERE hotel_id = ? AND is_active = 1
        ORDER BY display_order ASC, created_at DESC`,
@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
       const titre   = extra[locale]?.titre   || (locale === 'en' ? row.titre_en   : null) || row.titre_fr;
       const contenu = extra[locale]?.contenu || (locale === 'en' ? row.contenu_en : null) || row.contenu_fr;
 
-      return { id: row.id, categorie: row.categorie, display_order: row.display_order, titre, contenu };
+      return { id: row.id, categorie: row.categorie, display_order: row.display_order, is_notification: !!row.is_notification, titre, contenu };
     });
 
     await cache.set(cacheKey, JSON.stringify(resolved), 300); // 5 min

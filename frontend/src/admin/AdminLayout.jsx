@@ -35,8 +35,8 @@ const NAV_HOTEL = [
   { to: '/admin/hotel/services',      icon: '💆', label: 'Services & bien-être'         },
   { to: '/admin/hotel/tips',          icon: '💡', label: 'Bon à savoir'                 },
   { to: '/admin/hotel/events',        icon: '🗓️', label: 'Agenda'                      },
-  { to: '/admin/hotel/notifications', icon: '🔔', label: 'Notifications borne'          },
   { to: '/admin/hotel/feedbacks',     icon: '⭐', label: 'Évaluations clients'           },
+  { to: '/admin/hotel/devise',        icon: '💱', label: 'Convertisseur devises'          },
 ];
 
 const NAV_CONTRIBUTOR = [

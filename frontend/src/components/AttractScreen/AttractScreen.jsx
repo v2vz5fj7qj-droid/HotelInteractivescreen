@@ -10,7 +10,15 @@ import styles from './AttractScreen.module.css';
 
 const ATTRACT_DELAY = 45_000;
 const BG_INTERVAL   = 5_000;
-const EVENTS = ['touchstart', 'touchmove', 'mousedown', 'keydown', 'scroll', 'wheel'];
+const EVENTS = [
+  { type: 'touchstart', capture: false },
+  { type: 'touchmove',  capture: true  },
+  { type: 'wheel',      capture: true  },
+  { type: 'mousedown',  capture: false },
+  { type: 'keydown',    capture: false },
+  { type: 'scroll',     capture: true  },
+  { type: 'click',      capture: false },
+];
 
 /* Images des sections du kiosque — donnent envie d'explorer */
 const BG_SLIDES = [
@@ -52,7 +60,9 @@ export default function AttractScreen() {
 
     if (isHome) {
       reset();
-      EVENTS.forEach(e => window.addEventListener(e, reset, { passive: true }));
+      EVENTS.forEach(({ type, capture }) =>
+        window.addEventListener(type, reset, { passive: true, capture })
+      );
     } else {
       clearTimeout(timerRef.current);
       setVisible(false);
@@ -60,7 +70,9 @@ export default function AttractScreen() {
 
     return () => {
       clearTimeout(timerRef.current);
-      EVENTS.forEach(e => window.removeEventListener(e, reset));
+      EVENTS.forEach(({ type, capture }) =>
+        window.removeEventListener(type, reset, { capture })
+      );
     };
   }, [isHome]);
 

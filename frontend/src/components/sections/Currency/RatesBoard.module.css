@@ -1,0 +1,274 @@
+/* ── Conteneur principal ─────────────────────────────────────── */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 18px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.errorMsg, .noData {
+  color: var(--c-text-muted);
+  font-size: clamp(0.85rem, 1.4vh, 1rem);
+  text-align: center;
+}
+.errorMsg { color: var(--c-accent); }
+
+/* ── En-tête du tableau ──────────────────────────────────────── */
+.boardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.boardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.boardTitle {
+  font-size: clamp(0.9rem, 1.6vh, 1.15rem);
+  font-weight: 800;
+  color: var(--c-text);
+}
+.boardTime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(0.68rem, 1.1vh, 0.82rem);
+  color: var(--c-text-muted);
+}
+
+/* Point pulsant "live" */
+.pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  position: relative;
+  flex-shrink: 0;
+}
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid #10B981;
+  animation: ripple 1.8s ease-out infinite;
+}
+@keyframes ripple {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(2);   opacity: 0; }
+}
+
+.boardActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Bouton refresh discret */
+.refreshBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  transition: background 120ms, color 120ms, transform 100ms;
+  flex-shrink: 0;
+}
+.refreshBtn:hover  { background: var(--c-bg); color: var(--c-text); }
+.refreshBtn:active { transform: scale(0.88); }
+.refreshBtn:disabled { opacity: 0.4; cursor: default; }
+.refreshBtnSpin svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Bouton calculatrice — CTA principal */
+.calcBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(8px, 1.4vh, 12px) clamp(14px, 2.5vw, 22px);
+  border-radius: 999px;
+  border: none;
+  background: var(--c-primary);
+  color: #fff;
+  font-size: clamp(0.78rem, 1.3vh, 0.95rem);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 140ms, transform 100ms, box-shadow 140ms;
+  box-shadow: 0 3px 14px color-mix(in srgb, var(--c-primary) 35%, transparent);
+  -webkit-tap-highlight-color: transparent;
+}
+.calcBtn:hover  { background: color-mix(in srgb, var(--c-primary) 85%, #000); }
+.calcBtn:active { transform: scale(0.93); box-shadow: none; }
+
+/* ── Grille des paires ───────────────────────────────────────── */
+.pairsGrid {
+  display: grid;
+  /* 3 colonnes, adapte selon nb de paires */
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(6px, 1.1vh, 12px);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 4px;
+}
+
+/* Avec 15 paires (6 devises) : 5 lignes × 3 cols — si < 12 paires : 2 cols */
+@media (max-height: 700px) {
+  .pairsGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Carte d'une paire ───────────────────────────────────────── */
+.pairCard {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: clamp(8px, 1.4vh, 14px) clamp(8px, 1.5vw, 14px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vh, 10px);
+  animation: fadeUp 280ms ease-out var(--delay, 0ms) both;
+  transition: border-color 180ms, box-shadow 180ms;
+}
+.pairCard:hover {
+  border-color: color-mix(in srgb, var(--c-primary) 40%, var(--c-border));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--c-primary) 8%, transparent);
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* En-tête : les deux devises côte à côte */
+.pairHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.pairCur {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+/* Devise de droite : flag à droite, texte aligné à droite */
+.pairCurRight {
+  justify-content: flex-end;
+}
+.pairCurRight .pairInfo {
+  align-items: flex-end;
+}
+
+.pairFlag {
+  font-size: clamp(1rem, 1.9vh, 1.5rem);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.pairInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.pairCode {
+  font-size: clamp(0.75rem, 1.3vh, 0.95rem);
+  font-weight: 800;
+  color: var(--c-text);
+  line-height: 1;
+}
+.pairName {
+  font-size: clamp(0.55rem, 0.85vh, 0.68rem);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Icône bidirectionnelle centrale */
+.pairSwapIcon {
+  font-size: clamp(0.85rem, 1.4vh, 1.1rem);
+  color: var(--c-text-muted);
+  opacity: 0.45;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Deux lignes de taux ─────────────────────────────────────── */
+.pairRates {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: clamp(4px, 0.7vh, 7px);
+  border-top: 1px solid var(--c-border);
+}
+
+.pairRateLine {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+/* Ligne inverse : légèrement atténuée */
+.pairRateLineInv {
+  opacity: 0.68;
+}
+.pairRateLineInv .pairRateVal {
+  color: var(--c-text);
+  font-size: clamp(0.82rem, 1.4vh, 1.05rem);
+}
+
+.pairRateLabel {
+  font-size: clamp(0.58rem, 0.9vh, 0.7rem);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pairRateSep {
+  font-size: clamp(0.58rem, 0.9vh, 0.7rem);
+  color: var(--c-text-muted);
+  flex-shrink: 0;
+}
+.pairRateVal {
+  font-size: clamp(0.95rem, 1.75vh, 1.35rem);
+  font-weight: 800;
+  color: var(--c-primary);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pairRateUnit {
+  font-size: clamp(0.58rem, 0.9vh, 0.7rem);
+  font-weight: 700;
+  color: var(--c-text-muted);
+  flex-shrink: 0;
+}

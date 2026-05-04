@@ -22,11 +22,14 @@
     "events_sub":           "Agenda local",
     "map_sub":              "Explorer la ville",
     "notif_title":          "Bon à savoir",
+    "notif_title_notif":    "Notification",
     "notif_msg":            "Cocktail de bienvenue ce soir à 18h",
     "weather_widget_label": "Météo locale",
     "weather_widget_desc":  "Ciel dégagé",
     "feedback":             "Évaluer",
-    "feedback_sub":         "Donnez votre avis"
+    "feedback_sub":         "Donnez votre avis",
+    "currency":             "Convertir devises",
+    "currency_sub":         "Taux de change"
   },
   "common": {
     "back":       "Retour",
@@ -216,5 +219,21 @@
     "category_chambre":      "Chambre",
     "category_restauration": "Restauration",
     "category_services":     "Services"
+  },
+  "currency": {
+    "title":            "Convertisseur de devises",
+    "subtitle":         "Taux de change en direct",
+    "calc_subtitle":    "Saisissez un montant pour voir les équivalences",
+    "rates_title":      "Tableau des taux croisés",
+    "equivalences":     "Équivalences",
+    "refresh":          "Actualiser",
+    "last_update":      "Mis à jour à",
+    "enter_amount":     "Saisissez un montant pour commencer",
+    "no_rates":         "Aucun taux disponible",
+    "open_calculator":  "Calculatrice",
+    "back_to_rates":    "Tableau des taux",
+    "error_config":     "Configuration devises non disponible",
+    "error_rates":      "Impossible de récupérer les taux",
+    "error_refresh":    "Actualisation échouée"
   }
 }

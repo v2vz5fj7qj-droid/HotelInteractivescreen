@@ -22,11 +22,14 @@
     "events_sub":           "Lokale Veranstaltungen",
     "map_sub":              "Die Stadt erkunden",
     "notif_title":          "Gut zu wissen",
+    "notif_title_notif":    "Benachrichtigung",
     "notif_msg":            "Willkommenscocktail heute Abend um 18 Uhr",
     "weather_widget_label": "Lokales Wetter",
     "weather_widget_desc":  "Klarer Himmel",
     "feedback":             "Bewerten",
-    "feedback_sub":         "Ihr Feedback"
+    "feedback_sub":         "Ihr Feedback",
+    "currency":             "Währungsrechner",
+    "currency_sub":         "Aktuelle Wechselkurse"
   },
   "common": {
     "back":            "Zurück",
@@ -216,5 +219,21 @@
     "category_chambre":      "Zimmer",
     "category_restauration": "Restaurant",
     "category_services":     "Services"
+  },
+  "currency": {
+    "title":            "Währungsrechner",
+    "subtitle":         "Live-Wechselkurse",
+    "calc_subtitle":    "Betrag eingeben, um Umrechnungen zu sehen",
+    "rates_title":      "Wechselkurstabelle",
+    "equivalences":     "Äquivalenzen",
+    "refresh":          "Aktualisieren",
+    "last_update":      "Aktualisiert um",
+    "enter_amount":     "Betrag eingeben",
+    "no_rates":         "Keine Kurse verfügbar",
+    "open_calculator":  "Rechner",
+    "back_to_rates":    "Kurstabelle",
+    "error_config":     "Währungskonfiguration nicht verfügbar",
+    "error_rates":      "Wechselkurse nicht abrufbar",
+    "error_refresh":    "Aktualisierung fehlgeschlagen"
   }
 }

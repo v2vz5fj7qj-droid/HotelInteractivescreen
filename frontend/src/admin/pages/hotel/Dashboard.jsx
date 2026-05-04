@@ -30,31 +30,28 @@ export default function HotelDashboard() {
   const [services, setServices] = useState([]);
   const [events,   setEvents]   = useState([]);
   const [tips,     setTips]     = useState([]);
-  const [notifs,   setNotifs]   = useState([]);
   const [pending,  setPending]  = useState([]);
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [sv, ev, tp, nt, pd] = await Promise.allSettled([
-          api.get('/hotel/services',      { params }),
-          api.get('/hotel/events',        { params }),
-          api.get('/hotel/tips',          { params }),
-          api.get('/hotel/notifications', { params }),
+        const [sv, ev, tp, pd] = await Promise.allSettled([
+          api.get('/hotel/services',       { params }),
+          api.get('/hotel/events',         { params }),
+          api.get('/hotel/tips',           { params }),
           api.get('/hotel/events/pending', { params }),
         ]);
         if (sv.status === 'fulfilled') setServices(sv.value.data || []);
         if (ev.status === 'fulfilled') setEvents(ev.value.data || []);
         if (tp.status === 'fulfilled') setTips(tp.value.data || []);
-        if (nt.status === 'fulfilled') setNotifs(nt.value.data || []);
         if (pd.status === 'fulfilled') setPending(pd.value.data || []);
       } finally { setLoading(false); }
     };
     load();
   }, []); // eslint-disable-line
 
-  const activeNotifs = notifs.filter(n => n.is_active).length;
+  const activeNotifs = tips.filter(t => t.is_active && t.is_notification);
   const pubEvents    = events.filter(e => e.status === 'published').length;
 
   if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
@@ -72,8 +69,8 @@ export default function HotelDashboard() {
         <StatCard icon="💆" value={services.length} label="Services actifs" />
         <StatCard icon="🗓️" value={pubEvents}        label="Événements publiés" />
         <StatCard icon="💡" value={tips.length}      label="Bons à savoir" />
-        <StatCard icon="🔔" value={activeNotifs}     label="Notifications actives"
-          color={activeNotifs > 0 ? '#C2782A' : undefined} />
+        <StatCard icon="🔔" value={activeNotifs.length} label="Notifications actives"
+          color={activeNotifs.length > 0 ? '#C2782A' : undefined} />
       </div>
 
       {pending.length > 0 && (
@@ -110,20 +107,19 @@ export default function HotelDashboard() {
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB', fontWeight: 700, fontSize: '0.95rem' }}>
           Notifications borne actives
         </div>
-        {notifs.filter(n => n.is_active).length === 0 ? (
+        {activeNotifs.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>🔔</div>
             <div className={styles.emptyText}>Aucune notification active</div>
           </div>
         ) : (
           <table className={styles.table}>
-            <thead><tr><th>Message (FR)</th><th>Type</th><th>Expire</th></tr></thead>
+            <thead><tr><th>Titre (FR)</th><th>Catégorie</th></tr></thead>
             <tbody>
-              {notifs.filter(n => n.is_active).map(n => (
-                <tr key={n.id}>
-                  <td style={{ fontWeight: 500 }}>{n.message_fr || '—'}</td>
-                  <td>{n.type || '—'}</td>
-                  <td style={{ color: '#6B7280' }}>{n.expires_at ? new Date(n.expires_at).toLocaleDateString('fr-FR') : 'Illimité'}</td>
+              {activeNotifs.map(t => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 500 }}>{t.titre_fr || '—'}</td>
+                  <td style={{ color: '#6B7280' }}>{t.categorie || '—'}</td>
                 </tr>
               ))}
             </tbody>

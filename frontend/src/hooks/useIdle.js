@@ -1,11 +1,13 @@
 import { useEffect, useCallback, useRef } from 'react';
 
-// scroll utilise capture:true pour intercepter le défilement dans les conteneurs
-// enfants (overflow:auto/scroll) — l'événement scroll ne remonte pas à window
-// sans la phase de capture, ce qui empêchait la réinitialisation du timer.
+// scroll/touchmove/wheel utilisent capture:true — ces événements ne remontent pas
+// à window depuis les conteneurs overflow:scroll sans la phase de capture.
+// Sur écran tactile avec touch-action:pan-y, le browser gère le défilement
+// nativement : touchmove peut ne pas propager, seul scroll/wheel est fiable.
 const EVENTS = [
   { type: 'touchstart',  capture: false },
-  { type: 'touchmove',   capture: false },
+  { type: 'touchmove',   capture: true  },
+  { type: 'wheel',       capture: true  },
   { type: 'mousemove',   capture: false },
   { type: 'keydown',     capture: false },
   { type: 'scroll',      capture: true  },

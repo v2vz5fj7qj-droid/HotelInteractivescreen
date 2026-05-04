@@ -22,11 +22,14 @@
     "events_sub":           "本地活动",
     "map_sub":              "探索城市",
     "notif_title":          "温馨提示",
+    "notif_title_notif":    "通知",
     "notif_msg":            "今晚18时欢迎鸡尾酒会",
     "weather_widget_label": "本地天气",
     "weather_widget_desc":  "晴空万里",
     "feedback":             "评价",
-    "feedback_sub":         "分享您的意见"
+    "feedback_sub":         "分享您的意见",
+    "currency":             "货币兑换",
+    "currency_sub":         "实时汇率"
   },
   "common": {
     "back":            "返回",
@@ -216,5 +219,21 @@
     "category_chambre":      "客房",
     "category_restauration": "餐饮",
     "category_services":     "服务"
+  },
+  "currency": {
+    "title":            "货币兑换",
+    "subtitle":         "实时汇率",
+    "calc_subtitle":    "输入金额以查看换算",
+    "rates_title":      "交叉汇率表",
+    "equivalences":     "换算结果",
+    "refresh":          "刷新",
+    "last_update":      "更新于",
+    "enter_amount":     "输入金额开始",
+    "no_rates":         "暂无汇率",
+    "open_calculator":  "计算器",
+    "back_to_rates":    "汇率表",
+    "error_config":     "货币配置不可用",
+    "error_rates":      "无法获取汇率",
+    "error_refresh":    "刷新失败"
   }
 }

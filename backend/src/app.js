@@ -22,12 +22,12 @@ const infoRoutes         = require('./routes/info');
 const analyticsRoutes    = require('./routes/analytics');
 const qrRoutes           = require('./routes/qr');
 const themeRoutes        = require('./routes/theme');
-const notificationsRoutes = require('./routes/notifications');
 const translateRoutes    = require('./routes/translate');
 const kioskRoutes        = require('./routes/kiosk');
 const servicesRoutes     = require('./routes/services');
 const tipsRoutes         = require('./routes/tips');
 const feedbackRoutes     = require('./routes/feedback');
+const currencyRoutes     = require('./routes/currency');
 
 // ── Routes admin (ancien monolithe — rétrocompatibilité) ──────────
 const adminRoutesLegacy  = require('./routes/admin');
@@ -54,8 +54,8 @@ const hotelSettingsRoutes       = require('./routes/admin/hotel/settings');
 const hotelServicesRoutes       = require('./routes/admin/hotel/services');
 const hotelTipsRoutes           = require('./routes/admin/hotel/tips');
 const hotelEventsRoutes         = require('./routes/admin/hotel/events');
-const hotelNotificationsRoutes  = require('./routes/admin/hotel/notifications');
 const hotelFeedbacksRoutes      = require('./routes/admin/hotel/feedbacks');
+const hotelDeviseRoutes         = require('./routes/admin/hotel/devise');
 
 // Contributeur
 const contribPlacesRoutes = require('./routes/admin/contributor/places');
@@ -68,6 +68,7 @@ const superAuditLogRoutes   = require('./routes/admin/super/auditLog');
 
 // ── Services ─────────────────────────────────────────────────────
 const { startWeatherScheduler }  = require('./services/weatherRefresh');
+const { startCurrencyScheduler } = require('./services/currencyService');
 const { startFlightScheduler }   = require('./services/flightRefresh');
 const { startArchiveScheduler }  = require('./services/archiveService');
 const { runMigrations }          = require('./services/runMigrations');
@@ -91,13 +92,13 @@ app.use('/api/info',          infoRoutes);
 app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/qr',            qrRoutes);
 app.use('/api/theme',         themeRoutes);
-app.use('/api/notifications', notificationsRoutes);
 app.use('/api/translate',     translateRoutes);
 app.use('/api/kiosk',         kioskRoutes);
 app.use('/api/hotels',        kioskRoutes);   // /api/hotels/public
 app.use('/api/services',      servicesRoutes);
 app.use('/api/tips',          tipsRoutes);
 app.use('/api/feedback',      feedbackRoutes);
+app.use('/api/currency',      currencyRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────
 app.use('/api/admin', authRoutes);
@@ -126,8 +127,8 @@ adminV2.use('/hotel/banner-images',     requireRole('super_admin','hotel_admin')
 adminV2.use('/hotel/services',          requireRole('super_admin','hotel_admin'), hotelServicesRoutes);
 adminV2.use('/hotel/tips',              requireRole('super_admin','hotel_admin'), hotelTipsRoutes);
 adminV2.use('/hotel/events',            requireRole('super_admin','hotel_admin','hotel_staff'), hotelEventsRoutes);
-adminV2.use('/hotel/notifications',     requireRole('super_admin','hotel_admin'), hotelNotificationsRoutes);
 adminV2.use('/hotel/feedbacks',         requireRole('super_admin','hotel_admin','hotel_staff'), hotelFeedbacksRoutes);
+adminV2.use('/hotel/devise',            requireRole('super_admin','hotel_admin'), hotelDeviseRoutes);
 
 // Contributeur
 adminV2.use('/contributor/places', requireRole('contributor'), contribPlacesRoutes);
@@ -165,4 +166,5 @@ app.listen(PORT, async () => {
   startWeatherScheduler();
   startFlightScheduler().catch(e => console.error('[Flights Scheduler]', e.message));
   startArchiveScheduler();
+  startCurrencyScheduler().catch(e => console.error('[Currency Scheduler]', e.message));
 });

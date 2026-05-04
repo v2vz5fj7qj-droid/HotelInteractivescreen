@@ -22,11 +22,14 @@
     "events_sub":           "Local agenda",
     "map_sub":              "Explore the city",
     "notif_title":          "Good to know",
+    "notif_title_notif":    "Notification",
     "notif_msg":            "Welcome cocktail tonight at 6pm",
     "weather_widget_label": "Local weather",
     "weather_widget_desc":  "Clear sky",
     "feedback":             "Rate",
-    "feedback_sub":         "Share your feedback"
+    "feedback_sub":         "Share your feedback",
+    "currency":             "Currency Exchange",
+    "currency_sub":         "Live exchange rates"
   },
   "common": {
     "back":       "Back",
@@ -216,5 +219,21 @@
     "category_chambre":      "Room",
     "category_restauration": "Dining",
     "category_services":     "Services"
+  },
+  "currency": {
+    "title":            "Currency Exchange",
+    "subtitle":         "Live exchange rates",
+    "calc_subtitle":    "Enter an amount to see equivalences",
+    "rates_title":      "Cross-rate board",
+    "equivalences":     "Equivalences",
+    "refresh":          "Refresh",
+    "last_update":      "Updated at",
+    "enter_amount":     "Enter an amount to start",
+    "no_rates":         "No rates available",
+    "open_calculator":  "Calculator",
+    "back_to_rates":    "Rate board",
+    "error_config":     "Currency configuration not available",
+    "error_rates":      "Unable to fetch exchange rates",
+    "error_refresh":    "Refresh failed"
   }
 }

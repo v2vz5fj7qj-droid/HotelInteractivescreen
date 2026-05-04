@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     if (!hotelId) return res.status(400).json({ error: 'hotel_id manquant' });
-    const { titre_fr, titre_en, contenu_fr, contenu_en, categorie, display_order, translations_extra } = req.body;
+    const { titre_fr, titre_en, contenu_fr, contenu_en, categorie, display_order, is_notification, translations_extra } = req.body;
     if (!titre_fr || !contenu_fr) return res.status(400).json({ error: 'titre_fr et contenu_fr requis' });
 
     const extra = {};
@@ -65,10 +65,10 @@ router.post('/', async (req, res) => {
 
     const [result] = await db.query(
       `INSERT INTO hotel_tips
-         (hotel_id, created_by, titre_fr, titre_en, contenu_fr, contenu_en, categorie, display_order, translations_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (hotel_id, created_by, titre_fr, titre_en, contenu_fr, contenu_en, categorie, display_order, is_notification, translations_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [hotelId, req.user.id, titre_fr, titre_en || null, contenu_fr, contenu_en || null,
-       categorie || null, display_order || 0,
+       categorie || null, display_order || 0, is_notification ? 1 : 0,
        Object.keys(extra).length ? JSON.stringify(extra) : null]
     );
     const [rows] = await db.query('SELECT * FROM hotel_tips WHERE id = ?', [result.insertId]);
@@ -87,7 +87,7 @@ router.put('/:id', async (req, res) => {
     );
     if (!rows[0]) return res.status(404).json({ error: 'Conseil introuvable' });
 
-    const allowed = ['titre_fr', 'titre_en', 'contenu_fr', 'contenu_en', 'categorie', 'display_order', 'is_active'];
+    const allowed = ['titre_fr', 'titre_en', 'contenu_fr', 'contenu_en', 'categorie', 'display_order', 'is_active', 'is_notification'];
     const fields = {};
     for (const k of allowed) if (req.body[k] !== undefined) fields[k] = req.body[k];
 
