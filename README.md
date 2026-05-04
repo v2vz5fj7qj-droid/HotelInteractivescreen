@@ -118,19 +118,18 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 
 ## Fonctionnalités de la borne
 
-| Section              | Description                                                                |
-|----------------------|----------------------------------------------------------------------------|
-| Menu d'accueil       | Dashboard 3 zones, horloge live, notifications rotatives toutes les 5s     |
-| Météo                | Météo actuelle + prévisions 5 jours + alertes saisonnières (OWM)           |
-| Vols                 | Arrivées/départs multi-aéroports par hôtel, recherche par numéro de vol    |
-| Services et bien-être| Services spa/massage/piscine (info + horaires + tarifs)                    |
-| Agenda               | Événements globaux + événements propres à l'hôtel, filtres par catégorie   |
-| Carte & POI          | Carte Leaflet interactive, bulle de détail avec galerie d'images (max 3)   |
-| Infos utiles         | Contacts urgences, taxis, ambassades, pharmacies                           |
-| Bon à savoir         | Informations propres à l'hôtel (règles, équipements, horaires...) — les fiches cochées "notification" apparaissent avec icône clochette |
-| Transfert mobile     | QR code avec token TTL (10 min) pour continuer sur smartphone              |
-| Évaluations (Feedback) | Formulaire multi-étapes : notation étoilée par catégorie, commentaire libre, emojis rapides |
-| Convertisseur de devises | Convertisseur interactif + tableau des taux de change (40+ devises, MAJ automatique via open.er-api.com) |
+| Section              | Route        | Description                                                                                   |
+|----------------------|--------------|-----------------------------------------------------------------------------------------------|
+| Menu d'accueil       | `/`          | 3 zones : bannière carrousel, cartes de service, widget météo cliquable — rotation des "Bon à savoir" (icône clochette si `is_notification`) |
+| Météo                | `/weather`   | Météo actuelle + prévisions 5 jours + alertes saisonnières (OpenWeatherMap)                   |
+| Vols                 | `/flights`   | Arrivées/départs multi-aéroports par hôtel, recherche par numéro de vol                       |
+| Services et bien-être| `/wellness`  | Services spa/massage/piscine avec horaires et tarifs                                          |
+| Agenda               | `/events`    | Événements globaux + propres à l'hôtel, filtres par catégorie                                 |
+| Carte & POI          | `/map`       | Carte Leaflet interactive, bulle de détail avec galerie d'images (max 3 par POI)              |
+| Infos utiles         | `/info`      | Contacts urgences, taxis, ambassades, pharmacies                                              |
+| Transfert mobile     | `/mobile`    | QR code avec token signé TTL 10 min pour continuer sur smartphone                            |
+| Évaluations          | `/feedback`  | Formulaire multi-étapes : notation étoilée par catégorie, commentaire libre, emojis rapides   |
+| Devises              | `/currency`  | Tableau des taux de change (max 5 devises) + convertisseur interactif (40+ devises, open.er-api.com) |
 
 **Fonctionnalités transversales :**
 - Multilingue 9 langues : FR, EN, DE, ES, PT, AR (RTL), ZH, JA, RU
