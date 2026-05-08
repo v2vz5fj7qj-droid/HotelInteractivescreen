@@ -21,6 +21,7 @@ import WeatherManager            from './pages/super/WeatherManager';
 import TokensManager           from './pages/super/TokensManager';
 import AuditLog               from './pages/super/AuditLog';
 import HotelConfig            from './pages/super/HotelConfig';
+import SuperKiosksManager     from './pages/super/KiosksManager';
 
 // Pages hotel-admin
 import HotelDashboard       from './pages/hotel/Dashboard';
@@ -30,6 +31,7 @@ import TipsManager          from './pages/hotel/TipsManager';
 import HotelEventsManager   from './pages/hotel/EventsManager';
 import FeedbackManager      from './pages/hotel/FeedbackManager';
 import DeviseManager        from './pages/hotel/DeviseManager';
+import HotelKiosksManager  from './pages/hotel/KiosksManager';
 
 // Pages contributeur
 import ContribDashboard from './pages/contributor/Dashboard';
@@ -102,6 +104,7 @@ export default function AdminApp() {
           <Route path="weather"            element={<WeatherManager />} />
           <Route path="tokens"          element={<TokensManager />} />
           <Route path="audit-log"       element={<AuditLog />} />
+          <Route path="kiosks"          element={<SuperKiosksManager />} />
           <Route path="*"               element={<Navigate to="/admin/super" replace />} />
         </Route>
 
@@ -121,6 +124,7 @@ export default function AdminApp() {
           <Route path="events"          element={<HotelEventsManager />} />
           <Route path="feedbacks"       element={<FeedbackManager />} />
           <Route path="devise"          element={<DeviseManager />} />
+          <Route path="kiosks"          element={<HotelKiosksManager />} />
           <Route path="*"               element={<Navigate to="/admin/hotel" replace />} />
         </Route>
 

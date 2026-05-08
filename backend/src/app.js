@@ -3,10 +3,11 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 
-const express  = require('express');
-const cors     = require('cors');
-const helmet   = require('helmet');
-const rateLimit = require('express-rate-limit');
+const express      = require('express');
+const cors         = require('cors');
+const helmet       = require('helmet');
+const rateLimit    = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 
 const adminAuth  = require('./middleware/adminAuth');
 const hotelCtx   = require('./middleware/hotelContext');
@@ -48,6 +49,7 @@ const superEventCatRoutes      = require('./routes/admin/super/eventCategories')
 const superInfoCatRoutes       = require('./routes/admin/super/infoCategories');
 const superWeatherRoutes       = require('./routes/admin/super/weather');
 const superTokensRoutes     = require('./routes/admin/super/tokens');
+const superKiosksRoutes     = require('./routes/admin/super/kiosks');
 
 // Hotel-admin
 const hotelSettingsRoutes       = require('./routes/admin/hotel/settings');
@@ -56,6 +58,10 @@ const hotelTipsRoutes           = require('./routes/admin/hotel/tips');
 const hotelEventsRoutes         = require('./routes/admin/hotel/events');
 const hotelFeedbacksRoutes      = require('./routes/admin/hotel/feedbacks');
 const hotelDeviseRoutes         = require('./routes/admin/hotel/devise');
+const hotelKiosksRoutes         = require('./routes/admin/hotel/kiosks');
+
+// Kiosk device (public)
+const kioskDeviceRoutes         = require('./routes/kioskDevice');
 
 // Contributeur
 const contribPlacesRoutes = require('./routes/admin/contributor/places');
@@ -72,14 +78,51 @@ const { startCurrencyScheduler } = require('./services/currencyService');
 const { startFlightScheduler }   = require('./services/flightRefresh');
 const { startArchiveScheduler }  = require('./services/archiveService');
 const { runMigrations }          = require('./services/runMigrations');
+const { startKioskMonitor }      = require('./services/kioskMonitor');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
 
+// ── Confiance proxy (nginx / Cloudflare) ─────────────────────────
+// Permet à req.ip de retourner l'IP réelle du client (via X-Forwarded-For du premier proxy)
+if (process.env.TRUST_PROXY) app.set('trust proxy', 1);
+
 // ── Sécurité ─────────────────────────────────────────────────────
-app.use(helmet());
-app.use(cors({ origin: '*' }));   // Restreindre en production
-app.use(express.json());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'"],
+      styleSrc:       ["'self'", "'unsafe-inline'"],
+      imgSrc:         ["'self'", 'data:', 'https:'],
+      connectSrc:     ["'self'"].concat(
+        process.env.API_EXTERNAL_ORIGINS ? process.env.API_EXTERNAL_ORIGINS.split(',') : []
+      ),
+      fontSrc:        ["'self'", 'https://fonts.gstatic.com'],
+      objectSrc:      ["'none'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}));
+
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173')
+  .split(',').map(o => o.trim());
+app.use(cors({
+  origin: (origin, cb) => {
+    // Autoriser les requêtes sans origine (Postman, curl, appels serveur-à-serveur)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origine non autorisée — ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json({ limit: '100kb' }));
+app.use(cookieParser());
 app.use(rateLimit({ windowMs: 60_000, max: 200 }));
 
 // ── Routes publiques ─────────────────────────────────────────────
@@ -99,6 +142,7 @@ app.use('/api/services',      servicesRoutes);
 app.use('/api/tips',          tipsRoutes);
 app.use('/api/feedback',      feedbackRoutes);
 app.use('/api/currency',      currencyRoutes);
+app.use('/api/kiosk-device',  kioskDeviceRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────
 app.use('/api/admin', authRoutes);
@@ -120,6 +164,7 @@ adminV2.use('/super/event-categories',  requireRole('super_admin'), superEventCa
 adminV2.use('/super/info-categories',   requireRole('super_admin'), superInfoCatRoutes);
 adminV2.use('/super/weather',           requireRole('super_admin'), superWeatherRoutes);
 adminV2.use('/super/tokens',            requireRole('super_admin'), superTokensRoutes);
+adminV2.use('/super/kiosks',            requireRole('super_admin'), superKiosksRoutes);
 
 // Hotel-admin (+ super-admin peut tout faire)
 adminV2.use('/hotel/settings',          requireRole('super_admin','hotel_admin'), hotelSettingsRoutes);
@@ -129,6 +174,7 @@ adminV2.use('/hotel/tips',              requireRole('super_admin','hotel_admin')
 adminV2.use('/hotel/events',            requireRole('super_admin','hotel_admin','hotel_staff'), hotelEventsRoutes);
 adminV2.use('/hotel/feedbacks',         requireRole('super_admin','hotel_admin','hotel_staff'), hotelFeedbacksRoutes);
 adminV2.use('/hotel/devise',            requireRole('super_admin','hotel_admin'), hotelDeviseRoutes);
+adminV2.use('/hotel/kiosks',            requireRole('super_admin','hotel_admin'), hotelKiosksRoutes);
 
 // Contributeur
 adminV2.use('/contributor/places', requireRole('contributor'), contribPlacesRoutes);
@@ -167,4 +213,5 @@ app.listen(PORT, async () => {
   startFlightScheduler().catch(e => console.error('[Flights Scheduler]', e.message));
   startArchiveScheduler();
   startCurrencyScheduler().catch(e => console.error('[Currency Scheduler]', e.message));
+  startKioskMonitor();
 });

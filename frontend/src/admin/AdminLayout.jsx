@@ -27,6 +27,7 @@ const NAV_SUPER = [
   { to: '/admin/super/airports',           icon: '✈️', label: 'Aéroports'                  },
   { to: '/admin/super/tokens',             icon: '🔑', label: 'Tokens API'                 },
   { to: '/admin/super/audit-log',          icon: '📋', label: "Journal d'activité"          },
+  { to: '/admin/super/kiosks',             icon: '🖥️', label: 'Bornes kiosques'             },
 ];
 
 const NAV_HOTEL = [
@@ -37,6 +38,7 @@ const NAV_HOTEL = [
   { to: '/admin/hotel/events',        icon: '🗓️', label: 'Agenda'                      },
   { to: '/admin/hotel/feedbacks',     icon: '⭐', label: 'Évaluations clients'           },
   { to: '/admin/hotel/devise',        icon: '💱', label: 'Convertisseur devises'          },
+  { to: '/admin/hotel/kiosks',        icon: '🖥️', label: 'Bornes kiosques'                },
 ];
 
 const NAV_CONTRIBUTOR = [

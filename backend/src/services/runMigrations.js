@@ -211,6 +211,55 @@ async function migration013() {
   }
 }
 
+async function tableExists(tableName) {
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.TABLES
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    [tableName]
+  );
+  return row.cnt > 0;
+}
+
+async function migration014() {
+  if (await tableExists('kiosks')) return;
+  await db.query(`
+    CREATE TABLE kiosks (
+      id                  INT AUTO_INCREMENT PRIMARY KEY,
+      hotel_id            INT NOT NULL,
+      label               VARCHAR(100) NULL,
+      device_token        VARCHAR(128) NOT NULL,
+      fingerprint         VARCHAR(64) NULL,
+      is_enabled          TINYINT(1) NOT NULL DEFAULT 1,
+      last_seen_at        DATETIME NULL,
+      offline_notified_at DATETIME NULL,
+      registered_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_kiosk_token (device_token),
+      INDEX idx_kiosks_hotel (hotel_id),
+      FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  console.log('[migration014] table kiosks créée');
+}
+
+async function migration015() {
+  if (await tableExists('kiosk_keys')) return;
+  await db.query(`
+    CREATE TABLE kiosk_keys (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      hotel_id    INT NOT NULL,
+      key_value   VARCHAR(64) NOT NULL,
+      kiosk_id    INT NULL,
+      used_at     DATETIME NULL,
+      expires_at  DATETIME NOT NULL,
+      created_by  INT NOT NULL,
+      UNIQUE KEY uq_kiosk_key (key_value),
+      INDEX idx_kiosk_keys_hotel (hotel_id),
+      FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  console.log('[migration015] table kiosk_keys créée');
+}
+
 async function runMigrations() {
   try {
     await migration003();
@@ -222,6 +271,8 @@ async function runMigrations() {
     await migration011();
     await migration012();
     await migration013();
+    await migration014();
+    await migration015();
     console.log('✅ Migrations : OK');
   } catch (err) {
     console.error('[runMigrations] Erreur :', err.message);
