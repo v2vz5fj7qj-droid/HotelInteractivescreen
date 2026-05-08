@@ -20,8 +20,13 @@ Ouvrir `.env` et remplir au minimum :
 ```
 DB_ROOT_PASSWORD=motdepasse_root
 DB_PASSWORD=motdepasse_db
-JWT_SECRET=une_chaine_aleatoire_32_caracteres
+JWT_SECRET=une_chaine_aleatoire_strictement_superieure_a_32_caracteres
 ```
+
+> Pour générer un `JWT_SECRET` fort :
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+> ```
 
 > Les clés API (météo, vols, carte) sont **facultatives** — l'app fonctionne avec des données de démo sans elles.
 
@@ -119,6 +124,7 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 - **Utilisateurs** — création/gestion des comptes (tous rôles), permissions contributeurs
 - **Tokens FlightAPI** — suivi de consommation de crédits
 - **Audit log** — historique de toutes les actions
+- **Bornes kiosques** — liste de toutes les bornes enregistrées, statut temps réel (en ligne / hors ligne / désactivée / jamais vue), génération de clés d'inscription avec expiration configurable, copie de clé, toggle actif/inactif, suppression
 
 ### Hotel-admin — fonctionnalités
 
@@ -131,6 +137,7 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 - **Police personnalisée** — upload `.ttf`/`.otf` pour remplacer la police de la borne (section "Paramètres hôtel")
 - **Devises** — convertisseur de devises affiché sur la borne : devise de base, devises cibles (max 10), tableau des taux (max 5), mise à jour automatique via [open.er-api.com](https://www.exchangerate-api.com/) (sans clé par défaut) ou manuelle
 - **Dashboard** — soumissions en attente de pré-validation
+- **Bornes kiosques** — liste des bornes de l'hôtel avec statut temps réel, toggle actif/inactif
 
 ### Contributeur — fonctionnalités
 
@@ -152,6 +159,34 @@ Si MySQL tourne déjà depuis une session précédente (avant l'ajout de tables)
 ```bash
 docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk \
   < database/init.sql
+```
+
+---
+
+## Activer une borne kiosque (Android / Fully Kiosk Browser)
+
+### Première activation (inscription)
+
+1. **Générer une clé** depuis le backoffice super-admin → **Bornes kiosques** → "🔑 Gérer les clés" → sélectionner l'hôtel → **Générer la clé**
+2. **Copier la clé** (format `XXXXXX-XXXXXX-XXXXXX`, valable 72h par défaut)
+3. **Ouvrir l'URL de la borne** sur l'appareil Android : `http://votre-domaine.com/<hotel-slug>`
+4. L'écran d'inscription s'affiche automatiquement → **coller la clé** → **Activer la borne**
+5. La borne est maintenant enregistrée et envoie un heartbeat toutes les 5 minutes
+
+> La clé est à usage unique et liée à un hôtel — elle sera rejetée si utilisée sur une URL d'un autre hôtel.
+
+### Démarrages suivants
+
+Au redémarrage du navigateur, la borne s'authentifie **silencieusement** (token stocké en localStorage). Aucune clé n'est redemandée.
+
+> Si le localStorage est vidé (réinitialisation de l'appareil), l'écran d'inscription réapparaît. Générer une nouvelle clé depuis le backoffice.
+
+### Mode test (sans inscription)
+
+Pour accéder à l'interface sans enregistrer de borne :
+
+```
+http://localhost:5173/<hotel-slug>?bypass=1
 ```
 
 ---
