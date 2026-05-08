@@ -170,6 +170,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Météo | Localités par hôtel (max 5), cache partagé par localité |
 | Vols | Clé API, aéroports par hôtel, planification par aéroport, suivi tokens |
 | Users | CRUD comptes, rôles, permissions contributeurs |
+| **Bornes kiosques** | Liste toutes les bornes (tous hôtels), statut temps réel (en ligne / hors ligne / désactivée), génération de clés d'inscription usage unique avec expiration configurable, copie de clé, toggle actif/inactif, suppression |
 
 ### Hotel-admin
 
@@ -184,6 +185,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Évaluations | Consultation des feedbacks kiosque — statistiques par catégorie, filtres date/note, export CSV et PDF |
 | Police personnalisée | Upload d'un fichier `.ttf`/`.otf` pour remplacer la police de la borne |
 | Devises | Devise de base, devises cibles (max 10), tableau des taux affiché sur la borne (max 5), MAJ auto (intervalle ou heures fixes) ou manuelle, refresh forcé |
+| **Bornes kiosques** | Vue des bornes de l'hôtel avec statut temps réel, toggle actif/inactif |
 
 ### Contributeur
 
@@ -330,6 +332,70 @@ mysql_data:/var/lib/mysql
 
 ---
 
+## Identification et monitoring des bornes
+
+### Flux d'inscription (une seule fois par borne)
+
+```
+Super-admin génère une clé → liée à un hôtel + expiration (72h par défaut)
+    ↓
+Technicien saisit la clé sur l'écran d'inscription de la borne
+    ↓
+POST /api/kiosk-device/register { key, fingerprint, hotel_slug }
+    ↓
+Backend valide : clé existante, non utilisée, non expirée, bon hôtel
+    ↓
+Borne reçoit un device_token → stocké en localStorage (clé par hôtel)
+    ↓
+Interface publique s'affiche
+```
+
+### Flux normal (chaque démarrage)
+
+```
+Borne démarre → lit device_token depuis localStorage
+    ↓
+POST /api/kiosk-device/auth { device_token }
+    ↓
+Si token invalide → écran d'inscription
+Si enabled=false  → écran "Borne désactivée"
+Si enabled=true   → interface publique + heartbeat toutes les 5 min
+```
+
+### Heartbeat et monitoring
+
+- `PUT /api/kiosk-device/heartbeat` toutes les **5 minutes** (authentifié par device_token)
+- La réponse contient `enabled` — si `false`, l'interface se met en écran désactivé en temps réel
+- Le backend (KioskMonitor) vérifie toutes les 5 min les bornes sans heartbeat depuis **> 10 minutes**
+- Si une borne est détectée hors ligne, une **notification backoffice** est envoyée au super-admin et à l'hotel-admin concerné (via `workflow_notifications`)
+- La notification n'est envoyée qu'une seule fois par incident — elle se réinitialise au prochain heartbeat
+
+### Mode test (bypass)
+
+Pour tester l'interface sans borne physique enregistrée, ajouter `?bypass=1` à l'URL :
+
+```
+https://votre-domaine.com/<hotel-slug>?bypass=1
+```
+
+Aucune clé n'est demandée. Ce mode est destiné au développement uniquement.
+
+### Sécurité
+
+- La clé est à **usage unique** — marquée utilisée dès la première inscription
+- La clé est **liée à un hôtel** — elle est rejetée si présentée sur l'URL d'un autre hôtel
+- Tous les cas d'échec d'inscription retournent le même message générique (`Clé invalide`) pour éviter toute fuite d'information
+- Le device_token est stocké **par hôtel** dans localStorage (`connectbe_device_token_<slug>`) — un token enregistré pour l'hôtel A ne permet pas d'accéder à l'hôtel B
+
+### Tables DB
+
+| Table | Rôle |
+|---|---|
+| `kiosks` | Bornes enregistrées (device_token, fingerprint, label, is_enabled, last_seen_at) |
+| `kiosk_keys` | Clés d'inscription générées (key_value, hotel_id, expires_at, used_at) |
+
+---
+
 ## Mode kiosque (borne physique)
 
 ### Autostart au démarrage — Linux / systemd
@@ -444,3 +510,8 @@ git push origin feat/multi-hotel
 | Police personnalisée par hôtel (upload TTF/OTF) | ✅ Complet  |
 | Convertisseur de devises (borne + backoffice)   | ✅ Complet  |
 | Bon à savoir — flag is_notification (clochette) | ✅ Complet  |
+| Identification et inscription des bornes        | ✅ Complet  |
+| Monitoring heartbeat (5 min)                    | ✅ Complet  |
+| Alertes backoffice borne hors ligne             | ✅ Complet  |
+| Gestion bornes super-admin (clés, toggle, suppression) | ✅ Complet |
+| Gestion bornes hotel-admin (vue + toggle)       | ✅ Complet  |
