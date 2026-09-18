@@ -7,7 +7,7 @@ const db = require('./db');
 async function notifyAdmins(kiosk) {
   // Récupérer le super_admin et les hotel_admin de l'hôtel concerné
   const [admins] = await db.query(
-    `SELECT id FROM users
+    `SELECT id FROM admin_users
      WHERE role = 'super_admin'
         OR (role = 'hotel_admin' AND hotel_id = ?)`,
     [kiosk.hotel_id]

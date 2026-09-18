@@ -2,7 +2,8 @@
  * runMigrations — migrations SQL appliquées automatiquement au démarrage.
  * Chaque migration est idempotente : elle vérifie l'état avant d'agir.
  */
-const db = require('./db');
+const db     = require('./db');
+const bcrypt = require('bcrypt');
 
 async function columnExists(table, column) {
   const [rows] = await db.query(
@@ -260,6 +261,27 @@ async function migration015() {
   console.log('[migration015] table kiosk_keys créée');
 }
 
+// Initialise le mot de passe du compte super-admin seedé par migration 001, tant qu'il
+// porte encore le hash placeholder ($2b$10$placeholder_hash_to_replace — non fonctionnel).
+// Idempotent et sans danger : une fois le hash remplacé (ici ou via le backoffice), cette
+// fonction ne trouve plus de compte "placeholder" et ne touche donc plus jamais au mot de
+// passe réel choisi par l'utilisateur, y compris aux redémarrages suivants.
+async function migration016() {
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+  if (!ADMIN_PASSWORD) return; // pas de seed automatique sans variable définie dans .env
+
+  const PLACEHOLDER = '$2b$10$placeholder_hash_to_replace';
+  const [[placeholderAccount]] = await db.query(
+    `SELECT id, email FROM admin_users WHERE role = 'super_admin' AND password_hash = ? LIMIT 1`,
+    [PLACEHOLDER]
+  );
+  if (!placeholderAccount) return;
+
+  const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  await db.query('UPDATE admin_users SET password_hash = ? WHERE id = ?', [hash, placeholderAccount.id]);
+  console.log(`[migration016] Mot de passe super-admin (${placeholderAccount.email}) initialisé depuis ADMIN_PASSWORD`);
+}
+
 async function runMigrations() {
   try {
     await migration003();
@@ -273,6 +295,7 @@ async function runMigrations() {
     await migration013();
     await migration014();
     await migration015();
+    await migration016();
     console.log('✅ Migrations : OK');
   } catch (err) {
     console.error('[runMigrations] Erreur :', err.message);

@@ -266,8 +266,8 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 |---------------------------|-----------------------------------------------|------------------|
 | `DB_ROOT_PASSWORD`        | Mot de passe root MySQL                       | Oui              |
 | `DB_PASSWORD`             | Mot de passe utilisateur MySQL                | Oui              |
-| `JWT_SECRET`              | Secret de signature JWT (32 car. min.)        | Non (défaut dev) |
-| `ADMIN_PASSWORD`          | Mot de passe du compte super-admin            | Non (connectbe2026) |
+| `JWT_SECRET`              | Secret de signature JWT (32 car. min.)        | Oui — le serveur refuse de démarrer sans (fail-fast) |
+| `ADMIN_PASSWORD`          | Mot de passe initial du super-admin (appliqué une seule fois, au 1er démarrage) | Non (connectbe2026) |
 | `OPENWEATHERMAP_API_KEY`  | Clé OpenWeatherMap (météo)                    | Non (mock)       |
 | `FLIGHTAPI_KEY`           | Clé FlightAPI.io (vols temps réel)            | Non (mock)       |
 | `VITE_ORS_API_KEY`        | Clé OpenRouteService (itinéraires carte)      | Non              |

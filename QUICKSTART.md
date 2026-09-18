@@ -30,7 +30,9 @@ JWT_SECRET=une_chaine_aleatoire_strictement_superieure_a_32_caracteres
 
 > Les clés API (météo, vols, carte) sont **facultatives** — l'app fonctionne avec des données de démo sans elles.
 
-> **Mot de passe admin par défaut :** `connectbe2026` (variable `ADMIN_PASSWORD` dans `.env`). Changer en production.
+> **Mot de passe admin par défaut :** `connectbe2026` (variable `ADMIN_PASSWORD` dans `.env`). Appliqué automatiquement
+> au **premier démarrage** du backend sur le compte super-admin (`admin@iconnectbe.com`) — voir
+> [Premier mot de passe super-admin](#premier-mot-de-passe-super-admin) ci-dessous. Changer en production.
 
 ---
 
@@ -105,9 +107,41 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 
 | Rôle | URL d'accès | Login par défaut | Mot de passe |
 |----|---|---|---|
-| Super-admin | http://localhost:5173/admin | `admin@connectbe.com` | `connectbe2026` |
+| Super-admin | http://localhost:5173/admin | `admin@iconnectbe.com` | `connectbe2026` (valeur de `ADMIN_PASSWORD`) |
 | Hotel-admin | http://localhost:5173/admin | selon création | selon création |
 | Contributeur | http://localhost:5173/admin | selon création | selon création |
+
+### Premier mot de passe super-admin
+
+La migration `database/migrations/001_multi_hotel.sql` seed le compte `admin@iconnectbe.com` avec un
+`password_hash` **placeholder** (`$2b$10$placeholder_hash_to_replace`), non fonctionnel tel quel. Au tout premier
+démarrage du backend, `runMigrations()` (voir `backend/src/services/runMigrations.js`, `migration016`) détecte ce
+placeholder et le remplace automatiquement par le hash bcrypt de la variable **`ADMIN_PASSWORD`** définie dans `.env`.
+Aucune manipulation manuelle n'est donc nécessaire dans le cas normal.
+
+Cette étape ne s'exécute **qu'une seule fois** : une fois le hash remplacé (ici ou via le backoffice), les
+redémarrages suivants ne touchent plus jamais au mot de passe — changer `ADMIN_PASSWORD` dans `.env` après coup
+n'aura aucun effet. Pour changer le mot de passe ensuite, utiliser la page **Utilisateurs** du backoffice super-admin.
+
+<details>
+<summary>Dépannage — réinitialiser manuellement si besoin (compte créé avant l'ajout de ce mécanisme, <code>ADMIN_PASSWORD</code> absente au premier boot, mot de passe oublié…)</summary>
+
+```bash
+cd backend
+node -e "require('bcrypt').hash('VOTRE_MOT_DE_PASSE', 10).then(console.log)"
+```
+
+```bash
+docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk \
+  -e "UPDATE admin_users SET password_hash = '<hash_généré>' WHERE email = 'admin@iconnectbe.com';"
+```
+
+</details>
+
+> **Authentification admin :** depuis le durcissement sécurité, le JWT n'est plus renvoyé dans le corps de la
+> réponse ni stocké en `localStorage`/`sessionStorage` — il est posé dans un cookie `HttpOnly` + `SameSite=Strict`
+> (`admin_token`, scope `/api/admin`). Pour tester l'API en dehors du navigateur (Postman, curl), le header
+> `Authorization: Bearer <token>` reste accepté en repli par le middleware `adminAuth`.
 
 ### Super-admin — fonctionnalités
 
@@ -255,7 +289,7 @@ Les valeurs à renseigner obligatoirement :
 | `DB_ROOT_PASSWORD` | Mot de passe root MySQL |
 | `DB_PASSWORD` | Mot de passe utilisateur MySQL |
 | `JWT_SECRET` | Chaîne aléatoire ≥ 32 caractères |
-| `ADMIN_PASSWORD` | Mot de passe du compte super-admin |
+| `ADMIN_PASSWORD` | Mot de passe super-admin — appliqué une seule fois au premier démarrage (voir [Premier mot de passe super-admin](#premier-mot-de-passe-super-admin)) |
 | `OPENWEATHERMAP_API_KEY` | Météo (optionnel — mode mock si absent) |
 | `FLIGHTAPI_KEY` | Vols temps réel (optionnel — mode mock si absent) |
 | `VITE_ORS_API_KEY` | Itinéraires carte (optionnel) |
