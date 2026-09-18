@@ -41,10 +41,13 @@ const DEFAULT_FORM = {
   api_key:              '',
 };
 
-export default function DeviseManager() {
-  const { user }  = useAuth();
-  const hotelId   = useSuperHotelId(user);
-  const params    = hotelId ? { hotel_id: hotelId } : {};
+// hotelIdProp : fourni quand le composant est embarqué dans un onglet (ex. HotelConfig.jsx
+// côté super-admin) — prioritaire sur le sélecteur d'hôtel global (sessionStorage).
+export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
+  const { user }        = useAuth();
+  const sessionHotelId  = useSuperHotelId(user);
+  const hotelId         = hotelIdProp ?? sessionHotelId;
+  const params          = hotelId ? { hotel_id: hotelId } : {};
 
   const [form,       setForm]       = useState(DEFAULT_FORM);
   const [rates,      setRates]      = useState(null);

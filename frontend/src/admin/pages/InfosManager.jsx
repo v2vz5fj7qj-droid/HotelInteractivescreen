@@ -235,7 +235,7 @@ export default function InfosManager() {
                     <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`}
                       onClick={() => setTab(l)} style={{ position: 'relative' }}
                     >
-                      {localesMeta[l]?.flag} {l}
+                      {l.toUpperCase()}
                       {l === sourceLang && (
                         <span style={{
                           position: 'absolute', top: -4, right: -4,

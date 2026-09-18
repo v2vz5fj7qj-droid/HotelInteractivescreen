@@ -11,6 +11,11 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../../../services/db');
+const cache   = require('../../../services/cacheService');
+
+// La route publique /api/events met ses résultats en cache Redis (jusqu'à 30 min) —
+// on vide les clés events:* après toute mutation qui affecte un événement publié/visible.
+const invalidateEventsCache = () => cache.delPattern('events:*');
 
 function resolveHotelId(req) {
   if (req.user.role === 'super_admin' && req.query.hotel_id) return parseInt(req.query.hotel_id);
@@ -35,7 +40,7 @@ router.get('/pending', async (req, res) => {
       FROM events e
       LEFT JOIN event_translations et ON et.event_id = e.id AND et.locale = 'fr'
       LEFT JOIN admin_users u ON u.id = e.created_by
-      WHERE e.hotel_id = ? AND e.status IN ('pending')
+      WHERE e.owner_hotel_id = ? AND e.status IN ('pending')
       ORDER BY e.created_at ASC
     `, [hotelId]);
     res.json(rows);
@@ -55,7 +60,7 @@ router.get('/', async (req, res) => {
       FROM events e
       LEFT JOIN event_translations et ON et.event_id = e.id AND et.locale = 'fr'
       LEFT JOIN admin_users u ON u.id = e.created_by
-      WHERE e.hotel_id = ?
+      WHERE e.owner_hotel_id = ?
       ORDER BY e.start_date DESC
     `, [hotelId]);
     res.json(rows);
@@ -84,7 +89,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO events
          (slug, category, start_date, end_date, start_time, end_time, location, lat, lng,
           price_fcfa, image_url, is_featured, is_recurrent, recurrence_rule, auto_archive,
-          hotel_id, created_by, status, validated_by, validated_at)
+          owner_hotel_id, created_by, status, validated_by, validated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, NOW())`,
       [slug, category, start_date, end_date || null, start_time || null, end_time || null,
        location || null, lat || null, lng || null, price_fcfa || 0, image_url || null,
@@ -102,6 +107,11 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // owner_hotel_id n'est que la métadonnée "propriétaire" — la visibilité publique passe
+    // par la table de liaison N:N hotel_events (voir migration 005)
+    await db.query('INSERT IGNORE INTO hotel_events (hotel_id, event_id) VALUES (?, ?)', [hotelId, id]);
+
+    await invalidateEventsCache();
     const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [id]);
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -116,7 +126,7 @@ router.put('/:id', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      'SELECT * FROM events WHERE id = ? AND hotel_id = ?', [req.params.id, hotelId]
+      'SELECT * FROM events WHERE id = ? AND owner_hotel_id = ?', [req.params.id, hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
 
@@ -143,6 +153,7 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    await invalidateEventsCache();
     const [updated] = await db.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
     res.json(updated[0]);
   } catch (err) {
@@ -156,10 +167,11 @@ router.delete('/:id', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      'SELECT id FROM events WHERE id = ? AND hotel_id = ?', [req.params.id, hotelId]
+      'SELECT id FROM events WHERE id = ? AND owner_hotel_id = ?', [req.params.id, hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
     await db.query('DELETE FROM events WHERE id = ?', [req.params.id]);
+    await invalidateEventsCache();
     res.json({ message: 'Événement supprimé' });
   } catch (err) {
     console.error('[hotel/events DELETE]', err);
@@ -172,10 +184,11 @@ router.post('/:id/archive', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      'SELECT id FROM events WHERE id = ? AND hotel_id = ?', [req.params.id, hotelId]
+      'SELECT id FROM events WHERE id = ? AND owner_hotel_id = ?', [req.params.id, hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
     await db.query('UPDATE events SET status="archived", archived_at=NOW() WHERE id=?', [req.params.id]);
+    await invalidateEventsCache();
     res.json({ message: 'Événement archivé' });
   } catch (err) {
     console.error('[hotel/events POST /archive]', err);
@@ -188,7 +201,7 @@ router.post('/:id/unarchive', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      `SELECT * FROM events WHERE id = ? AND status = 'archived' AND (hotel_id = ? OR created_by = ?)`,
+      `SELECT * FROM events WHERE id = ? AND status = 'archived' AND (owner_hotel_id = ? OR created_by = ?)`,
       [req.params.id, hotelId, req.user.id]
     );
     if (!rows[0]) {
@@ -209,6 +222,7 @@ router.post('/:id/unarchive', async (req, res) => {
       `UPDATE events SET status='published', archived_at=NULL WHERE id=?`,
       [req.params.id]
     );
+    await invalidateEventsCache();
     res.json({ message: 'Événement désarchivé' });
   } catch (err) {
     console.error('[hotel/events POST /unarchive]', err);
@@ -221,7 +235,7 @@ router.post('/:id/pre-approve', async (req, res) => {
   try {
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      'SELECT * FROM events WHERE id = ? AND hotel_id = ? AND status = "pending"', [req.params.id, hotelId]
+      'SELECT * FROM events WHERE id = ? AND owner_hotel_id = ? AND status = "pending"', [req.params.id, hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Soumission introuvable ou déjà traitée' });
 
@@ -250,7 +264,7 @@ router.post('/:id/reject', async (req, res) => {
     if (!reason) return res.status(400).json({ error: 'Motif de rejet requis' });
     const hotelId = resolveHotelId(req);
     const [rows] = await db.query(
-      'SELECT * FROM events WHERE id = ? AND hotel_id = ? AND status IN ("pending","pre_approved")',
+      'SELECT * FROM events WHERE id = ? AND owner_hotel_id = ? AND status IN ("pending","pre_approved")',
       [req.params.id, hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Soumission introuvable' });

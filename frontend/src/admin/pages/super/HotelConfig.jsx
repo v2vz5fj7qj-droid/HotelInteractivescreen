@@ -1,5 +1,5 @@
 // Super-admin — Configuration complète d'un hôtel
-// Onglets : Paramètres | Bon à savoir | Météo | Aéroports
+// Onglets : Paramètres | Bon à savoir | Météo | Aéroports | Devises
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../useAdminApi';
@@ -8,6 +8,7 @@ import { useTranslate } from '../../hooks/useTranslate';
 import { useToast } from '../../hooks/useToast';
 import styles from '../../Admin.module.css';
 import localesMeta from '../../../i18n/locales.json';
+import DeviseManager from '../hotel/DeviseManager';
 
 const ALL_LOCALES  = Object.keys(localesMeta);
 const TIPS_TRANS_FIELDS = ['titre', 'contenu'];
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'tips',     label: 'Bon à savoir' },
   { key: 'weather',  label: 'Météo'        },
   { key: 'airports', label: 'Aéroports'   },
+  { key: 'devise',   label: 'Devises'      },
 ];
 
 // ── Onglet Paramètres ────────────────────────────────────────────
@@ -251,7 +253,7 @@ function TabSettings({ hotelId }) {
           {ALL_LOCALES.map(l => (
             <div key={l} className={styles.field}>
               <label className={styles.label}>
-                {localesMeta[l]?.flag} {localesMeta[l]?.nativeName}
+                {localesMeta[l]?.nativeName}
               </label>
               <textarea
                 className={styles.textarea}
@@ -468,7 +470,7 @@ function TipFormModal({ tip, hotelId, onClose, onSaved }) {
                   className={`${styles.tab} ${activeLang === l ? styles.tabActive : ''}`}
                   onClick={() => setActiveLang(l)}
                   style={{ gap: 4, display: 'flex', alignItems: 'center' }}>
-                  {m.flag} {m.nativeName}
+                  {m.nativeName}
                   {filled && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', marginLeft: 3 }} />}
                 </button>
               );
@@ -476,13 +478,13 @@ function TipFormModal({ tip, hotelId, onClose, onSaved }) {
           </div>
           <div key={activeLang}>
             <div className={styles.field}>
-              <label className={styles.label}>{langMeta.flag} Titre{activeLang === 'fr' ? ' *' : ''}</label>
+              <label className={styles.label}>Titre{activeLang === 'fr' ? ' *' : ''}</label>
               <input className={styles.input} value={curTrans.titre}
                 onChange={e => setLangVal(activeLang, 'titre', e.target.value)}
                 autoFocus={activeLang === 'fr'} />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>{langMeta.flag} Contenu{activeLang === 'fr' ? ' *' : ''}</label>
+              <label className={styles.label}>Contenu{activeLang === 'fr' ? ' *' : ''}</label>
               <textarea className={styles.textarea} rows={4} value={curTrans.contenu}
                 onChange={e => setLangVal(activeLang, 'contenu', e.target.value)} />
             </div>
@@ -552,7 +554,7 @@ function TabTips({ hotelId }) {
             {tips.length === 0 ? (
               <tr><td colSpan={6}><div className={styles.empty}><div className={styles.emptyIcon}>💡</div><div className={styles.emptyText}>Aucun conseil</div></div></td></tr>
             ) : tips.map(t => {
-              const langs = (t.translations || []).filter(tr => tr.titre?.trim()).map(tr => localesMeta[tr.locale]?.flag || tr.locale);
+              const langs = (t.translations || []).filter(tr => tr.titre?.trim()).map(tr => tr.locale.toUpperCase());
               return (
                 <tr key={t.id}>
                   <td style={{ fontWeight: 600 }}>{t.titre_fr}</td>
@@ -904,6 +906,7 @@ export default function HotelConfig() {
       {tab === 'tips'     && <TabTips     hotelId={id} />}
       {tab === 'weather'  && <TabWeather  hotelId={id} hotelNom={hotel.nom} />}
       {tab === 'airports' && <TabAirports hotelId={id} hotelNom={hotel.nom} />}
+      {tab === 'devise'   && <DeviseManager hotelId={parseInt(id)} />}
     </div>
   );
 }

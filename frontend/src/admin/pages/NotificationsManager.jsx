@@ -104,7 +104,7 @@ export default function NotificationsManager() {
                 <td style={{ maxWidth:220, color:'#6B7280', fontSize:'0.85rem' }}>{it.message_en || '—'}</td>
                 <td style={{ fontSize:'0.8rem', color:'#9CA3AF' }}>
                   {ALL_LOCALES.filter(l => l !== 'fr' && l !== 'en' && it[`message_${l}`])
-                    .map(l => localesMeta[l]?.flag)
+                    .map(l => l.toUpperCase())
                     .join(' ') || '—'}
                 </td>
                 <td>{it.display_order}</td>
@@ -137,7 +137,7 @@ export default function NotificationsManager() {
                     className={tab === l ? styles.btnPrimary : styles.btnSecondary}
                     style={{ padding:'4px 10px', fontSize:'0.85rem' }}
                   >
-                    {localesMeta[l]?.flag} {l.toUpperCase()}
+                    {l.toUpperCase()}
                     {editing[`message_${l}`] ? ' ✓' : ''}
                   </button>
                 ))}
@@ -155,7 +155,7 @@ export default function NotificationsManager() {
               {/* Champ message pour la langue active */}
               <div className={styles.field}>
                 <label className={styles.label}>
-                  {localesMeta[tab]?.flag} Message en {localesMeta[tab]?.nativeName}
+                  Message en {localesMeta[tab]?.nativeName}
                 </label>
                 <textarea
                   className={styles.textarea}

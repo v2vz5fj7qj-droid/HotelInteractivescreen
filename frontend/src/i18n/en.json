@@ -6,7 +6,7 @@
     "weather":              "Weather",
     "flights":              "Flights",
     "map":                  "Map",
-    "wellness":             "Wellness",
+    "wellness":             "Services",
     "info":                 "Useful info",
     "events":               "Events",
     "mobile":               "Mobile",
@@ -112,7 +112,7 @@
     "rating":         "Rating"
   },
   "wellness": {
-    "title":          "Wellness Services",
+    "title":          "Services",
     "subtitle":       "Take care of yourself",
     "duration":       "Duration",
     "price":          "Price",
@@ -187,7 +187,7 @@
       "weather":  "Weather",
       "flights":  "Flights",
       "map":      "Map & POI",
-      "wellness": "Wellness",
+      "wellness": "Services",
       "info":     "Useful info",
       "events":   "Agenda"
     },

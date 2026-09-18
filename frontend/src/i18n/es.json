@@ -6,7 +6,7 @@
     "weather":              "Clima",
     "flights":              "Vuelos",
     "map":                  "Mapa",
-    "wellness":             "Bienestar",
+    "wellness":             "Servicios",
     "info":                 "Info útil",
     "events":               "Agenda",
     "mobile":               "Móvil",
@@ -112,7 +112,7 @@
     "rating":         "Valoración"
   },
   "wellness": {
-    "title":           "Servicios de bienestar",
+    "title":           "Servicios",
     "subtitle":        "Cuídese",
     "duration":        "Duración",
     "price":           "Precio",
@@ -187,7 +187,7 @@
       "weather":  "Clima",
       "flights":  "Vuelos",
       "map":      "Mapa & POI",
-      "wellness": "Bienestar",
+      "wellness": "Servicios",
       "info":     "Info útil",
       "events":   "Agenda"
     },

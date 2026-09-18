@@ -455,7 +455,6 @@ export default function RadialMenu() {
                   className={`${styles.langOption} ${loc === locale ? styles.langOptionActive : ''}`}
                   onClick={() => { setLocale(loc); setLangOpen(false); }}
                 >
-                  <span aria-hidden="true">{localesMeta[loc]?.flag}</span>
                   <span>{localesMeta[loc]?.nativeName}</span>
                 </button>
               ))}
@@ -469,7 +468,7 @@ export default function RadialMenu() {
             aria-label={t('common.change_language')}
           >
             <Languages size={20} />
-            <span className={styles.langCode}>{localesMeta[locale]?.flag} {locale.toUpperCase()}</span>
+            <span className={styles.langCode}>{locale.toUpperCase()}</span>
           </button>
         </div>
       </nav>

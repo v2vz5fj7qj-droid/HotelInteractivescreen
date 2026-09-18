@@ -233,7 +233,7 @@ function PlaceFormModal({ initial, categories, onClose, onSaved }) {
                   className={`${styles.tab} ${activeLang === l ? styles.tabActive : ''}`}
                   onClick={() => setActiveLang(l)}
                   style={{ gap: 4, display: 'flex', alignItems: 'center' }}>
-                  {m.flag} {m.nativeName}
+                  {m.nativeName}
                   {filled && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', marginLeft: 3 }} />}
                 </button>
               );
@@ -244,19 +244,19 @@ function PlaceFormModal({ initial, categories, onClose, onSaved }) {
           <div key={activeLang}>
             <div className={styles.field}>
               <label className={styles.label}>
-                {langMeta.flag} Nom{activeLang === 'fr' ? ' *' : ''}
+                Nom{activeLang === 'fr' ? ' *' : ''}
               </label>
               <input className={styles.input} value={curTrans.name}
                 onChange={e => setLangVal(activeLang, 'name', e.target.value)}
                 autoFocus={activeLang === 'fr'} />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>{langMeta.flag} Adresse</label>
+              <label className={styles.label}>Adresse</label>
               <input className={styles.input} value={curTrans.address}
                 onChange={e => setLangVal(activeLang, 'address', e.target.value)} />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>{langMeta.flag} Description</label>
+              <label className={styles.label}>Description</label>
               <textarea className={styles.textarea} rows={3} value={curTrans.description}
                 onChange={e => setLangVal(activeLang, 'description', e.target.value)} />
             </div>
@@ -401,7 +401,7 @@ function DetailModal({ detail, onClose, onPublish, onReject, onDelete, onEdit })
                   return (
                     <span key={t.locale} style={{ background: '#E5E7EB', borderRadius: 6,
                       padding: '2px 8px', fontSize: '0.78rem', fontWeight: 600 }}>
-                      {m.flag} {m.nativeName}
+                      {m.nativeName}
                     </span>
                   );
                 })}

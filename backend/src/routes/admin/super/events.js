@@ -17,6 +17,14 @@ const fs      = require('fs');
 const multer  = require('multer');
 const router  = express.Router();
 const db      = require('../../../services/db');
+const cache   = require('../../../services/cacheService');
+
+// La route publique /api/events met ses résultats en cache Redis (jusqu'à 30 min,
+// clé "events:<hotelId>:<locale>:<category>:<upcoming>:<featured>:<limit>").
+// Sans invalidation, une création/modification/publication ici resterait invisible
+// sur les bornes pendant toute la durée du cache — on vide donc les clés events:*
+// après chaque mutation.
+const invalidateEventsCache = () => cache.delPattern('events:*');
 
 const eventImgDir = path.resolve(__dirname, '../../../../../uploads/events');
 if (!fs.existsSync(eventImgDir)) fs.mkdirSync(eventImgDir, { recursive: true });
@@ -164,6 +172,7 @@ router.post('/', async (req, res) => {
     }
 
     await auditLog(req.user.id, 'create', id, null, { slug, category, start_date });
+    await invalidateEventsCache();
     const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [id]);
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -203,6 +212,7 @@ router.put('/:id', async (req, res) => {
     }
 
     await auditLog(req.user.id, 'update', req.params.id, existing[0], fields);
+    await invalidateEventsCache();
     const [rows] = await db.query('SELECT * FROM events WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
   } catch (err) {
@@ -224,6 +234,7 @@ router.put('/:id/hotels', async (req, res) => {
       await db.query('INSERT IGNORE INTO hotel_events (hotel_id, event_id) VALUES (?, ?)', [hid, req.params.id]);
     }
     await auditLog(req.user.id, 'assign_hotels', req.params.id, null, { hotel_ids });
+    await invalidateEventsCache();
     const [hotels] = await db.query(
       `SELECT he.hotel_id, h.nom FROM hotel_events he
        JOIN hotels h ON h.id = he.hotel_id WHERE he.event_id = ?`,
@@ -243,6 +254,7 @@ router.delete('/:id', async (req, res) => {
     if (!rows[0]) return res.status(404).json({ error: 'Événement introuvable' });
     await db.query('DELETE FROM events WHERE id = ?', [req.params.id]);
     await auditLog(req.user.id, 'delete', req.params.id, rows[0], null);
+    await invalidateEventsCache();
     res.json({ message: 'Événement supprimé' });
   } catch (err) {
     console.error('[super/events DELETE]', err);
@@ -263,6 +275,7 @@ router.post('/:id/publish', async (req, res) => {
     );
     await auditLog(req.user.id, 'publish', req.params.id, { status: rows[0].status }, { status: 'published' });
     await notifyAuthor(rows[0].created_by, 'published', req.params.id, 'Votre événement a été publié.');
+    await invalidateEventsCache();
     res.json({ message: 'Événement publié' });
   } catch (err) {
     console.error('[super/events POST /publish]', err);
@@ -284,6 +297,7 @@ router.post('/:id/reject', async (req, res) => {
     );
     await auditLog(req.user.id, 'reject', req.params.id, { status: rows[0].status }, { status: 'rejected', reason });
     await notifyAuthor(rows[0].created_by, 'rejected', req.params.id, `Votre événement a été rejeté : ${reason}`);
+    await invalidateEventsCache();
     res.json({ message: 'Événement rejeté' });
   } catch (err) {
     console.error('[super/events POST /reject]', err);
@@ -301,6 +315,7 @@ router.post('/:id/archive', async (req, res) => {
       [req.params.id]
     );
     await auditLog(req.user.id, 'archive', req.params.id, { status: rows[0].status }, { status: 'archived' });
+    await invalidateEventsCache();
     res.json({ message: 'Événement archivé' });
   } catch (err) {
     console.error('[super/events POST /archive]', err);
@@ -333,6 +348,7 @@ router.post('/:id/unarchive', async (req, res) => {
     );
     await auditLog(req.user.id, 'unarchive', req.params.id, { status: 'archived' }, { status: 'published' });
     await notifyAuthor(rows[0].created_by, 'unarchived', req.params.id, 'Votre événement a été réactivé et est à nouveau visible sur la borne.');
+    await invalidateEventsCache();
     res.json({ message: 'Événement désarchivé' });
   } catch (err) {
     console.error('[super/events POST /unarchive]', err);
@@ -357,6 +373,7 @@ router.post('/:id/image', uploadEventImg.single('image'), async (req, res) => {
     const image_url = `/uploads/events/${req.file.filename}`;
     await db.query('UPDATE events SET image_url = ? WHERE id = ?', [image_url, req.params.id]);
     await auditLog(req.user.id, 'upload_image', req.params.id, { image_url: old }, { image_url });
+    await invalidateEventsCache();
     res.json({ image_url });
   } catch (err) {
     console.error('[super/events POST /:id/image]', err);
@@ -378,6 +395,7 @@ router.delete('/:id/image', async (req, res) => {
 
     await db.query('UPDATE events SET image_url = NULL WHERE id = ?', [req.params.id]);
     await auditLog(req.user.id, 'delete_image', req.params.id, { image_url: old }, null);
+    await invalidateEventsCache();
     res.json({ message: 'Image supprimée' });
   } catch (err) {
     console.error('[super/events DELETE /:id/image]', err);

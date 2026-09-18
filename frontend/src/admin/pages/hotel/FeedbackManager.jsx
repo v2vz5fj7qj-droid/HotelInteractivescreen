@@ -154,9 +154,10 @@ export default function FeedbackManager() {
     const timePart = now.toTimeString().slice(0, 5).replace(':', 'h');
     const filename = `feedbacks_${hotelSlug || hotelId}_${datePart}_${timePart}.csv`;
 
-    const token = sessionStorage.getItem('admin_token');
-    const url   = `/api/admin/hotel/feedbacks/export?${params}`;
-    const res   = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    // credentials 'same-origin' (défaut fetch) suffit : le cookie HttpOnly admin_token
+    // est envoyé automatiquement, pas besoin de header Authorization manuel.
+    const url = `/api/admin/hotel/feedbacks/export?${params}`;
+    const res = await fetch(url);
     const blob  = await res.blob();
     const a     = document.createElement('a');
     a.href      = URL.createObjectURL(blob);

@@ -6,7 +6,7 @@
     "weather":              "天気",
     "flights":              "フライト",
     "map":                  "地図",
-    "wellness":             "ウェルネス",
+    "wellness":             "サービス",
     "info":                 "お役立ち情報",
     "events":               "イベント",
     "mobile":               "モバイル",
@@ -112,7 +112,7 @@
     "rating":         "評価"
   },
   "wellness": {
-    "title":           "ウェルネスサービス",
+    "title":           "サービス",
     "subtitle":        "ご自身をいたわる",
     "duration":        "所要時間",
     "price":           "料金",
@@ -187,7 +187,7 @@
       "weather":  "天気",
       "flights":  "フライト",
       "map":      "地図",
-      "wellness": "ウェルネス",
+      "wellness": "サービス",
       "info":     "お役立ち情報",
       "events":   "イベント"
     },

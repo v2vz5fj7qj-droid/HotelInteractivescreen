@@ -359,7 +359,7 @@ export default function HotelSettings() {
           {ALL_LOCALES.map(l => (
             <div key={l} className={styles.field}>
               <label className={styles.label}>
-                {localesMeta[l]?.flag} {localesMeta[l]?.nativeName}
+                {localesMeta[l]?.nativeName}
               </label>
               <textarea
                 className={styles.textarea}

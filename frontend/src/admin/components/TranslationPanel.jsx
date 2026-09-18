@@ -52,7 +52,7 @@ export default function TranslationPanel({
       >
         {allLocales.map(l => (
           <option key={l} value={l}>
-            {localesMeta[l]?.flag} {localesMeta[l]?.nativeName}
+            {localesMeta[l]?.nativeName}
           </option>
         ))}
       </select>

@@ -1,13 +1,17 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 
-// Client dédié à la route /api/translate (hors du préfixe /api/admin)
-const client = axios.create({ baseURL: '/api' });
-client.interceptors.request.use(cfg => {
-  const token = sessionStorage.getItem('admin_token');
-  if (token) cfg.headers.Authorization = `Bearer ${token}`;
-  return cfg;
-});
+// Client dédié à la route /api/translate (hors du préfixe /api/admin).
+// withCredentials : le navigateur envoie automatiquement le cookie HttpOnly admin_token
+// (scope /api, voir COOKIE_OPTS dans backend/src/routes/admin/auth.js).
+const client = axios.create({ baseURL: '/api', withCredentials: true });
+client.interceptors.response.use(
+  r => r,
+  err => {
+    if (err.response?.status === 401) window.location.href = '/admin/login';
+    return Promise.reject(err);
+  }
+);
 
 /**
  * Hook de traduction automatique via LibreTranslate (avec fallback MyMemory).

@@ -137,7 +137,7 @@ function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
                   className={`${styles.tab} ${activeLang === l ? styles.tabActive : ''}`}
                   onClick={() => setActiveLang(l)}
                   style={{ gap: 4, display: 'flex', alignItems: 'center' }}>
-                  {m.flag} {m.nativeName}
+                  {m.nativeName}
                   {filled && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', display: 'inline-block', marginLeft: 3 }} />}
                 </button>
               );
@@ -148,7 +148,7 @@ function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
           <div key={activeLang}>
             <div className={styles.field}>
               <label className={styles.label}>
-                {langMeta.flag} Titre{activeLang === 'fr' ? ' *' : ''}
+                Titre{activeLang === 'fr' ? ' *' : ''}
               </label>
               <input className={styles.input} value={curTrans.titre}
                 onChange={e => setLangVal(activeLang, 'titre', e.target.value)}
@@ -156,7 +156,7 @@ function TipFormModal({ tip, hotelParams, onClose, onSaved }) {
             </div>
             <div className={styles.field}>
               <label className={styles.label}>
-                {langMeta.flag} Contenu{activeLang === 'fr' ? ' *' : ''}
+                Contenu{activeLang === 'fr' ? ' *' : ''}
               </label>
               <textarea className={styles.textarea} rows={4} value={curTrans.contenu}
                 onChange={e => setLangVal(activeLang, 'contenu', e.target.value)} />
@@ -240,7 +240,7 @@ export default function TipsManager() {
             {tips.length === 0 ? (
               <tr><td colSpan={7}><div className={styles.empty}><div className={styles.emptyIcon}>💡</div><div className={styles.emptyText}>Aucun conseil</div></div></td></tr>
             ) : tips.map(t => {
-              const langs = (t.translations || []).filter(tr => tr.titre?.trim()).map(tr => localesMeta[tr.locale]?.flag || tr.locale);
+              const langs = (t.translations || []).filter(tr => tr.titre?.trim()).map(tr => tr.locale.toUpperCase());
               return (
                 <tr key={t.id}>
                   <td style={{ fontWeight: 600 }}>{t.titre_fr}</td>

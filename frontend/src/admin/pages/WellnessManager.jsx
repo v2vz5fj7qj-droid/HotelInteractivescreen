@@ -96,7 +96,7 @@ export default function WellnessManager() {
     <div>
       <div className={styles.pageHeader}>
         <div>
-          <h2 className={styles.pageTitle}>Services Bien-être</h2>
+          <h2 className={styles.pageTitle}>Services</h2>
           <p className={styles.pageSubtitle}>{items.length} service(s) configuré(s)</p>
         </div>
         <button className={styles.btnPrimary} onClick={openCreate}>+ Nouveau service</button>
@@ -227,7 +227,7 @@ export default function WellnessManager() {
                     <button key={l} className={`${styles.tab} ${tab === l ? styles.tabActive : ''}`}
                       onClick={() => setTab(l)} style={{ position: 'relative' }}
                     >
-                      {localesMeta[l]?.flag} {l}
+                      {l.toUpperCase()}
                       {l === sourceLang && (
                         <span style={{
                           position: 'absolute', top: -4, right: -4,

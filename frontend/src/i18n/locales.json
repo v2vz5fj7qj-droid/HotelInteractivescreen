@@ -1,11 +1,11 @@
 {
-  "fr": { "nativeName": "Français",   "flag": "🇫🇷", "dir": "ltr" },
-  "en": { "nativeName": "English",    "flag": "🇬🇧", "dir": "ltr" },
-  "de": { "nativeName": "Deutsch",    "flag": "🇩🇪", "dir": "ltr" },
-  "es": { "nativeName": "Español",    "flag": "🇪🇸", "dir": "ltr" },
-  "pt": { "nativeName": "Português",  "flag": "🇵🇹", "dir": "ltr" },
-  "ar": { "nativeName": "العربية",    "flag": "🇸🇦", "dir": "rtl" },
-  "zh": { "nativeName": "中文",       "flag": "🇨🇳", "dir": "ltr" },
-  "ja": { "nativeName": "日本語",     "flag": "🇯🇵", "dir": "ltr" },
-  "ru": { "nativeName": "Русский",   "flag": "🇷🇺", "dir": "ltr" }
+  "fr": { "nativeName": "Français",   "dir": "ltr" },
+  "en": { "nativeName": "English",    "dir": "ltr" },
+  "de": { "nativeName": "Deutsch",    "dir": "ltr" },
+  "es": { "nativeName": "Español",    "dir": "ltr" },
+  "pt": { "nativeName": "Português",  "dir": "ltr" },
+  "ar": { "nativeName": "العربية",    "dir": "rtl" },
+  "zh": { "nativeName": "中文",       "dir": "ltr" },
+  "ja": { "nativeName": "日本語",     "dir": "ltr" },
+  "ru": { "nativeName": "Русский",   "dir": "ltr" }
 }

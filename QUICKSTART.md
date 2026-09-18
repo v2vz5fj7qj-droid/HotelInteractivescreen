@@ -150,6 +150,7 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
   - Onglet **Paramètres** : logo, image de fond, couleurs, messages d'accueil FR/EN, contacts, WiFi, check-in/check-out
   - Onglet **Météo** : affectation des localités météo (max 5), localité par défaut, refresh manuel
   - Onglet **Aéroports** : affectation/retrait des aéroports du système à l'hôtel
+  - Onglet **Devises** : configuration du convertisseur de devises affiché sur la borne (même module que côté hotel-admin)
 - **Carte & Lieux** — validation des soumissions avec **vue détaillée** (coords GPS + lien OpenStreetMap) avant publication ou rejet motivé
 - **Agenda** — validation des soumissions avec **vue détaillée** (titre, description, dates, lieu, contributeur) avant publication ou rejet motivé
 - **Infos utiles** — validation des soumissions avec **vue détaillée** (contacts, description) avant publication ou rejet motivé
@@ -164,7 +165,7 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 
 - **Paramètres hôtel** — logo, fond, thème couleurs, contacts, WiFi, code check-in/check-out
 - **Images de bannière** — galerie carrousel affichée sur la borne (upload, réordonnancement, max 10 images)
-- **Services et bien-être** — CRUD services avec catégories
+- **Services** — CRUD services avec catégories
 - **Agenda** — CRUD événements propres à l'hôtel
 - **Bon à savoir** — informations propres à l'hôtel ; les fiches marquées "notification" apparaissent avec une icône clochette sur la borne
 - **Évaluations** — statistiques et liste des feedbacks soumis depuis la borne (filtres date/note, export CSV et PDF)

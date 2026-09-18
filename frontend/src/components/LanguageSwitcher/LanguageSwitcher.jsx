@@ -23,8 +23,6 @@ export default function LanguageSwitcher() {
     setOpen(false);
   }
 
-  const currentMeta = localesMeta[locale];
-
   return (
     <div className={styles.wrapper} ref={containerRef}>
       {/* Bouton déclencheur */}
@@ -35,7 +33,6 @@ export default function LanguageSwitcher() {
         aria-expanded={open}
         aria-label="Changer de langue"
       >
-        <span className={styles.triggerFlag} aria-hidden="true">{currentMeta?.flag}</span>
         <span className={styles.triggerCode}>{locale.toUpperCase()}</span>
         <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`} aria-hidden="true">▾</span>
       </button>
@@ -54,7 +51,6 @@ export default function LanguageSwitcher() {
                 className={`${styles.option} ${isActive ? styles.optionActive : ''}`}
                 onClick={() => handleSelect(loc)}
               >
-                <span className={styles.optionFlag} aria-hidden="true">{meta?.flag}</span>
                 <span className={styles.optionName}>{meta?.nativeName}</span>
               </button>
             );

@@ -123,7 +123,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Menu d'accueil       | `/`          | 3 zones : bannière carrousel, cartes de service, widget météo cliquable — rotation des "Bon à savoir" (icône clochette si `is_notification`) |
 | Météo                | `/weather`   | Météo actuelle + prévisions 5 jours + alertes saisonnières (OpenWeatherMap)                   |
 | Vols                 | `/flights`   | Arrivées/départs multi-aéroports par hôtel, recherche par numéro de vol                       |
-| Services et bien-être| `/wellness`  | Services spa/massage/piscine avec horaires et tarifs                                          |
+| Services             | `/wellness`  | Services spa/massage/piscine avec horaires et tarifs                                          |
 | Agenda               | `/events`    | Événements globaux + propres à l'hôtel, filtres par catégorie                                 |
 | Carte & POI          | `/map`       | Carte Leaflet interactive, bulle de détail avec galerie d'images (max 3 par POI)              |
 | Infos utiles         | `/info`      | Contacts urgences, taxis, ambassades, pharmacies                                              |
@@ -162,7 +162,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 |---|---|
 | Tableau de bord | Vue globale, notifications de workflow (soumissions en attente) |
 | Hôtels | CRUD hôtels (nom, slug, statut) + bouton **Configurer** par hôtel |
-| Configuration hôtel | Page dédiée par hôtel — 3 onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Météo** (localités, défaut, refresh), **Aéroports** (affectation/retrait) |
+| Configuration hôtel | Page dédiée par hôtel — onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Bon à savoir**, **Météo** (localités, défaut, refresh), **Aéroports** (affectation/retrait), **Devises** (convertisseur, même module que côté hotel-admin) |
 | Carte & POI | CRUD lieux, **modal détail** (coordonnées, carte OSM, contributeur, historique rejet) avant validation/rejet, affectation → hôtels |
 | Agenda | CRUD événements globaux, **modal détail** (titre, description, dates, lieu, contributeur) avant validation/rejet/archivage |
 | Infos utiles | CRUD, **modal détail** (contacts, description, contributeur) avant validation/rejet |
@@ -462,7 +462,7 @@ git push origin feat/multi-hotel
 | Menu d'accueil           | ✅ Complet  |
 | Météo                    | ✅ Complet  |
 | Vols                     | ✅ Complet  |
-| Bien-être                | ✅ Complet  |
+| Services                 | ✅ Complet  |
 | Agenda événements        | ✅ Complet  |
 | Carte & POI (Leaflet)    | ✅ Complet  |
 | Infos utiles             | ✅ Complet  |

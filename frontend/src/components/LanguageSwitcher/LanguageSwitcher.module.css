@@ -28,11 +28,6 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 15%, transparent);
 }
 
-.triggerFlag {
-  font-size: 1.15em;
-  line-height: 1;
-}
-
 .triggerCode {
   letter-spacing: 0.04em;
 }
@@ -100,12 +95,6 @@
   font-weight: 700;
 }
 
-.optionFlag {
-  font-size: 1.2em;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
 .optionName {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,7 +110,6 @@
     padding: 8px 10px;
     gap: 4px;
   }
-  .triggerCode,
   .chevron { display: none; }
   /* Dropdown reste lisible */
   .dropdown { min-width: 180px; }

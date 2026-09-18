@@ -13,7 +13,9 @@ const COOKIE_OPTS = {
   httpOnly:  true,   // Inaccessible au JavaScript — protection XSS
   secure:    process.env.NODE_ENV === 'production', // HTTPS uniquement en prod
   sameSite:  'Strict',
-  path:      '/api/admin',
+  // path '/api' (pas '/api/admin') : le cookie doit aussi être envoyé à /api/translate,
+  // qui est protégé par adminAuth mais monté hors du préfixe /api/admin (voir app.js)
+  path:      '/api',
   // Pas de maxAge → cookie de session (disparaît à la fermeture du navigateur)
 };
 

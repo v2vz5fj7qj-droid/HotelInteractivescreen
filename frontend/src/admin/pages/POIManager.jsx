@@ -285,7 +285,7 @@ export default function POIManager() {
                       onClick={() => setTab(l)}
                       style={{ position: 'relative' }}
                     >
-                      {localesMeta[l]?.flag} {l}
+                      {l.toUpperCase()}
                       {l === sourceLang && (
                         <span style={{
                           position: 'absolute', top: -4, right: -4,

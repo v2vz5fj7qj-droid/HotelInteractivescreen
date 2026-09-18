@@ -14,6 +14,13 @@ function resolveHotelId(req) {
   return req.hotelId;
 }
 
+const DEFAULT_CONFIG = {
+  base_currency:         'XOF',
+  target_currencies:     ['EUR', 'USD', 'GBP', 'CNY'],
+  update_mode:           'auto',
+  update_interval_hours: 6,
+};
+
 const VALID_CURRENCIES = [
   'XOF','XAF','EUR','USD','GBP','CHF','JPY','CNY','CAD','AUD',
   'MAD','GHS','NGN','ZAR','EGP','KES','TND','INR','BRL','AED',
@@ -27,13 +34,10 @@ router.get('/', async (req, res) => {
   try {
     const cfg = await getConfig(hotelId);
     if (!cfg) {
-      // Retourner config par défaut si inexistante
+      // Retourner config par défaut si inexistante (pas encore persistée en base)
       return res.json({
         hotel_id:             hotelId,
-        base_currency:        'XOF',
-        target_currencies:    ['EUR', 'USD', 'GBP', 'CNY'],
-        update_mode:          'auto',
-        update_interval_hours: 6,
+        ...DEFAULT_CONFIG,
         daily_update_times:   null,
         rates:                null,
         last_update:          null,
@@ -170,7 +174,25 @@ router.put('/', async (req, res) => {
 router.post('/refresh', async (req, res) => {
   const hotelId = resolveHotelId(req);
   try {
-    const result = await refreshRates(hotelId);
+    let cfg = await getConfig(hotelId);
+    if (!cfg) {
+      // Aucune configuration encore sauvegardée pour cet hôtel — en créer une par défaut
+      // avant de rafraîchir, pour permettre de cliquer "Actualiser" sans être passé par
+      // "Sauvegarder" au préalable.
+      await db.query(
+        `INSERT INTO devise_config (hotel_id, base_currency, target_currencies, update_mode, update_interval_hours)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          hotelId,
+          DEFAULT_CONFIG.base_currency,
+          JSON.stringify(DEFAULT_CONFIG.target_currencies),
+          DEFAULT_CONFIG.update_mode,
+          DEFAULT_CONFIG.update_interval_hours,
+        ],
+      );
+      cfg = await getConfig(hotelId);
+    }
+    const result = await refreshRates(hotelId, cfg);
     res.json({ success: true, last_update: result.last_update, from: result.from });
   } catch (e) {
     console.error('[POST /admin/hotel/devise/refresh]', e);

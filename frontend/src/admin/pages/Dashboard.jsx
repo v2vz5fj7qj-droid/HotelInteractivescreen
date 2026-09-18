@@ -6,7 +6,7 @@ import styles from '../Admin.module.css';
 const SECTION_LABELS = {
   weather:  '☁️ Météo',
   flights:  '✈️ Vols',
-  wellness: '💆 Bien-être',
+  wellness: '💆 Services',
   events:   '🗓️ Agenda',
   map:      '🗺️ Carte',
   info:     '📞 Infos',
@@ -42,7 +42,7 @@ export default function Dashboard() {
   }, []);
 
   const cards = [
-    { icon: '💆', label: 'Services bien-être', value: stats?.wellness,      to: '/admin/wellness'       },
+    { icon: '💆', label: 'Services',           value: stats?.wellness,      to: '/admin/wellness'       },
     { icon: '🗓️', label: 'Événements actifs',  value: stats?.events,        to: '/admin/events'         },
     { icon: '🔔', label: 'Notifications actives', value: stats?.notifications, to: '/admin/notifications' },
     { icon: '🗺️', label: 'Points d\'intérêt',  value: stats?.poi,           to: '/admin/map'            },

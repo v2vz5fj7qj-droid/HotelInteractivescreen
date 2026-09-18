@@ -6,7 +6,7 @@
     "weather":              "天气",
     "flights":              "航班",
     "map":                  "地图",
-    "wellness":             "健康",
+    "wellness":             "服务",
     "info":                 "实用信息",
     "events":               "活动",
     "mobile":               "手机",
@@ -112,7 +112,7 @@
     "rating":         "评分"
   },
   "wellness": {
-    "title":           "健康服务",
+    "title":           "服务",
     "subtitle":        "关爱自己",
     "duration":        "时长",
     "price":           "价格",
@@ -187,7 +187,7 @@
       "weather":  "天气",
       "flights":  "航班",
       "map":      "地图",
-      "wellness": "健康",
+      "wellness": "服务",
       "info":     "实用信息",
       "events":   "活动"
     },
