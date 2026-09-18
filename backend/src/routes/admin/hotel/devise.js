@@ -173,8 +173,8 @@ router.post('/refresh', async (req, res) => {
     const result = await refreshRates(hotelId);
     res.json({ success: true, last_update: result.last_update, from: result.from });
   } catch (e) {
-    console.error('[POST /admin/hotel/devise/refresh]', e.message);
-    res.status(500).json({ error: 'Impossible de mettre à jour les taux : ' + e.message });
+    console.error('[POST /admin/hotel/devise/refresh]', e);
+    res.status(500).json({ error: 'Impossible de mettre à jour les taux. Vérifiez les logs serveur.' });
   }
 });
 

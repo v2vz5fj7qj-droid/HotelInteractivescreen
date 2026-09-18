@@ -1,3 +1,6 @@
+// Route publique kiosque — Points d'intérêt (lieux à visiter)
+// GET /api/poi/categories?hotel_id=   → catégories filtrées par hôtel
+// GET /api/poi?hotel_id=&locale=      → POI publiés de l'hôtel dans la locale demandée
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');

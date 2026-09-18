@@ -1,5 +1,8 @@
+// Routes admin legacy — rétrocompatibilité avec l'ancien backoffice mono-hôtel.
+// Ces routes coexistent avec le routeur /api/admin v2 (admin/*.js).
+// Ne pas supprimer tant que l'ancien frontend ou des intégrations les utilisent.
+// Nouvelles fonctionnalités à ajouter dans les routes admin v2 uniquement.
 const express   = require('express');
-const jwt       = require('jsonwebtoken');
 const multer    = require('multer');
 const path      = require('path');
 const fs        = require('fs');
@@ -8,7 +11,6 @@ const cache     = require('../services/cacheService');
 const adminAuth = require('../middleware/adminAuth');
 
 const router = express.Router();
-const SECRET = process.env.JWT_SECRET || 'connectbe_dev_secret';
 
 // ── Upload logo ───────────────────────────────────────
 const storage = multer.diskStorage({
@@ -57,19 +59,6 @@ const uploadPoiImg = multer({
 // ════════════════════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════════════════════
-
-// POST /api/admin/login
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  const validUser = process.env.ADMIN_USERNAME || 'admin';
-  const validPass = process.env.ADMIN_PASSWORD || 'connectbe2026';
-if (username !== validUser || password !== validPass) {
-    return res.status(401).json({ error: 'Identifiants incorrects' });
-  }
-
-  const token = jwt.sign({ username, role: 'admin' }, SECRET, { expiresIn: '8h' });
-  res.json({ token, expiresIn: 28800 });
-});
 
 // POST /api/admin/logout (révocation côté client — token non invalidé côté serveur)
 router.post('/logout', adminAuth, (req, res) => res.json({ ok: true }));

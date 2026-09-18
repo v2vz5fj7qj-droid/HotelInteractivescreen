@@ -11,13 +11,17 @@ const db      = require('../../../services/db');
 
 const VALID_ROLES = ['super_admin', 'hotel_admin', 'hotel_staff', 'contributor'];
 
-async function auditLog(userId, action, entityId, oldValue, newValue) {
+async function auditLog(req, userId, action, entityId, oldValue, newValue) {
   await db.query(
-    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value)
-     VALUES (?, ?, 'user', ?, ?, ?)`,
-    [userId, action, entityId,
-     oldValue ? JSON.stringify(oldValue) : null,
-     newValue ? JSON.stringify(newValue) : null]
+    `INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value, ip_address, user_agent)
+     VALUES (?, ?, 'user', ?, ?, ?, ?, ?)`,
+    [
+      userId, action, entityId,
+      oldValue ? JSON.stringify(oldValue) : null,
+      newValue ? JSON.stringify(newValue) : null,
+      req.ip || null,
+      req.headers?.['user-agent']?.slice(0, 255) || null,
+    ]
   );
 }
 
@@ -109,7 +113,7 @@ router.post('/', async (req, res) => {
       [hotel_id || null, email, password_hash, role, can_submit_places, can_submit_events, can_submit_info]
     );
     const id = result.insertId;
-    await auditLog(req.user.id, 'create', id, null, { email, role, hotel_id });
+    await auditLog(req, req.user.id, 'create', id, null, { email, role, hotel_id });
 
     const [rows] = await db.query(
       'SELECT id, hotel_id, email, role, can_submit_places, can_submit_events, can_submit_info, is_active, created_at FROM admin_users WHERE id = ?',
@@ -150,9 +154,17 @@ router.put('/:id', async (req, res) => {
 
     if (!Object.keys(fields).length) return res.status(400).json({ error: 'Aucun champ à modifier' });
 
-    await db.query('UPDATE admin_users SET ? WHERE id = ?', [fields, req.params.id]);
+    // Colonnes explicites — pas de SET ? dynamique pour éviter le mass assignment
+    const setClauses = [];
+    const setParams  = [];
+    const UPDATABLE = ['email', 'role', 'hotel_id', 'can_submit_places', 'can_submit_events', 'can_submit_info', 'is_active', 'password_hash'];
+    for (const col of UPDATABLE) {
+      if (col in fields) { setClauses.push(`${col} = ?`); setParams.push(fields[col]); }
+    }
+    await db.query(`UPDATE admin_users SET ${setClauses.join(', ')} WHERE id = ?`, [...setParams, req.params.id]);
+
     const logged = { ...fields }; delete logged.password_hash;
-    await auditLog(req.user.id, 'update', req.params.id, existing[0], logged);
+    await auditLog(req, req.user.id, 'update', req.params.id, existing[0], logged);
 
     const [rows] = await db.query(
       'SELECT id, hotel_id, email, role, can_submit_places, can_submit_events, can_submit_info, is_active FROM admin_users WHERE id = ?',
@@ -175,7 +187,7 @@ router.delete('/:id', async (req, res) => {
     const [rows] = await db.query('SELECT id FROM admin_users WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable' });
     await db.query('UPDATE admin_users SET is_active = 0 WHERE id = ?', [req.params.id]);
-    await auditLog(req.user.id, 'deactivate', req.params.id, { is_active: 1 }, { is_active: 0 });
+    await auditLog(req, req.user.id, 'deactivate', req.params.id, { is_active: 1 }, { is_active: 0 });
     res.json({ message: 'Utilisateur désactivé' });
   } catch (err) {
     console.error('[super/users DELETE]', err);

@@ -1,3 +1,7 @@
+// Route de traduction automatique — réservée au backoffice (adminAuth requis).
+// Utilise LibreTranslate en interne (auto-hébergé, URL via LIBRETRANSLATE_URL).
+// Avec fallback vers l'API publique MyMemory si LibreTranslate est indisponible.
+// POST /api/translate — Body: { text, source, targets: string[] }
 const express   = require('express');
 const axios     = require('axios');
 const adminAuth = require('../middleware/adminAuth');

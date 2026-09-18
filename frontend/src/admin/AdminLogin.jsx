@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate }     from 'react-router-dom';
-import axios               from 'axios';
+import client              from './useAdminApi';
 import { useAuth }         from './contexts/AuthContext';
 import styles              from './Admin.module.css';
 
@@ -15,8 +15,8 @@ export default function AdminLogin() {
     e.preventDefault();
     setError(''); setLoading(true);
     try {
-      const { data } = await axios.post('/api/admin/login', form);
-      login(data); // stocke token, role, hotel_id, email
+      const { data } = await client.post('/login', form);
+      login(data); // stocke role, hotel_id, hotel_slug, email (le token est dans le cookie HttpOnly)
 
       // Redirection selon le rôle
       if (data.role === 'super_admin')  navigate('/admin/super');

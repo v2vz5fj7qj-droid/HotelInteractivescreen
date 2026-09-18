@@ -1,6 +1,9 @@
+// Suivi des interactions kiosque — chaque navigation ou clic important appelle trackEvent().
+// Les appels sont fire-and-forget : une erreur réseau est silencieusement ignorée.
+// Le device_type est détecté par largeur d'écran (≥1200px = kiosk, sinon mobile).
 import api from './api';
 
-// Session unique par démarrage de borne
+// SESSION_ID est unique par démarrage de borne — permet de regrouper les actions d'une session.
 const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export async function trackEvent(section, action, meta = {}) {

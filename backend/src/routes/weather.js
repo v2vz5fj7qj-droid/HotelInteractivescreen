@@ -1,3 +1,8 @@
+// Route publique kiosque — météo en temps réel via OpenWeatherMap.
+// Stratégie cache : Redis 10 min → appel API OWM → fallback stale 30 jours.
+// La localité est résolue depuis la DB selon hotel_id et locality_id fournis.
+// GET /api/weather/current?hotel_id=X&locality_id=Y
+// GET /api/weather/localities?hotel_id=X
 const express = require('express');
 const axios   = require('axios');
 const cache   = require('../services/cacheService');

@@ -1,3 +1,6 @@
+// Route publique kiosque — Infos utiles (numéros, contacts, urgences)
+// GET /api/info/categories?hotel_id=   → catégories filtrées par hôtel
+// GET /api/info?hotel_id=&locale=      → contacts publiés de l'hôtel
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');

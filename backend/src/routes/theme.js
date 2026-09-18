@@ -84,15 +84,17 @@ function getDefaultTheme() {
 // POST /api/theme/fullscreen-verify  → Vérifie le mot de passe plein écran (public)
 router.post('/fullscreen-verify', async (req, res) => {
   const { password } = req.body;
-  if (typeof password !== 'string') return res.json({ ok: false });
+  if (typeof password !== 'string' || !password) return res.json({ ok: false });
   try {
     const [rows] = await db.query(
       "SELECT config_value FROM theme_config WHERE config_key = 'fullscreen_password'"
     );
-    const stored = rows[0]?.config_value || 'fs1234';
+    const stored = rows[0]?.config_value;
+    // Fail-secure : si aucun mot de passe configuré, interdire l'accès
+    if (!stored) return res.json({ ok: false });
     res.json({ ok: password === stored });
   } catch {
-    res.json({ ok: password === 'fs1234' });
+    res.json({ ok: false });
   }
 });
 

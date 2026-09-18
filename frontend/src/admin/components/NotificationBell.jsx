@@ -1,3 +1,6 @@
+// Cloche de notifications du backoffice — polling toutes les 30s.
+// Affiche le compteur de non-lues et un dropdown avec les dernières notifications.
+// Les notifications "kiosk_offline" viennent du kioskMonitor.js côté backend.
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../useAdminApi';
 import styles from '../Admin.module.css';

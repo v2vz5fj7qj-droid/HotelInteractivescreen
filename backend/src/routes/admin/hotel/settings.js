@@ -103,7 +103,9 @@ router.put('/', async (req, res) => {
     }
     if (!Object.keys(fields).length) return res.status(400).json({ error: 'Aucun champ à modifier' });
 
-    await db.query('UPDATE hotel_settings SET ? WHERE hotel_id = ?', [fields, hotelId]);
+    const setClauses = Object.keys(fields).map(col => `${col} = ?`);
+    const setParams  = Object.values(fields);
+    await db.query(`UPDATE hotel_settings SET ${setClauses.join(', ')} WHERE hotel_id = ?`, [...setParams, hotelId]);
     const [rows] = await db.query('SELECT * FROM hotel_settings WHERE hotel_id = ?', [hotelId]);
     res.json(rows[0]);
   } catch (err) {

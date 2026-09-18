@@ -1,3 +1,6 @@
+// Route publique kiosque — Événements et agenda
+// GET /api/events?hotel_id=1&locale=fr&category=music&upcoming=true&limit=20
+// Retourne les événements publiés globaux + ceux de l'hôtel demandé, triés par date.
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');

@@ -1,3 +1,7 @@
+// Hotel-admin — Consultation et export des avis clients
+// GET /api/admin/hotel/feedbacks?from=&to=&min_note=&limit=&offset=
+// GET /api/admin/hotel/feedbacks/stats
+// GET /api/admin/hotel/feedbacks/export  — téléchargement CSV (BOM pour Excel)
 const express = require('express');
 const Feedback = require('../../../models/feedback');
 

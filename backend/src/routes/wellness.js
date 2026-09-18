@@ -1,3 +1,5 @@
+// Route publique kiosque — Services bien-être (spa, fitness, piscine…)
+// GET /api/wellness?locale=fr   → liste globale des services wellness traduits
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');

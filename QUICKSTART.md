@@ -107,7 +107,7 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 
 | Rôle | URL d'accès | Login par défaut | Mot de passe |
 |----|---|---|---|
-| Super-admin | http://localhost:5173/admin | `admin@iconnectbe.com` | `connectbe2026` (valeur de `ADMIN_PASSWORD`) |
+| Super-admin | http://localhost:5173/admin | `admin@iconnectbe.com` | `connectbe2026` (valeur de `ADMIN_PASSWORD`) | TnwVGgIqZpqoTGEHmnqy
 | Hotel-admin | http://localhost:5173/admin | selon création | selon création |
 | Contributeur | http://localhost:5173/admin | selon création | selon création |
 

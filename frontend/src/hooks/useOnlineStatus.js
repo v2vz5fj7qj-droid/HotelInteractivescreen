@@ -1,3 +1,7 @@
+// Suit l'état de connectivité réseau du navigateur.
+// Retourne true si en ligne, false si hors-ligne.
+// Utilisé par KioskLayout pour afficher la bannière "mode hors-ligne"
+// et par api.js pour basculer sur le cache localStorage.
 import { useState, useEffect } from 'react';
 
 export function useOnlineStatus() {

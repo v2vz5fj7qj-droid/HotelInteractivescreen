@@ -1,5 +1,9 @@
+// Modèle Feedback — avis clients soumis depuis la borne kiosque.
+// Les notes sont stockées en JSON par catégorie (proprete, accueil, chambre, restauration, services).
+// L'IP est conservée pour le rate-limiting et la détection de doublons quotidiens.
 const db = require('../services/db');
 
+// Insère un nouvel avis. Retourne l'ID inséré.
 async function create({ hotel_id, categories, commentaire, note_globale, locale, ip }) {
   const [result] = await db.query(
     `INSERT INTO feedbacks (hotel_id, categories, commentaire, note_globale, locale, ip)
@@ -9,6 +13,7 @@ async function create({ hotel_id, categories, commentaire, note_globale, locale,
   return result.insertId;
 }
 
+// Vérifie si l'IP a déjà soumis un avis aujourd'hui pour cet hôtel (anti-spam).
 async function hasSubmittedToday(hotel_id, ip) {
   if (!ip) return false;
   const [rows] = await db.query(
@@ -19,6 +24,7 @@ async function hasSubmittedToday(hotel_id, ip) {
   return rows[0].cnt > 0;
 }
 
+// Liste les avis d'un hôtel avec filtres optionnels (plage de dates, note minimale) et pagination.
 async function list({ hotel_id, limit = 50, offset = 0, from, to, min_note }) {
   const params = [hotel_id];
   let where = 'WHERE hotel_id = ?';
@@ -40,6 +46,7 @@ async function list({ hotel_id, limit = 50, offset = 0, from, to, min_note }) {
   return { rows, total };
 }
 
+// Calcule les statistiques globales + tendance sur 30 jours (1 point par jour).
 async function stats(hotel_id) {
   const [rows] = await db.query(
     `SELECT

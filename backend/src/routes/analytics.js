@@ -1,3 +1,7 @@
+// Analytics kiosque — enregistrement des interactions et consultation des stats.
+// Les événements sont non-bloquants : une erreur DB n'empêche pas l'action utilisateur.
+// POST /api/analytics         — enregistrer un clic/navigation (appelé par trackEvent)
+// GET  /api/analytics/summary — stats par section sur les dernières 24h (backoffice)
 const express = require('express');
 const db      = require('../services/db');
 const router  = express.Router();

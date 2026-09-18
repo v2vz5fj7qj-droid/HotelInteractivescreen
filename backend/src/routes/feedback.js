@@ -1,25 +1,32 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const xss = require('xss');
 const Feedback = require('../models/feedback');
 
 const router = express.Router();
 
 const CATEGORIES = ['proprete', 'accueil', 'chambre', 'restauration', 'services'];
 
-// Burst : max 5 soumissions par IP+hôtel par 15 min (anti-spam réseau)
+// Options xss : aucun tag HTML autorisé dans les commentaires
+const XSS_OPTIONS = { whiteList: {}, stripIgnoreTag: true, stripIgnoreTagBody: ['script', 'style'] };
+
+// Retourne l'IP réelle du client (req.ip est déjà normalisé si TRUST_PROXY est défini dans app.js)
+const getClientIp = (req) => req.ip || req.connection?.remoteAddress || 'unknown';
+
+// Burst : max 5 soumissions par IP par 15 min
 const burstLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  keyGenerator: req => req.ip + ':' + (req.body?.hotel_id || ''),
+  keyGenerator: getClientIp,
   handler: (_, res) => res.status(429).json({ error: 'too_many_requests' }),
   skipFailedRequests: true,
 });
 
-// Journalier : max 300 soumissions par IP+hôtel par 24h (borne publique)
+// Journalier : max 300 soumissions par IP par 24h (borne publique partagée)
 const dailyLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
   max: 300,
-  keyGenerator: req => req.ip + ':' + (req.body?.hotel_id || ''),
+  keyGenerator: getClientIp,
   handler: (_, res) => res.status(429).json({ error: 'too_many_requests' }),
   skipFailedRequests: true,
 });
@@ -40,9 +47,9 @@ router.post('/', burstLimiter, dailyLimiter, async (req, res) => {
     }
   }
 
-  // Commentaire : max 500 chars, strip HTML basique
+  // Commentaire : sanitisation complète XSS + limite 500 chars
   const comment = commentaire
-    ? String(commentaire).replace(/<[^>]*>/g, '').trim().slice(0, 500)
+    ? xss(String(commentaire).trim(), XSS_OPTIONS).slice(0, 500)
     : null;
 
   // Calcul note globale (moyenne des catégories fournies)
@@ -50,15 +57,13 @@ router.post('/', burstLimiter, dailyLimiter, async (req, res) => {
   if (noted.length === 0) return res.status(400).json({ error: 'Aucune note fournie' });
   const note_globale = noted.reduce((s, c) => s + categories[c], 0) / noted.length;
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
-
   const id = await Feedback.create({
     hotel_id,
     categories,
     commentaire: comment,
     note_globale: Math.round(note_globale * 100) / 100,
     locale: locale || 'fr',
-    ip,
+    ip: getClientIp(req),
   });
 
   res.status(201).json({ id, note_globale: Math.round(note_globale * 100) / 100 });

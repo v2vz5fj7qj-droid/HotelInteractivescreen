@@ -1,3 +1,8 @@
+// Route QR Code — lien mobile vers le kiosque
+// POST /api/qr/token          → génère un token signé (TTL configurable via QR_TOKEN_TTL_MIN)
+// GET  /api/qr/validate/:token → valide le token et retourne la section + locale cibles
+// Le token est stocké en base et utilisé par MobileGate pour rediriger le téléphone
+// vers la bonne section de la borne (météo, vols, carte, bien-être, infos).
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();

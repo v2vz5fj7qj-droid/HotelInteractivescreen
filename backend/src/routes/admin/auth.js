@@ -1,12 +1,21 @@
 // Route d'authentification — tous les rôles
 // POST /api/admin/login
+// POST /api/admin/logout
 const express  = require('express');
 const router   = express.Router();
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const db       = require('../../services/db');
+const { JWT_SECRET } = require('../../config/secrets');
 
-const SECRET = process.env.JWT_SECRET || 'connectbe_dev_secret';
+const COOKIE_NAME = 'admin_token';
+const COOKIE_OPTS = {
+  httpOnly:  true,   // Inaccessible au JavaScript — protection XSS
+  secure:    process.env.NODE_ENV === 'production', // HTTPS uniquement en prod
+  sameSite:  'Strict',
+  path:      '/api/admin',
+  // Pas de maxAge → cookie de session (disparaît à la fermeture du navigateur)
+};
 
 router.post('/login', async (req, res) => {
   try {
@@ -37,10 +46,13 @@ router.post('/login', async (req, res) => {
       can_submit_info:   !!user.can_submit_info,
     };
 
-    const token = jwt.sign(payload, SECRET, { expiresIn: '8h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 
+    // Token dans un cookie HttpOnly — jamais exposé au JavaScript
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTS);
+
+    // Le body ne contient que les métadonnées non-sensibles pour l'UI
     res.json({
-      token,
       role:        user.role,
       hotel_id:    user.hotel_id,
       hotel_slug:  user.hotel_slug || null,
@@ -50,6 +62,11 @@ router.post('/login', async (req, res) => {
     console.error('[auth/login]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie(COOKIE_NAME, { ...COOKIE_OPTS, maxAge: 0 });
+  res.json({ ok: true });
 });
 
 module.exports = router;

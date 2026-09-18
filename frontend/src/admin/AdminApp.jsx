@@ -40,7 +40,10 @@ import MyEvents         from './pages/contributor/MyEvents';
 import MyInfo           from './pages/contributor/MyInfo';
 
 // ── Guards ──────────────────────────────────────────────────────
+// hydrated : indique que AuthContext a fini de lire le sessionStorage.
+// Sans ce flag, on renverrait vers /login avant même de savoir si l'user est connecté.
 
+// RequireAuth — redirige vers /login si non connecté, conserve l'URL d'origine dans state.from.
 function RequireAuth({ children }) {
   const { user, hydrated } = useAuth();
   const location           = useLocation();
@@ -49,6 +52,7 @@ function RequireAuth({ children }) {
   return children;
 }
 
+// RequireRole — redirige si le rôle de l'utilisateur n'est pas dans la liste autorisée.
 function RequireRole({ roles, children }) {
   const { user, hydrated } = useAuth();
   if (!hydrated) return null;
@@ -57,6 +61,8 @@ function RequireRole({ roles, children }) {
 }
 
 // ── Root redirect selon le rôle ─────────────────────────────────
+// Redirige automatiquement /admin vers la bonne section selon le rôle :
+// super_admin → /admin/super | hotel_admin|staff → /admin/hotel | contributor → /admin/contributor
 
 function AdminRoot() {
   const { user, hydrated } = useAuth();

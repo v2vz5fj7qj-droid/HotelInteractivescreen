@@ -1,3 +1,8 @@
+// Route publique kiosque — données de vols
+// Sert uniquement le cache Redis alimenté par le scheduler (flightRefresh.js).
+// Aucun appel API direct ici : si le cache est vide, retourne { _pending: true }.
+// GET /api/flights?airport=OUA&type=arrivals|departures
+// GET /api/flights/search?flight=AH110&hotel_id=X
 const express = require('express');
 const cache   = require('../services/cacheService');
 const db      = require('../services/db');
