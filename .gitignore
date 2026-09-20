@@ -32,6 +32,10 @@ redis_data/
 /*.sql
 *.backup.*
 
+# Sauvegardes complètes produites par scripts/db-backup.sh
+# Elles contiennent les données réelles des clients — jamais dans git.
+backups/
+
 # IDE
 .vscode/
 .idea/

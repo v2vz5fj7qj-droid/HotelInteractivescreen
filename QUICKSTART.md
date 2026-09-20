@@ -319,7 +319,7 @@ le volume Docker `mysql_data` et ne sont pas automatiquement dans git.
 **Pour les commiter et les inclure dans un déploiement futur :**
 
 ```bash
-# 1. Exporter les données vivantes
+# 1. Exporter le contenu éditorial
 ./scripts/db-export.sh
 
 # 2. Commiter le dump
@@ -328,13 +328,28 @@ git commit -m "chore: export données vivantes $(date +%Y-%m-%d)"
 git push
 ```
 
+**Pour une sauvegarde complète et restaurable** (schéma, contenus, logs, avis, bornes) :
+
+```bash
+./scripts/db-backup.sh        # → backups/connectbe_<date>.sql.gz, hors git
+KEEP=30 ./scripts/db-backup.sh   # conserve les 30 dernières au lieu de 10
+```
+
+À lancer **sur le serveur, avant chaque mise à jour**.
+
 Sur un **nouveau serveur** (`git clone` + `docker compose up --build`), le fichier
 `database/seeds/data_live.sql` est rechargé automatiquement dans la BDD vierge.
 Il est généré en `REPLACE INTO` : il écrase les lignes de `bootstrap.sql` chargées juste
 avant, au lieu d'échouer sur des doublons de clé primaire.
 
-> Le script exclut automatiquement les tables non essentielles au déploiement :
-> `audit_log`, `workflow_notifications`, `feedbacks`.
+> `db-export.sh` écarte les tables propres à une instance ou purement techniques :
+> `audit_log`, `workflow_notifications`, `feedbacks`, `analytics_events`, `kiosks`,
+> `kiosk_keys`, `qr_tokens`. Pour tout conserver, utiliser `db-backup.sh`.
+
+> ⚠️ **Ne jamais rejouer `data_live.sql` sur une production en service** — c'est un
+> `REPLACE INTO` global, il écrase les saisies du client. Mise à jour d'une production :
+> `./scripts/db-backup.sh` puis `git pull` puis `docker compose restart backend`.
+> Le code et le schéma passent, les contenus ne bougent pas.
 
 ---
 

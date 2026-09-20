@@ -318,18 +318,62 @@ L'application est **offline-first** :
 
 ## Versionner les données et déployer
 
-Les données saisies en backoffice (hôtels, événements, lieux, services…) vivent dans le volume
-Docker `mysql_data`. Pour les inclure dans un push et les rejouer sur un nouveau serveur :
+Deux choses circulent, et elles ne se traitent pas de la même façon.
+
+| | Circule par | Touche les contenus ? |
+|---|---|---|
+| **Code et schéma** | `git pull` + redémarrage du backend | Non |
+| **Contenus** | La production elle-même, via le backoffice | — |
+
+### Mettre à jour une production en service
 
 ```bash
-# Exporter les données vivantes → database/seeds/data_live.sql
-./scripts/db-export.sh
+cd /opt/connectbe
+./scripts/db-backup.sh              # filet de sécurité — toujours en premier
+git pull
+docker compose restart backend      # runMigrations applique les changements de schéma
+```
 
-# Commiter et pousser
+`mysql_data` est un volume nommé, jamais recréé : **les données saisies par le client ne sont
+pas touchées**. `backend/src` et `frontend/src` sont montés depuis le dépôt, donc `git pull`
+suffit à livrer le code. Un `docker compose up -d --build` n'est nécessaire que si les
+dépendances (`package.json`) ont changé.
+
+> ⚠️ **Ne jamais rejouer `data_live.sql` sur une production en service.** C'est un
+> `REPLACE INTO` global : il écrase toute ligne de même identifiant par votre version locale,
+> sans distinguer vos modifications des saisies du client. Ce fichier sert à **amorcer** un
+> déploiement, pas à le mettre à jour.
+
+### Les deux scripts de base de données
+
+| Script | Produit | Contenu | Versionné |
+|---|---|---|---|
+| `scripts/db-backup.sh` | `backups/connectbe_<date>.sql.gz` | **Tout** — schéma, contenus, logs, analytics, avis, bornes | Non (`.gitignore`) |
+| `scripts/db-export.sh` | `database/seeds/data_live.sql` | Contenu éditorial seul | Oui |
+
+`db-export.sh` écarte volontairement ce qui est propre à une instance ou purement technique :
+`audit_log`, `workflow_notifications`, `feedbacks`, `analytics_events`, `kiosks`, `kiosk_keys`,
+`qr_tokens`. Une borne enregistrée sur votre machine de dev n'a rien à faire chez le client.
+
+```bash
+# Rapatrier l'état réel de la production dans git (à lancer SUR le serveur)
+./scripts/db-export.sh
 git add database/seeds/data_live.sql
-git commit -m "chore: export données vivantes $(date +%Y-%m-%d)"
+git commit -m "chore: export données $(date +%Y-%m-%d)"
 git push
 ```
+
+Tant que la production n'est pas lancée, exporter depuis la machine de dev a du sens : c'est
+ce qui amorcera le premier déploiement. **Dès qu'un client saisit ses propres données, le sens
+s'inverse** — la production devient la source de vérité, et `data_live.sql` n'est plus qu'une
+sauvegarde éditoriale versionnée.
+
+### Livrer du contenu préparé en dev
+
+Si vous avez préparé du contenu en local (un jeu d'infos utiles, un catalogue de services) et
+qu'il doit rejoindre une production déjà vivante, passez par un fichier de seed ciblé sur les
+tables et les lignes concernées — comme `database/seeds/useful_info_burkina_faso.sql`. Jamais
+par le dump global.
 
 ### Premier démarrage sur un nouveau serveur
 

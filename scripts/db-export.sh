@@ -1,14 +1,26 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# db-export.sh — Exporte les données vivantes de la BDD vers
+# db-export.sh — Exporte le CONTENU ÉDITORIAL de la BDD vers
 #                database/seeds/data_live.sql
 #
 # Usage :
 #   ./scripts/db-export.sh           # utilise les valeurs du .env
 #   DB_PASSWORD=xxx ./scripts/db-export.sh
 #
-# Le fichier généré est commité dans git et rechargé automatiquement
-# lors d'un déploiement sur un serveur vierge (docker-entrypoint-initdb.d).
+# Le fichier généré est commité dans git et rechargé UNE SEULE FOIS, à la
+# création du volume, lors d'un déploiement sur un serveur vierge
+# (docker-entrypoint-initdb.d).
+#
+# ⚠️  Ce fichier n'est PAS un mécanisme de mise à jour. Le rejouer sur une
+#     production en service écraserait les saisies du client : c'est un
+#     REPLACE INTO global, il ne distingue pas vos modifications des leurs.
+#     Pour mettre à jour une production : git pull + docker compose restart
+#     backend (le code et le schéma passent, les contenus ne bougent pas).
+#
+# Une fois la production vivante, c'est ELLE la source de vérité : lancez ce
+# script sur le serveur, pas en local, pour rapatrier l'état réel dans git.
+#
+# Pour une sauvegarde complète et restaurable : scripts/db-backup.sh
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -39,11 +51,18 @@ fi
 
 echo "📦  Export en cours depuis $CONTAINER ($DB_NAME)…"
 
-# ── Tables à exclure (schéma géré par migrations, données techniques) ─────────
+# ── Tables exclues du seed ────────────────────────────────────────────────────
+# Ce dump amorce un NOUVEAU déploiement : il ne doit contenir que du contenu
+# éditorial. Tout ce qui est propre à une instance ou purement technique reste
+# dehors — c'est le rôle de db-backup.sh de tout conserver.
 EXCLUDE_TABLES=(
-  audit_log
-  workflow_notifications
-  feedbacks
+  audit_log               # journal d'audit
+  workflow_notifications  # notifications internes du workflow
+  feedbacks               # avis laissés sur les bornes
+  analytics_events        # statistiques de consultation (près de la moitié du dump)
+  kiosks                  # bornes enregistrées : device_token propre à chaque machine
+  kiosk_keys              # clés d'activation à usage unique
+  qr_tokens               # tokens de transfert mobile, durée de vie 10 minutes
 )
 
 IGNORE_ARGS=()
