@@ -23,13 +23,17 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/flights/search?flight=AH110[&hotel_id=X]
-// Cherche dans le cache — tous les aéroports de l'hôtel si hotel_id fourni
+// Cherche dans le cache — par numéro de vol OU nom de compagnie —
+// tous les aéroports de l'hôtel si hotel_id fourni
 router.get('/search', async (req, res) => {
-  const flightNum = (req.query.flight || '').toUpperCase().trim().replace(/[\s-]/g, '');
-  if (!flightNum) return res.status(400).json({ error: 'Numéro de vol requis' });
+  const rawQuery = (req.query.flight || '').trim();
+  if (!rawQuery) return res.status(400).json({ error: 'Numéro de vol ou compagnie requis' });
 
-  const hotelId = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
-  const norm    = (s) => (s || '').toUpperCase().replace(/[\s-]/g, '');
+  const hotelId   = req.query.hotel_id ? parseInt(req.query.hotel_id, 10) : null;
+  const norm      = (s) => (s || '').toUpperCase().replace(/[\s-]/g, '');
+  const normText  = (s) => (s || '').toUpperCase().trim();
+  const flightNum = norm(rawQuery);
+  const queryText = normText(rawQuery);
 
   // Déterminer les aéroports à scruter
   let airportCodes = [DEF_AIRPORT];
@@ -52,7 +56,11 @@ router.get('/search', async (req, res) => {
       if (!cached) continue;
       const { flights } = JSON.parse(cached);
       (flights || [])
-        .filter(f => norm(f.flight_number).includes(norm(flightNum)))
+        .filter(f =>
+          norm(f.flight_number).includes(flightNum) ||
+          normText(f.airline).includes(queryText) ||
+          norm(f.airline_icao).includes(flightNum)
+        )
         .forEach(f => {
           // Un même numéro de vol peut avoir un segment arrivée ET un segment départ
           // (ex: escale) : dédupliquer sur vol+aéroports, pas juste le numéro de vol.
