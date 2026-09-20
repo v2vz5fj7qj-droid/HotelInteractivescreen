@@ -54,8 +54,11 @@ router.get('/search', async (req, res) => {
       (flights || [])
         .filter(f => norm(f.flight_number).includes(norm(flightNum)))
         .forEach(f => {
-          if (!seen.has(f.flight_number)) {
-            seen.add(f.flight_number);
+          // Un même numéro de vol peut avoir un segment arrivée ET un segment départ
+          // (ex: escale) : dédupliquer sur vol+aéroports, pas juste le numéro de vol.
+          const key = `${f.flight_number}|${f.departure?.iata}|${f.arrival?.iata}`;
+          if (!seen.has(key)) {
+            seen.add(key);
             allFound.push(f);
           }
         });
