@@ -189,12 +189,46 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 
 ## Appliquer le schéma base de données
 
-Si MySQL tourne déjà depuis une session précédente (avant l'ajout de tables) :
+Le schéma complet vit dans `database/init.sql`. Il ne contient **que de la structure**
+(`CREATE TABLE IF NOT EXISTS`, aucun `DROP`, aucune donnée) : le rejouer sur une base
+peuplée est sans risque et se contente d'ajouter les tables manquantes.
 
 ```bash
 docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk \
   < database/init.sql
 ```
+
+### Ce qui est chargé au premier démarrage
+
+Les trois fichiers montés dans `docker-entrypoint-initdb.d` ne sont joués **qu'une seule
+fois**, sur un volume `mysql_data` vierge, et dans cet ordre :
+
+| Ordre | Fichier | Contenu |
+|-------|---------|---------|
+| 01 | `database/init.sql` | Schéma complet (39 tables) |
+| 02 | `database/seeds/bootstrap.sql` | Hôtel #1, super-admin, catégories, thème, aéroports |
+| 03 | `database/seeds/data_live.sql` | Données réelles exportées (`REPLACE INTO`) |
+
+Les colonnes ajoutées après coup sont posées au démarrage du backend par
+`backend/src/services/runMigrations.js`, dont les migrations sont idempotentes.
+
+> Les seeds de démonstration `wellness.sql`, `poi.sql` et `events.sql` ne sont plus montés
+> automatiquement — ils faisaient double emploi avec `data_live.sql`. Pour les charger
+> à la main : `docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_kiosk < database/seeds/poi.sql`
+
+### Déployer avec ou sans les données
+
+Au premier démarrage sur un serveur neuf, deux options :
+
+- **Avec vos données** (défaut) — ne touchez à rien : `data_live.sql` est chargé et vous
+  retrouvez hôtels, lieux, événements, services et comptes tels qu'exportés.
+- **Base vierge** — commentez la ligne `03_data_live.sql` dans `docker-compose.yml` avant
+  le premier `docker compose up`. Vous démarrez avec un seul hôtel, le compte super-admin
+  et les catégories, sans aucun contenu métier.
+
+> Le choix se joue **uniquement au premier démarrage**. Une fois le volume `mysql_data`
+> créé, ces fichiers ne sont plus relus. Pour repartir de zéro :
+> `docker compose down -v` (⚠️ efface définitivement la base).
 
 ---
 
@@ -296,6 +330,8 @@ git push
 
 Sur un **nouveau serveur** (`git clone` + `docker compose up --build`), le fichier
 `database/seeds/data_live.sql` est rechargé automatiquement dans la BDD vierge.
+Il est généré en `REPLACE INTO` : il écrase les lignes de `bootstrap.sql` chargées juste
+avant, au lieu d'échouer sur des doublons de clé primaire.
 
 > Le script exclut automatiquement les tables non essentielles au déploiement :
 > `audit_log`, `workflow_notifications`, `feedbacks`.

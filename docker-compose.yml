@@ -13,13 +13,14 @@ services:
       - "3307:3306"    # 3306 déjà utilisé par un autre conteneur MySQL
     volumes:
       - mysql_data:/var/lib/mysql
+      # Joués une seule fois, sur un volume mysql_data vierge.
+      # 01 — schéma complet (structure seule)
       - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql
-      - ./database/seeds/wellness.sql:/docker-entrypoint-initdb.d/02_wellness.sql
-      - ./database/seeds/poi.sql:/docker-entrypoint-initdb.d/03_poi.sql
-      - ./database/seeds/events.sql:/docker-entrypoint-initdb.d/04_events.sql
-      # Données vivantes exportées via scripts/db-export.sh
-      # Chargé uniquement sur une BDD vierge (nouveau déploiement)
-      - ./database/seeds/data_live.sql:/docker-entrypoint-initdb.d/05_data_live.sql
+      # 02 — données de référence : hôtel #1, super-admin, catégories, thème
+      - ./database/seeds/bootstrap.sql:/docker-entrypoint-initdb.d/02_bootstrap.sql
+      # 03 — données réelles exportées via scripts/db-export.sh (REPLACE INTO).
+      #      Commenter cette ligne pour déployer sur une base vierge.
+      - ./database/seeds/data_live.sql:/docker-entrypoint-initdb.d/03_data_live.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]

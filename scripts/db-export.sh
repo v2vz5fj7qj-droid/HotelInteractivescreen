@@ -52,8 +52,11 @@ for tbl in "${EXCLUDE_TABLES[@]}"; do
 done
 
 # ── Dump : données uniquement (CREATE TABLE géré par init.sql + migrations) ──
+# --replace : REPLACE INTO au lieu d'INSERT INTO, pour que ce dump écrase les
+# lignes de bootstrap.sql (chargé juste avant) au lieu d'échouer sur doublon.
 docker exec "$CONTAINER" mysqldump \
   -u "$DB_USER" -p"$DB_PASSWORD" \
+  --replace \
   --no-create-info \
   --no-create-db \
   --skip-triggers \

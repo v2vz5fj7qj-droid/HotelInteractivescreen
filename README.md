@@ -331,8 +331,28 @@ git commit -m "chore: export données vivantes $(date +%Y-%m-%d)"
 git push
 ```
 
-Sur un nouveau serveur, `docker compose up --build` recharge automatiquement `data_live.sql`
-dans la BDD vierge via `docker-entrypoint-initdb.d`.
+### Premier démarrage sur un nouveau serveur
+
+`docker compose up --build` joue trois fichiers via `docker-entrypoint-initdb.d`, une seule
+fois, sur un volume `mysql_data` vierge :
+
+| Ordre | Fichier | Contenu |
+|-------|---------|---------|
+| 01 | `database/init.sql` | Schéma complet — structure seule, aucun `DROP`, rejouable |
+| 02 | `database/seeds/bootstrap.sql` | Hôtel #1, super-admin, catégories, thème, aéroports |
+| 03 | `database/seeds/data_live.sql` | Données réelles exportées, en `REPLACE INTO` |
+
+Deux modes de déploiement, décidés **avant le premier démarrage** :
+
+- **Avec les données** (défaut) — rien à faire, `data_live.sql` est chargé.
+- **Base vierge** — commenter la ligne `03_data_live.sql` dans `docker-compose.yml`.
+  Résultat : un hôtel, un compte super-admin, les catégories, zéro contenu métier.
+
+Le mot de passe du super-admin (`admin@iconnectbe.com`) est initialisé au démarrage du backend
+depuis la variable `ADMIN_PASSWORD` du `.env` — `bootstrap.sql` ne pose qu'un hash placeholder.
+
+Les évolutions de schéma postérieures sont appliquées automatiquement au démarrage du backend
+par `backend/src/services/runMigrations.js` (migrations idempotentes).
 
 > **Clés API** — le fichier `.env` ne doit jamais être commité. Le transférer manuellement :
 > ```bash
