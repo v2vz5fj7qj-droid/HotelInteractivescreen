@@ -73,6 +73,23 @@ router.get('/search', async (req, res) => {
     }
   }
 
+  // Une recherche par numéro contient toujours un chiffre (ex: AH110, ET932) ;
+  // une recherche par compagnie est purement textuelle (ex: "Ethiopian").
+  const isFlightNumberQuery = /\d/.test(rawQuery);
+
+  if (isFlightNumberQuery) {
+    allFound.sort((a, b) =>
+      (a.flight_number || '').localeCompare(b.flight_number || '', undefined, { numeric: true, sensitivity: 'base' })
+    );
+  } else {
+    const timeKey = (f) => {
+      const iso = f.departure?.scheduled || f.departure?.estimated || f.departure?.actual ||
+                  f.arrival?.scheduled   || f.arrival?.estimated   || f.arrival?.actual;
+      return iso ? new Date(iso).getTime() : Infinity;
+    };
+    allFound.sort((a, b) => timeKey(a) - timeKey(b));
+  }
+
   return res.json({ flights: allFound });
 });
 
