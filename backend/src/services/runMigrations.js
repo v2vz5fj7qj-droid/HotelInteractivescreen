@@ -221,6 +221,15 @@ async function tableExists(tableName) {
   return row.cnt > 0;
 }
 
+async function constraintExists(table, constraintName) {
+  const [[row]] = await db.query(
+    `SELECT COUNT(*) AS cnt FROM information_schema.TABLE_CONSTRAINTS
+     WHERE table_schema = DATABASE() AND table_name = ? AND constraint_name = ?`,
+    [table, constraintName]
+  );
+  return row.cnt > 0;
+}
+
 async function migration014() {
   if (await tableExists('kiosks')) return;
   await db.query(`
@@ -282,23 +291,73 @@ async function migration016() {
   console.log(`[migration016] Mot de passe super-admin (${placeholderAccount.email}) initialisé depuis ADMIN_PASSWORD`);
 }
 
+// Pendant JS de database/migrations/014_qr_tokens_hotel_id.sql.
+// Numéroté 017 et non 014 : la numérotation de ce runner est indépendante de
+// celle des fichiers database/migrations/ et 014 y est déjà pris par kiosks.
+async function migration017() {
+  if (!(await columnExists('qr_tokens', 'hotel_id'))) {
+    await db.query('ALTER TABLE qr_tokens ADD COLUMN hotel_id INT NULL AFTER token');
+    console.log('[migration017] qr_tokens : colonne hotel_id ajoutée');
+  }
+
+  if (!(await constraintExists('qr_tokens', 'fk_qr_tokens_hotel'))) {
+    // Rattacher les tokens antérieurs au multi-hôtel au premier hôtel existant,
+    // sinon la clé étrangère refuserait les lignes orphelines. On ne code pas
+    // l'id 1 en dur : cet hôtel a pu être supprimé.
+    const [[fallback]] = await db.query('SELECT MIN(id) AS id FROM hotels');
+    if (fallback.id !== null) {
+      await db.query('UPDATE qr_tokens SET hotel_id = ? WHERE hotel_id IS NULL', [fallback.id]);
+    } else {
+      // Aucun hôtel : les tokens orphelins n'ont plus de cible, on purge.
+      await db.query('DELETE FROM qr_tokens WHERE hotel_id IS NULL');
+    }
+
+    await db.query(
+      `ALTER TABLE qr_tokens
+         ADD CONSTRAINT fk_qr_tokens_hotel
+         FOREIGN KEY (hotel_id) REFERENCES hotels(id) ON DELETE CASCADE`
+    );
+    console.log('[migration017] qr_tokens : clé étrangère vers hotels créée');
+  }
+}
+
+// Chaque migration est isolée : une erreur sur l'une n'empêche pas les
+// suivantes de s'appliquer. Un try/catch global masquait les migrations
+// postérieures au premier échec, laissant un schéma incomplet en silence.
+const MIGRATIONS = [
+  ['003 categories.hotel_id',      migration003],
+  ['004 hotel_tips.translations',  migration004],
+  ['007 welcome_messages',         migration007],
+  ['008 welcome_messages i18n',    migration008],
+  ['009 banner_images',            migration009],
+  ['010 feedbacks',                migration010],
+  ['011 hotel_settings.font_file', migration011],
+  ['012 devise_config',            migration012],
+  ['013 hotel_tips.is_notif',      migration013],
+  ['014 kiosks',                   migration014],
+  ['015 kiosk_keys',               migration015],
+  ['016 mot de passe super-admin', migration016],
+  ['017 qr_tokens.hotel_id',       migration017],
+];
+
 async function runMigrations() {
-  try {
-    await migration003();
-    await migration004();
-    await migration007();
-    await migration008();
-    await migration009();
-    await migration010();
-    await migration011();
-    await migration012();
-    await migration013();
-    await migration014();
-    await migration015();
-    await migration016();
+  const failed = [];
+
+  for (const [label, fn] of MIGRATIONS) {
+    try {
+      await fn();
+    } catch (err) {
+      failed.push(label);
+      console.error(`[runMigrations] ❌ ${label} : ${err.message}`);
+    }
+  }
+
+  if (failed.length === 0) {
     console.log('✅ Migrations : OK');
-  } catch (err) {
-    console.error('[runMigrations] Erreur :', err.message);
+  } else {
+    console.error(
+      `⚠️  Migrations : ${failed.length}/${MIGRATIONS.length} en échec — ${failed.join(', ')}`
+    );
   }
 }
 
