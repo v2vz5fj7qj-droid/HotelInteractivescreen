@@ -280,6 +280,28 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 | `HOTEL_AIRPORT_IATA`      | Code IATA aéroport par défaut (héritage v1)   | Non (OUA)        |
 | `IDLE_TIMEOUT_MS`         | Délai inactivité avant retour accueil (ms)    | Non (60000)      |
 | `QR_TOKEN_TTL_MIN`        | Durée de vie des tokens QR (minutes)          | Non (10)         |
+| `CORS_ORIGINS`            | Origines autorisées à appeler l'API, séparées par des virgules | Non (`http://localhost:3000,http://localhost:5173`) |
+
+### Accès depuis un autre appareil (test mobile / kiosque)
+
+Le navigateur envoie comme origine l'adresse tapée dans la barre d'URL. En ouvrant le front
+depuis un téléphone sur `http://192.168.x.x:5173`, l'origine n'est plus `localhost` et le backend
+répond `CORS: origine non autorisée`.
+
+- **En développement** (`NODE_ENV` ≠ `production`), les origines en IP privée
+  (`localhost`, `127.0.0.1`, `10.x`, `172.16–31.x`, `192.168.x`) sont acceptées automatiquement :
+  rien à configurer, même si l'IP DHCP de la machine change.
+- **En production**, seule la liste `CORS_ORIGINS` est acceptée — y renseigner le domaine public :
+
+  ```bash
+  CORS_ORIGINS=https://kiosque.monhotel.com,https://admin.monhotel.com
+  ```
+
+Après modification du `.env`, redémarrer le backend pour recharger les variables :
+
+```bash
+docker compose restart backend
+```
 
 ---
 

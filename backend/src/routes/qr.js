@@ -1,8 +1,10 @@
 // Route QR Code — lien mobile vers le kiosque
 // POST /api/qr/token          → génère un token signé (TTL configurable via QR_TOKEN_TTL_MIN)
-// GET  /api/qr/validate/:token → valide le token et retourne la section + locale cibles
+// GET  /api/qr/validate/:token → valide le token et retourne l'hôtel + la section + locale cibles
 // Le token est stocké en base et utilisé par MobileGate pour rediriger le téléphone
 // vers la bonne section de la borne (météo, vols, carte, bien-être, infos).
+// Le hotel_id est porté par le token : le téléphone n'a aucun contexte hôtel
+// (pas de HotelProvider dans l'URL /mobile/:section), c'est la validation qui le lui donne.
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const router  = express.Router();
@@ -14,9 +16,14 @@ const VALID_SECTIONS = ['weather', 'flights', 'map', 'wellness', 'info'];
 // POST /api/qr/token — génère un token signé avec TTL
 router.post('/token', async (req, res) => {
   const { section = 'weather', locale = 'fr' } = req.body;
+  const hotelId = parseInt(req.body.hotel_id, 10);
 
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ error: 'Section invalide' });
+  }
+
+  if (!Number.isInteger(hotelId)) {
+    return res.status(400).json({ error: 'hotel_id requis' });
   }
 
   const token     = uuidv4();
@@ -24,8 +31,8 @@ router.post('/token', async (req, res) => {
 
   try {
     await db.query(
-      'INSERT INTO qr_tokens (token, section, locale, expires_at) VALUES (?, ?, ?, ?)',
-      [token, section, locale, expiresAt]
+      'INSERT INTO qr_tokens (token, hotel_id, section, locale, expires_at) VALUES (?, ?, ?, ?, ?)',
+      [token, hotelId, section, locale, expiresAt]
     );
 
     // Nettoyage opportuniste des tokens expirés (sans bloquer la réponse)
@@ -53,7 +60,10 @@ router.get('/validate/:token', async (req, res) => {
 
   try {
     const [rows] = await db.query(
-      'SELECT section, locale, expires_at FROM qr_tokens WHERE token = ?',
+      `SELECT q.section, q.locale, q.expires_at, q.hotel_id, h.slug AS hotel_slug
+         FROM qr_tokens q
+         LEFT JOIN hotels h ON h.id = q.hotel_id
+        WHERE q.token = ?`,
       [token]
     );
 
@@ -61,13 +71,18 @@ router.get('/validate/:token', async (req, res) => {
       return res.status(404).json({ valid: false, reason: 'Token inconnu' });
     }
 
-    const { section, locale, expires_at } = rows[0];
+    const { section, locale, expires_at, hotel_id, hotel_slug } = rows[0];
 
     if (new Date(expires_at) < new Date()) {
       return res.status(410).json({ valid: false, reason: 'Token expiré' });
     }
 
-    res.json({ valid: true, section, locale });
+    // L'hôtel a été supprimé depuis la génération du token
+    if (!hotel_slug) {
+      return res.status(404).json({ valid: false, reason: 'Hôtel introuvable' });
+    }
+
+    res.json({ valid: true, section, locale, hotel_id, hotel_slug });
   } catch (err) {
     console.error('[QR validate]', err.message);
     res.status(500).json({ error: 'Erreur validation token' });

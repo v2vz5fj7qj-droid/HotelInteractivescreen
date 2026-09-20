@@ -371,6 +371,7 @@
 /* ─── Séparateur de jour ───────────────────────────────── */
 .dayDivider {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: clamp(10px, 1.4vw, 22px);
   padding: clamp(12px, 1.8vh, 30px) clamp(12px, 1.6vw, 28px) clamp(6px, 1vh, 16px);
@@ -396,6 +397,10 @@
   min-height: clamp(58px, 6.1vh, 132px);
   padding: clamp(8px, 1.1vh, 18px) clamp(12px, 1.6vw, 28px);
   border-bottom: 1px solid var(--c-border);
+  /* .flightList est un conteneur flex colonne : sans ceci les lignes se
+     compriment sous la hauteur de leur contenu, qui déborde alors sur la
+     ligne suivante (visible dès que la liste est plus haute que l'écran). */
+  flex-shrink: 0;
 }
 
 .cellTime { display: flex; flex-direction: column; min-width: 0; }
@@ -699,4 +704,16 @@
   .routeSideEnd { align-items: flex-start; text-align: start; }
   .routeLink { flex: none; padding-block: 10px; padding-top: 0; }
   .routeIcon { transform: rotate(45deg); }
+}
+
+/* ─── Téléphone (vue QR mobile) ─────────────────────────
+   Le BackButton (absolu, en haut à gauche) n'est pas rendu hors kiosque :
+   le padding haut qui lui était réservé devient de l'espace mort sur un
+   petit écran. On ne garde que la hauteur du LanguageSwitcher. */
+@media (max-width: 600px) {
+  .page {
+    padding-top: 56px;
+    padding-left:  16px;
+    padding-right: 16px;
+  }
 }

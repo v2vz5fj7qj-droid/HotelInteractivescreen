@@ -373,3 +373,15 @@
   .grid { grid-template-columns: 1fr; }
   .detailMeta { grid-template-columns: 1fr; }
 }
+
+/* ─── Téléphone (vue QR mobile) ─────────────────────────
+   Le BackButton (absolu, en haut à gauche) n'est pas rendu hors kiosque :
+   le padding haut qui lui était réservé devient de l'espace mort sur un
+   petit écran. On ne garde que la hauteur du LanguageSwitcher. */
+@media (max-width: 600px) {
+  .page {
+    padding-top: 56px;
+    padding-left:  16px;
+    padding-right: 16px;
+  }
+}

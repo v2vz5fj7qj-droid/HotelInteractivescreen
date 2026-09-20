@@ -387,3 +387,30 @@
 :global(.leaflet-popup-connectbe .leaflet-popup-tip)         { background: #1A1005; }
 :global(.leaflet-popup-connectbe .leaflet-popup-close-button){ color: rgba(245,230,200,.6) !important; }
 
+
+/* ─── Téléphone (vue QR mobile) ─────────────────────────
+   Le BackButton n'est pas rendu hors kiosque : on ne réserve plus que la
+   place du LanguageSwitcher à droite. Sans ceci, les 120px de padding
+   gauche écrasent les filtres de catégories sur un écran de 390px. */
+@media (max-width: 600px) {
+  /* On réserve la place du LanguageSwitcher sur le header lui-même : en la
+     mettant sur .categories, la bande scrollable passait sous le bouton. */
+  .header {
+    height: 56px;
+    padding-right: 64px;
+  }
+
+  .categories {
+    padding-left:  12px;
+    padding-right: 12px;
+  }
+
+  .zoomHint  { top: 3.4rem; }
+  .zoomHint,
+  .offlineTag,
+  .legend {
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+    text-align: center;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useTheme }    from '../../../contexts/ThemeContext';
+import { useHotel }    from '../../../contexts/HotelContext';
 import { trackEvent }  from '../../../services/analytics';
 import api             from '../../../services/api';
 import BackButton      from '../../BackButton/BackButton';
@@ -22,6 +23,7 @@ const REFRESH_THRESHOLD_SEC = 60;
 export default function MobileTransfer() {
   const { t, locale }    = useLanguage();
   const { config }       = useTheme();
+  const { hotel }        = useHotel();
   const [active, setActive] = useState('weather');
 
   const [tokenData, setTokenData] = useState(null); // { token, expiresAt }
@@ -32,11 +34,12 @@ export default function MobileTransfer() {
   const countdownRef = useRef(null);
 
   // ── Génère un nouveau token via l'API ──────────────────
-  const fetchToken = useCallback(async (section, loc) => {
+  const fetchToken = useCallback(async (section, loc, hotelId) => {
+    if (!hotelId) return;          // config hôtel pas encore chargée
     setLoading(true);
     setError(false);
     try {
-      const { data } = await api.post('/qr/token', { section, locale: loc });
+      const { data } = await api.post('/qr/token', { section, locale: loc, hotel_id: hotelId });
       setTokenData(data);
       setTimeLeft(Math.floor((new Date(data.expiresAt) - Date.now()) / 1000));
     } catch (err) {
@@ -53,8 +56,8 @@ export default function MobileTransfer() {
   }, []);
 
   useEffect(() => {
-    fetchToken(active, locale);
-  }, [active, locale, fetchToken]);
+    fetchToken(active, locale, hotel?.id);
+  }, [active, locale, hotel?.id, fetchToken]);
 
   // ── Countdown & auto-refresh ───────────────────────────
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function MobileTransfer() {
 
         // Auto-refresh quand il reste REFRESH_THRESHOLD_SEC secondes
         if (next === REFRESH_THRESHOLD_SEC) {
-          fetchToken(active, locale);
+          fetchToken(active, locale, hotel?.id);
         }
 
         return next;
@@ -75,7 +78,7 @@ export default function MobileTransfer() {
     }, 1000);
 
     return () => clearInterval(countdownRef.current);
-  }, [tokenData, active, locale, fetchToken]);
+  }, [tokenData, active, locale, hotel?.id, fetchToken]);
 
   // ── Changement de section ──────────────────────────────
   const handleSelect = (id) => {
@@ -117,7 +120,7 @@ export default function MobileTransfer() {
                 <p className={styles.errorText}>⚠️ {t('mobile.token_error')}</p>
                 <button
                   className={styles.retryBtn}
-                  onClick={() => fetchToken(active, locale)}
+                  onClick={() => fetchToken(active, locale, hotel?.id)}
                 >
                   {t('mobile.retry')}
                 </button>

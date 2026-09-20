@@ -5,8 +5,11 @@ import { setHotelId } from '../services/hotelStore';
 
 const HotelContext = createContext(null);
 
-export function HotelProvider({ children }) {
-  const { hotelSlug } = useParams();
+// `slug` permet de monter le provider hors d'une route /:hotelSlug (cas du
+// QR mobile, où le slug vient du token et non de l'URL). Sinon on lit l'URL.
+export function HotelProvider({ children, slug }) {
+  const { hotelSlug: slugFromRoute } = useParams();
+  const hotelSlug = slug || slugFromRoute;
 
   const [hotel,        setHotel]        = useState(null);
   const [settings,     setSettings]     = useState(null);

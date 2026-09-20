@@ -7,7 +7,10 @@ export default function BackButton({ to, label }) {
   const navigate        = useNavigate();
   const { t }           = useLanguage();
   const { hotelSlug }   = useParams();
-  const destination     = to ?? `/${hotelSlug}`;
+  const destination     = to ?? (hotelSlug ? `/${hotelSlug}` : null);
+
+  // Hors kiosque (vue mobile QR) il n'y a pas de menu où revenir
+  if (!destination) return null;
 
   return (
     <button

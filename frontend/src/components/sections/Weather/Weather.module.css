@@ -31,6 +31,10 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
+  /* Le sélecteur passe en nowrap + scroll horizontal en portrait : sans ceci
+     les boutons se compriment et le texte déborde de la pastille. */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .localityBtnActive {
   background: var(--c-primary);
@@ -368,4 +372,16 @@
 
   /* Prévisions horaires adaptées */
   .hourlyCard { min-width: clamp(46px, 13vw, 64px); }
+}
+
+/* ─── Téléphone (vue QR mobile) ─────────────────────────
+   Le BackButton (absolu, en haut à gauche) n'est pas rendu hors kiosque :
+   le padding haut qui lui était réservé devient de l'espace mort sur un
+   petit écran. On ne garde que la hauteur du LanguageSwitcher. */
+@media (max-width: 600px) {
+  .page {
+    padding-top: 56px;
+    padding-left:  16px;
+    padding-right: 16px;
+  }
 }

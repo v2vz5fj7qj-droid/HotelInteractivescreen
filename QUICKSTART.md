@@ -248,6 +248,35 @@ pour accéder au backoffice sans lien visible.
 
 ---
 
+## Tester depuis un téléphone
+
+Utile pour vérifier le transfert mobile (QR code) ou l'affichage de la borne sur un vrai appareil.
+
+1. Récupérer l'IP locale de la machine qui fait tourner le projet :
+
+   ```bash
+   # macOS
+   ipconfig getifaddr en0
+   # Linux
+   hostname -I | awk '{print $1}'
+   ```
+
+2. Sur le téléphone, connecté au **même réseau Wi-Fi**, ouvrir `http://<IP>:5173`
+   (par exemple `http://192.168.11.111:5173`).
+
+> **Erreur `CORS: origine non autorisée — http://192.168.x.x:5173` dans les logs backend ?**
+> Le navigateur envoie comme origine l'adresse tapée dans la barre d'URL : ce n'est plus
+> `localhost`, donc le backend la refuse si elle n'est pas autorisée.
+> En développement (`NODE_ENV` ≠ `production`) les IP du réseau local sont acceptées d'office.
+> Sinon, ajouter l'origine dans le `.env` puis redémarrer le backend :
+>
+> ```bash
+> CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://192.168.11.111:5173
+> docker compose restart backend
+> ```
+
+---
+
 ## Sauvegarder et versionner les données
 
 Les données saisies en backoffice (hôtels, événements, lieux, services, paramètres…) vivent dans
@@ -295,6 +324,7 @@ Les valeurs à renseigner obligatoirement :
 | `FLIGHTAPI_KEY` | Vols temps réel (optionnel — mode mock si absent) |
 | `ORS_API_KEY` | Itinéraires carte, proxifié côté backend (optionnel) |
 | `VITE_CARTO_API_KEY` | Fond de carte CARTO (optionnel — sans clé, le fond de carte affiche "API KEY REQUIRED") |
+| `CORS_ORIGINS` | Origines autorisées à appeler l'API, séparées par des virgules (optionnel — défaut `http://localhost:3000,http://localhost:5173`). En production, y mettre le domaine public ; en développement les IP du réseau local sont acceptées d'office, voir [Tester depuis un téléphone](#tester-depuis-un-téléphone) |
 
 > Pour transférer le `.env` entre machines sans le commiter, utiliser `scp` ou un gestionnaire de secrets (Bitwarden, 1Password, etc.).
 > ```bash

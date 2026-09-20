@@ -111,10 +111,15 @@ app.use(helmet({
 
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173')
   .split(',').map(o => o.trim());
+// En développement, autoriser aussi les IP privées (LAN) : indispensable pour
+// tester le kiosque ou le transfert mobile depuis un autre appareil du réseau.
+const LAN_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(cors({
   origin: (origin, cb) => {
     // Autoriser les requêtes sans origine (Postman, curl, appels serveur-à-serveur)
     if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (isDev && LAN_ORIGIN.test(origin)) return cb(null, true);
     cb(new Error(`CORS: origine non autorisée — ${origin}`));
   },
   credentials: true,
