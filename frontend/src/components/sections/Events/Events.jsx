@@ -25,6 +25,11 @@ export default function Events() {
   const params = { locale, upcoming: true, ...(category !== 'all' && { category }) };
   const { data, loading, error } = useApi('/events', params, { deps: [locale, category] });
 
+  const groupedSections = useMemo(() => {
+    if (!data?.length) return [];
+    return groupEventsByDate(data.filter(e => !e.is_featured));
+  }, [data]);
+
   useEffect(() => { trackEvent('events', 'open'); }, []);
 
   if (selected) {
@@ -81,9 +86,9 @@ export default function Events() {
 
         {!loading && data?.length > 0 && (
           <>
-            {/* Événements à la une */}
+            {/* Événements à la une — défilement horizontal, hauteur fixe */}
             {data.some(e => e.is_featured) && (
-              <div className={styles.featuredRow}>
+              <div className={styles.featuredScroll}>
                 {data.filter(e => e.is_featured).map(ev => (
                   <EventCardFeatured
                     key={ev.id}
@@ -100,24 +105,31 @@ export default function Events() {
               </div>
             )}
 
-            {/* Autres événements */}
-            {data.some(e => !e.is_featured) && (
-              <div className={styles.listGrid}>
-                {data.filter(e => !e.is_featured).map(ev => (
-                  <EventCardSmall
-                    key={ev.id}
-                    event={ev}
-                    t={t}
-                    locale={locale}
-                    catMeta={catMeta}
-                    onClick={() => {
-                      setSelected(ev);
-                      trackEvent('events', 'view', { event: ev.slug });
-                    }}
-                  />
-                ))}
+            {/* Autres événements — regroupés par date pour rester lisibles en nombre */}
+            {groupedSections.map(group => (
+              <div key={group.key} className={styles.dateGroup}>
+                <div className={styles.dateGroupHeader}>
+                  <span className={styles.dateGroupLabel}>{t(`events.groups.${group.key}`)}</span>
+                  <span className={styles.dateGroupCount}>{group.events.length}</span>
+                  <div className={styles.dateGroupRule} />
+                </div>
+                <div className={styles.compactGrid}>
+                  {group.events.map(ev => (
+                    <EventCardCompact
+                      key={ev.id}
+                      event={ev}
+                      t={t}
+                      locale={locale}
+                      catMeta={catMeta}
+                      onClick={() => {
+                        setSelected(ev);
+                        trackEvent('events', 'view', { event: ev.slug });
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
-            )}
+            ))}
           </>
         )}
       </div>
@@ -157,46 +169,38 @@ function EventCardFeatured({ event, t, locale, catMeta, onClick }) {
         <p className={styles.cardFeaturedDesc}>{event.description}</p>
 
         <div className={styles.cardMeta}>
-          <span>📅 {formatDateRange(event, t, locale)}</span>
-          {event.start_time && <span>🕐 {event.start_time.slice(0, 5)}</span>}
-          <span>📍 {event.location}</span>
+          <span className={styles.cardMetaDate}>
+            {event.is_recurrent ? `🔁 ${event.recurrence_label}` : `📅 ${formatShortDate(event, locale)}`}
+            {event.start_time && ` · 🕐 ${event.start_time.slice(0, 5)}`}
+          </span>
+          <span className={styles.cardMetaLocation}>📍 {event.location}</span>
         </div>
       </div>
     </button>
   );
 }
 
-/* ── Carte normale (petite) ───────────────────────────── */
-function EventCardSmall({ event, t, locale, catMeta, onClick }) {
+/* ── Carte compacte (liste groupée par date) ───────────── */
+function EventCardCompact({ event, t, locale, catMeta, onClick }) {
   const cat = catMeta?.[event.category];
   const catIcon  = cat?.icon  || '🗓️';
-  const catLabel = locale === 'fr' ? (cat?.label_fr || event.category) : (cat?.label_en || event.category);
   return (
-    <button className={styles.cardSmall} onClick={onClick}>
-      <div className={styles.cardSmallDate}>
-        <span className={styles.cardSmallDay}>
-          {new Date(event.start_date).toLocaleDateString(locale === 'fr' ? 'fr-BF' : 'en-GB', { day: '2-digit' })}
+    <button className={styles.cardCompact} onClick={onClick}>
+      <span className={`${styles.cardCompactIcon} ${styles[`cat_${event.category}`]}`} aria-hidden="true">
+        {event.is_recurrent ? '🔁' : catIcon}
+      </span>
+      <span className={styles.cardCompactBody}>
+        <span className={styles.cardCompactTitle}>{event.title}</span>
+        <span className={styles.cardCompactDate}>
+          {event.is_recurrent ? `🔁 ${event.recurrence_label}` : `📅 ${formatShortDate(event, locale)}`}
+          {event.start_time && ` · 🕐 ${event.start_time.slice(0, 5)}`}
         </span>
-        <span className={styles.cardSmallMonth}>
-          {new Date(event.start_date).toLocaleDateString(locale === 'fr' ? 'fr-BF' : 'en-GB', { month: 'short' })}
-        </span>
-      </div>
-
-      <div className={styles.cardSmallBody}>
-        <div className={styles.cardSmallTop}>
-          <span className={`${styles.categoryBadge} ${styles[`cat_${event.category}`]}`}>
-            {catIcon} {catLabel}
-          </span>
-          <span className={`${styles.priceBadge} ${event.is_free ? styles.priceFree : ''}`}>
-            {event.is_free ? t('events.free') : `${event.price_fcfa.toLocaleString('fr-BF')} F`}
-          </span>
-        </div>
-        <h3 className={styles.cardSmallTitle}>{event.title}</h3>
-        <p className={styles.cardSmallLocation}>📍 {event.location}</p>
-        {event.start_time && (
-          <p className={styles.cardSmallTime}>🕐 {event.start_time.slice(0, 5)}</p>
-        )}
-      </div>
+        <span className={styles.cardCompactLocation}>📍 {event.location}</span>
+      </span>
+      {event.is_hotel && <span className={styles.cardCompactHotel} aria-label={t('events.hotel_event')}>🏨</span>}
+      <span className={`${styles.cardCompactPrice} ${event.is_free ? styles.priceFree : ''}`}>
+        {event.is_free ? t('events.free') : `${event.price_fcfa.toLocaleString('fr-BF')} F`}
+      </span>
     </button>
   );
 }
@@ -247,8 +251,8 @@ function EventDetail({ event, t, locale, catMeta, onBack }) {
 
           {/* Informations pratiques */}
           <div className={styles.detailMeta}>
-            <MetaItem icon="📅" label={event.end_date ? t('events.from') : t('events.on')}>
-              {formatDateRange(event, t, locale)}
+            <MetaItem icon="📅" label={event.is_recurrent ? t('events.on') : (event.end_date ? t('events.from') : t('events.on'))}>
+              {event.is_recurrent ? event.recurrence_label : formatDateRange(event, t, locale)}
             </MetaItem>
 
             {event.start_time && (
@@ -289,6 +293,27 @@ function MetaItem({ icon, label, children }) {
   );
 }
 
+/* ── Regroupement par date (lisibilité quand il y a beaucoup d'événements) ── */
+function groupEventsByDate(events) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const buckets = { today: [], tomorrow: [], this_week: [], later: [] };
+  events.forEach(ev => {
+    const evDate = new Date(ev.start_date);
+    evDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((evDate - today) / 86400000);
+    if (diffDays <= 0)      buckets.today.push(ev);
+    else if (diffDays === 1) buckets.tomorrow.push(ev);
+    else if (diffDays <= 7)  buckets.this_week.push(ev);
+    else                     buckets.later.push(ev);
+  });
+
+  return ['today', 'tomorrow', 'this_week', 'later']
+    .map(key => ({ key, events: buckets[key] }))
+    .filter(group => group.events.length > 0);
+}
+
 /* ── Utilitaire dates ─────────────────────────────────── */
 function formatDateRange(event, t, locale) {
   const loc = locale === 'fr' ? 'fr-BF' : 'en-GB';
@@ -297,4 +322,14 @@ function formatDateRange(event, t, locale) {
   if (!event.end_date) return start;
   const end = new Date(event.end_date).toLocaleDateString(loc, opts);
   return `${start} ${t('events.to')} ${end}`;
+}
+
+/* Version courte (carte compacte) : "20 sept" ou "20–25 sept" */
+function formatShortDate(event, locale) {
+  const loc = locale === 'fr' ? 'fr-BF' : 'en-GB';
+  const opts = { day: 'numeric', month: 'short' };
+  const start = new Date(event.start_date).toLocaleDateString(loc, opts);
+  if (!event.end_date) return start;
+  const end = new Date(event.end_date).toLocaleDateString(loc, opts);
+  return `${start} – ${end}`;
 }

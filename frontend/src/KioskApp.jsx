@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useState, useRef, useCallback } from 
 import { Routes, Route, useParams, useSearchParams } from 'react-router-dom';
 import { HotelProvider, useHotel } from './contexts/HotelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { LinkModalProvider } from './contexts/LinkModalContext';
 import { SUPPORTED_LOCALES } from './contexts/LanguageContext';
 import IdleTimer          from './components/IdleTimer/IdleTimer';
 import KioskLayout        from './components/KioskLayout';
@@ -190,20 +191,29 @@ function KioskDeviceGate({ children }) {
 
 // ── App principale kiosque ─────────────────────────────────────────
 export default function KioskApp() {
+  // Mode kiosque : bloquer le menu contextuel (clic droit / appui long)
+  useEffect(() => {
+    const blockContextMenu = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', blockContextMenu);
+    return () => document.removeEventListener('contextmenu', blockContextMenu);
+  }, []);
+
   return (
     <KioskDeviceGate>
       <HotelProvider>
         <ThemeProvider>
-          <Suspense fallback={
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '100vw', height: '100vh', background: '#1A1208',
-            }}>
-              <div className="spinner" aria-label="Chargement…" />
-            </div>
-          }>
-            <KioskRoutes />
-          </Suspense>
+          <LinkModalProvider>
+            <Suspense fallback={
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '100vw', height: '100vh', background: '#1A1208',
+              }}>
+                <div className="spinner" aria-label="Chargement…" />
+              </div>
+            }>
+              <KioskRoutes />
+            </Suspense>
+          </LinkModalProvider>
         </ThemeProvider>
       </HotelProvider>
     </KioskDeviceGate>

@@ -387,14 +387,18 @@
 .managerTitle { font-size: 1.4rem; font-weight: 800; color: var(--a-text); margin: 0 0 4px; }
 .managerSub   { font-size: 0.85rem; color: var(--a-muted); margin: 0; }
 
-/* Toast notification */
+/* Toast notification — position fixe pour rester visible même sur un formulaire long
+   où le bouton d'action est loin en dessous du haut de page (ex: Convertisseur devises). */
 .toast {
+  position: fixed; top: 20px; right: 20px; z-index: 300;
+  min-width: 220px; max-width: 420px;
   padding: 10px 16px; border-radius: var(--a-radius);
   background: var(--a-success); color: #fff;
   font-size: 0.87rem; font-weight: 600;
-  margin-bottom: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
   animation: fadeIn 0.2s ease;
 }
+.toastError { background: var(--a-danger); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Table extras */

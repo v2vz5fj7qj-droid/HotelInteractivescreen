@@ -33,7 +33,7 @@ INSERT INTO theme_config (config_key, config_value, label) VALUES
 ('logo_url',            '/images/logo.png',   'URL du logo hôtel'),
 ('logo_url_dark',       '/images/logo-dark.png', 'Logo pour fond sombre'),
 ('banner_image_url',    'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1400&q=80', 'Image de fond bannière accueil'),
-('idle_timeout_ms',     '30000',              'Délai inactivité avant retour menu (ms)'),
+('idle_timeout_ms',     '60000',              'Délai inactivité avant retour menu (ms)'),
 ('fullscreen_password', 'fs1234',             'Mot de passe pour quitter le mode plein écran'),
 ('flight_airport_iata',     'OUA',   'Code IATA aéroport des vols'),
 ('flight_refresh_interval', '5',     'Intervalle rafraîchissement automatique vols (minutes)'),

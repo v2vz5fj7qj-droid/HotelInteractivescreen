@@ -24,13 +24,16 @@ async function hasSubmittedToday(hotel_id, ip) {
   return rows[0].cnt > 0;
 }
 
-// Liste les avis d'un hôtel avec filtres optionnels (plage de dates, note minimale) et pagination.
-async function list({ hotel_id, limit = 50, offset = 0, from, to, min_note }) {
+// Liste les avis d'un hôtel avec filtres optionnels (plage de dates, note minimale,
+// présence d'un commentaire, recherche plein texte dans le commentaire) et pagination.
+async function list({ hotel_id, limit = 50, offset = 0, from, to, min_note, has_comment, q }) {
   const params = [hotel_id];
   let where = 'WHERE hotel_id = ?';
-  if (from)     { where += ' AND DATE(created_at) >= ?'; params.push(from); }
-  if (to)       { where += ' AND DATE(created_at) <= ?'; params.push(to); }
-  if (min_note) { where += ' AND note_globale >= ?';     params.push(parseFloat(min_note)); }
+  if (from)        { where += ' AND DATE(created_at) >= ?';            params.push(from); }
+  if (to)          { where += ' AND DATE(created_at) <= ?';            params.push(to); }
+  if (min_note)    { where += ' AND note_globale >= ?';                params.push(parseFloat(min_note)); }
+  if (has_comment) { where += " AND commentaire IS NOT NULL AND commentaire != ''"; }
+  if (q)           { where += ' AND commentaire LIKE ?';               params.push(`%${q}%`); }
 
   const [rows] = await db.query(
     `SELECT id, categories, commentaire, note_globale, locale, created_at
@@ -56,7 +59,9 @@ async function stats(hotel_id) {
        ROUND(AVG(JSON_EXTRACT(categories, '$.accueil')),     2) AS moy_accueil,
        ROUND(AVG(JSON_EXTRACT(categories, '$.chambre')),     2) AS moy_chambre,
        ROUND(AVG(JSON_EXTRACT(categories, '$.restauration')),2) AS moy_restauration,
-       ROUND(AVG(JSON_EXTRACT(categories, '$.services')),    2) AS moy_services
+       ROUND(AVG(JSON_EXTRACT(categories, '$.services')),    2) AS moy_services,
+       SUM(CASE WHEN commentaire IS NOT NULL AND commentaire != '' THEN 1 ELSE 0 END) AS avec_commentaire,
+       SUM(CASE WHEN note_globale <= 2.5 THEN 1 ELSE 0 END) AS a_surveiller
      FROM feedbacks WHERE hotel_id = ?`,
     [hotel_id]
   );

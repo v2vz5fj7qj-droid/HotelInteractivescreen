@@ -17,10 +17,10 @@
     "banner_line2":         "est",
     "banner_accent":        "connecté",
     "services":             "Nos services",
-    "wellness_sub":         "Massages & soins",
+    "wellness_sub":         "Divers et plus",
     "flights_sub":          "Horaires & statuts",
     "events_sub":           "Agenda local",
-    "map_sub":              "Explorer la ville",
+    "map_sub":              "Explorer la zone",
     "notif_title":          "Bon à savoir",
     "notif_title_notif":    "Notification",
     "notif_msg":            "Cocktail de bienvenue ce soir à 18h",
@@ -42,7 +42,9 @@
     "website":    "Site web",
     "today":      "Aujourd'hui",
     "offline_banner": "Mode hors-ligne — Données en cache",
-    "change_language": "Changer de langue"
+    "change_language": "Changer de langue",
+    "link_loading": "Chargement du contenu…",
+    "link_unavailable": "Ce contenu ne peut pas s'afficher ici."
   },
   "weather": {
     "title":          "Météo",
@@ -91,7 +93,21 @@
     },
     "airport":     "Aéroport International de Ouagadougou",
     "no_results":  "Aucun vol trouvé",
-    "error":       "Informations de vols indisponibles"
+    "error":       "Informations de vols indisponibles",
+    "time": "Heure",
+    "origin": "Provenance",
+    "destination": "Destination",
+    "status_col": "Statut",
+    "search_label": "Rechercher un numéro de vol",
+    "clear_search": "Effacer la recherche",
+    "updated_now": "Horaires actualisés à l'instant",
+    "updated_ago": "Horaires actualisés il y a {{min}} min",
+    "stale_ago": "Horaires datant de {{min}} min",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "total": "{{n}} vols",
+    "local_times": "Heures locales",
+    "pending": "Chargement des horaires en cours"
   },
   "map": {
     "title":         "Carte & Points d'intérêt",
@@ -118,6 +134,7 @@
     "price":          "Tarif",
     "minutes":        "min",
     "fcfa":           "F CFA",
+    "free":           "Gratuit",
     "available_hours":"Horaires",
     "available_days": "Disponible",
     "how_to_book":    "Comment réserver",
@@ -156,6 +173,12 @@
       "festival":    "Festivals",
       "exhibition":  "Expositions",
       "hotel":       "À l'hôtel"
+    },
+    "groups": {
+      "today":       "Aujourd'hui",
+      "tomorrow":    "Demain",
+      "this_week":   "Cette semaine",
+      "later":       "Plus tard"
     },
     "free":          "Gratuit",
     "price":         "Entrée",
@@ -198,6 +221,7 @@
     "welcome_title":         "Aidez-nous à améliorer votre séjour !",
     "welcome_sub":           "Notez-nous en 1 minute — votre avis compte vraiment",
     "start":                 "Commencer",
+    "step_counter":          "Étape {{n}} sur {{total}}",
     "step_rating":           "Comment évaluez-vous votre séjour ?",
     "step_rating_sub":       "Notez uniquement les services dont vous avez bénéficié",
     "step_comment":          "Un commentaire à partager ?",

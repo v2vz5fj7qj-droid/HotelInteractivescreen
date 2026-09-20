@@ -141,6 +141,12 @@
   .pairsGrid { grid-template-columns: repeat(4, 1fr); }
 }
 
+/* Borne en portrait : moins de colonnes pour garder des cartes lisibles
+   sur une largeur réduite (au lieu de les écraser à 3 par ligne). */
+@media (orientation: portrait) {
+  .pairsGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── Carte d'une paire ───────────────────────────────────────── */
 .pairCard {
   background: var(--c-surface);

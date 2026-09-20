@@ -78,7 +78,7 @@ router.get('/:slug/config', async (req, res) => {
         email_contact:      row.email_contact,
         lat:                row.lat,
         lng:                row.lng,
-        idle_timeout_ms:    row.idle_timeout_ms ?? 30000,
+        idle_timeout_ms:    row.idle_timeout_ms ?? 60000,
         fullscreen_password: row.fullscreen_password ?? 'fs1234',
         wifi_name:           row.wifi_name ?? null,
         wifi_password:       row.wifi_password ?? null,
@@ -106,7 +106,7 @@ router.get('/:slug/config', async (req, res) => {
 
 // GET /api/hotels/public
 // Liste des hôtels actifs pour la page d'accueil (données non sensibles)
-router.get('/hotels/public', async (_req, res) => {
+router.get('/public', async (_req, res) => {
   const cacheKey = 'hotels:public';
   try {
     const cached = await cache.get(cacheKey);

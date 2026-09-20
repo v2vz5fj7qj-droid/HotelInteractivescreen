@@ -23,6 +23,8 @@ export default function WeatherManager() {
   const [toast,      setToast]      = useState('');
   const [newLoc,     setNewLoc]     = useState(EMPTY_NEW_LOC);
   const [creatingLoc, setCreatingLoc] = useState(false);
+  const [editingLoc, setEditingLoc] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -61,6 +63,10 @@ export default function WeatherManager() {
 
   const createAndAddLocality = async () => {
     if (!newLoc.name.trim()) return;
+    if (newLoc.lat === '' || newLoc.lng === '' || isNaN(parseFloat(newLoc.lat)) || isNaN(parseFloat(newLoc.lng))) {
+      alert('Latitude et longitude sont requises pour que la météo fonctionne.');
+      return;
+    }
     setCreatingLoc(true);
     try {
       const { data: created } = await api.post('/localities', newLoc);
@@ -76,6 +82,47 @@ export default function WeatherManager() {
       alert(err.response?.data?.error || 'Erreur création localité');
     } finally {
       setCreatingLoc(false);
+    }
+  };
+
+  const openEditLocality = (locOrId) => {
+    const loc = typeof locOrId === 'object'
+      ? locOrId
+      : localities.find(l => l.id === parseInt(locOrId));
+    if (!loc) return;
+    setEditingLoc({
+      id: loc.locality_id ?? loc.id,
+      name: loc.name || '',
+      country: loc.country || 'Burkina Faso',
+      owm_city_id: loc.owm_city_id || '',
+      lat: loc.lat ?? '',
+      lng: loc.lng ?? '',
+      timezone: loc.timezone || 'Africa/Ouagadougou',
+      is_active: loc.is_active === undefined ? true : !!loc.is_active,
+    });
+  };
+
+  const saveEditLocality = async () => {
+    if (!editingLoc?.name.trim()) return;
+    if (editingLoc.lat === '' || editingLoc.lng === '' || isNaN(parseFloat(editingLoc.lat)) || isNaN(parseFloat(editingLoc.lng))) {
+      alert('Latitude et longitude sont requises pour que la météo fonctionne.');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await api.put(`/localities/${editingLoc.id}`, editingLoc);
+      const { data: locs } = await api.get('/super/weather/localities');
+      setLocalities(locs);
+      if (selected) {
+        const { data } = await api.get(`/super/weather/hotels/${selected.id}`);
+        setHotelLocs(data);
+      }
+      setEditingLoc(null);
+      showToast('Localité mise à jour');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erreur lors de la mise à jour');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -172,6 +219,8 @@ export default function WeatherManager() {
                           )}
                           <button className={styles.btnSecondary} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             onClick={() => refreshWeather(l.locality_id)}>↻ Refresh</button>
+                          <button className={styles.btnEdit}
+                            onClick={() => openEditLocality(l)} title="Modifier les informations de la localité">✏️</button>
                           <button className={styles.btnDanger} style={{ padding: '5px 10px', fontSize: '0.78rem' }}
                             onClick={() => removeLocality(l.locality_id)}>Retirer</button>
                         </div>
@@ -199,6 +248,8 @@ export default function WeatherManager() {
                             onChange={e => setAddForm(f => ({ ...f, is_default: e.target.checked }))} />
                           Défaut
                         </label>
+                        <button className={styles.btnEdit} style={{ marginBottom: 10 }}
+                          onClick={() => openEditLocality(addForm.locality_id)} title="Modifier les informations de la localité">✏️</button>
                         <button className={styles.btnPrimary} onClick={() => addLocality()} style={{ paddingBottom: 10 }}>
                           Ajouter
                         </button>
@@ -238,20 +289,23 @@ export default function WeatherManager() {
                           </select>
                         </div>
                         <div className={styles.field}>
-                          <label className={styles.label}>Latitude</label>
+                          <label className={styles.label}>Latitude *</label>
                           <input className={styles.input} type="number" step="0.0001"
                             value={newLoc.lat}
                             onChange={e => setNewLoc(p => ({ ...p, lat: e.target.value }))}
                             placeholder="ex: 12.3641" />
                         </div>
                         <div className={styles.field}>
-                          <label className={styles.label}>Longitude</label>
+                          <label className={styles.label}>Longitude *</label>
                           <input className={styles.input} type="number" step="0.0001"
                             value={newLoc.lng}
                             onChange={e => setNewLoc(p => ({ ...p, lng: e.target.value }))}
                             placeholder="ex: -1.5332" />
                         </div>
                       </div>
+                      <span className={styles.fieldHint}>
+                        Latitude/longitude sont requises pour interroger la météo — sans elles, l'API renvoie une erreur.
+                      </span>
                       <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.85rem', cursor: 'pointer' }}>
                           <input type="checkbox" checked={addForm.is_default}
@@ -265,7 +319,7 @@ export default function WeatherManager() {
                         </button>
                         <button className={styles.btnPrimary}
                           onClick={createAndAddLocality}
-                          disabled={!newLoc.name.trim() || creatingLoc}>
+                          disabled={!newLoc.name.trim() || newLoc.lat === '' || newLoc.lng === '' || creatingLoc}>
                           {creatingLoc ? 'Création…' : 'Créer et ajouter'}
                         </button>
                       </div>
@@ -277,6 +331,87 @@ export default function WeatherManager() {
           )}
         </div>
       </div>
+
+      {editingLoc && (
+        <div className={styles.modalOverlay} onClick={() => setEditingLoc(null)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Modifier la localité</h2>
+              <button className={styles.modalClose} onClick={() => setEditingLoc(null)}>✕</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.formGrid2}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Nom de la ville *</label>
+                  <input className={styles.input} value={editingLoc.name}
+                    onChange={e => setEditingLoc(p => ({ ...p, name: e.target.value }))}
+                    placeholder="ex: Ouagadougou" />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Pays</label>
+                  <input className={styles.input} value={editingLoc.country}
+                    onChange={e => setEditingLoc(p => ({ ...p, country: e.target.value }))}
+                    placeholder="ex: Burkina Faso" />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>OpenWeatherMap City ID</label>
+                <input className={styles.input} value={editingLoc.owm_city_id}
+                  onChange={e => setEditingLoc(p => ({ ...p, owm_city_id: e.target.value }))}
+                  placeholder="ex: 2355426 (rechercher sur openweathermap.org)" />
+                <span className={styles.fieldHint}>
+                  Trouver l'ID : <a href="https://openweathermap.org/find" target="_blank" rel="noreferrer">openweathermap.org/find</a>
+                </span>
+              </div>
+
+              <div className={styles.formGrid2}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Latitude *</label>
+                  <input className={styles.input} type="number" step="0.0001"
+                    value={editingLoc.lat}
+                    onChange={e => setEditingLoc(p => ({ ...p, lat: e.target.value }))}
+                    placeholder="ex: 12.3641" />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Longitude *</label>
+                  <input className={styles.input} type="number" step="0.0001"
+                    value={editingLoc.lng}
+                    onChange={e => setEditingLoc(p => ({ ...p, lng: e.target.value }))}
+                    placeholder="ex: -1.5332" />
+                </div>
+              </div>
+              <span className={styles.fieldHint} style={{ marginTop: -8 }}>
+                Latitude/longitude sont requises pour interroger la météo — sans elles, l'API renvoie une erreur.
+              </span>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Fuseau horaire</label>
+                <select className={styles.select} value={editingLoc.timezone}
+                  onChange={e => setEditingLoc(p => ({ ...p, timezone: e.target.value }))}>
+                  {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                </select>
+              </div>
+
+              <div className={styles.toggleRow}>
+                <label className={styles.toggleLabel}>
+                  <input type="checkbox" checked={!!editingLoc.is_active}
+                    onChange={e => setEditingLoc(p => ({ ...p, is_active: e.target.checked }))} />
+                  Actif
+                </label>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button className={styles.btnSecondary} onClick={() => setEditingLoc(null)}>Annuler</button>
+              <button className={styles.btnPrimary} onClick={saveEditLocality} disabled={savingEdit}>
+                {savingEdit ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -20,7 +20,7 @@
     "wellness_sub":         "Massages & treatments",
     "flights_sub":          "Schedules & status",
     "events_sub":           "Local agenda",
-    "map_sub":              "Explore the city",
+    "map_sub":              "Explore the area",
     "notif_title":          "Good to know",
     "notif_title_notif":    "Notification",
     "notif_msg":            "Welcome cocktail tonight at 6pm",
@@ -42,7 +42,9 @@
     "website":    "Website",
     "today":      "Today",
     "offline_banner": "Offline mode — Cached data",
-    "change_language": "Change language"
+    "change_language": "Change language",
+    "link_loading": "Loading content…",
+    "link_unavailable": "This content can't be displayed here."
   },
   "weather": {
     "title":           "Weather",
@@ -91,7 +93,21 @@
     },
     "airport":     "Ouagadougou International Airport",
     "no_results":  "No flights found",
-    "error":       "Flight information unavailable"
+    "error":       "Flight information unavailable",
+    "time": "Time",
+    "origin": "From",
+    "destination": "To",
+    "status_col": "Status",
+    "search_label": "Search a flight number",
+    "clear_search": "Clear search",
+    "updated_now": "Updated just now",
+    "updated_ago": "Updated {{min}} min ago",
+    "stale_ago": "Data is {{min}} min old",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "total": "{{n}} flights",
+    "local_times": "Local times",
+    "pending": "Loading flight schedule"
   },
   "map": {
     "title":         "Map & Points of interest",
@@ -118,6 +134,7 @@
     "price":          "Price",
     "minutes":        "min",
     "fcfa":           "FCFA",
+    "free":           "Free",
     "available_hours":"Hours",
     "available_days": "Available",
     "how_to_book":    "How to book",
@@ -156,6 +173,12 @@
       "festival":    "Festivals",
       "exhibition":  "Exhibitions",
       "hotel":       "At the hotel"
+    },
+    "groups": {
+      "today":       "Today",
+      "tomorrow":    "Tomorrow",
+      "this_week":   "This week",
+      "later":       "Later"
     },
     "free":          "Free",
     "price":         "Entry",
@@ -198,6 +221,7 @@
     "welcome_title":         "Help us improve your stay!",
     "welcome_sub":           "Rate us in 1 minute — your opinion truly matters",
     "start":                 "Get started",
+    "step_counter":          "Step {{n}} of {{total}}",
     "step_rating":           "How would you rate your stay?",
     "step_rating_sub":       "Only rate the services you actually used",
     "step_comment":          "Any comments to share?",

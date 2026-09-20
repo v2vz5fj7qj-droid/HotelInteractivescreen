@@ -5,6 +5,8 @@ import { useHotel }    from '../../../contexts/HotelContext';
 import { trackEvent }  from '../../../services/analytics';
 import api             from '../../../services/api';
 import BackButton      from '../../BackButton/BackButton';
+import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
+import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles          from './Feedback.module.css';
 
 const CATEGORIES = [
@@ -268,10 +270,17 @@ export default function Feedback() {
 
   return (
     <div className={styles.shell} onPointerDown={resetIdle}>
+      <LanguageSwitcher />
+      <ThemeToggle />
       {step < 3 && (
         <div className={styles.header}>
           <BackButton />
           <div className={styles.progress}>
+            {step >= 1 && (
+              <span className={styles.stepLabel}>
+                {t('feedback.step_counter', { n: step, total: 2 })}
+              </span>
+            )}
             {[1, 2].map(s => (
               <div
                 key={s}

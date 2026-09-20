@@ -20,7 +20,7 @@
     "wellness_sub":         "マッサージ＆トリートメント",
     "flights_sub":          "時刻表＆ステータス",
     "events_sub":           "ローカルイベント",
-    "map_sub":              "街を探索",
+    "map_sub":              "周辺エリアを探索",
     "notif_title":          "お知らせ",
     "notif_title_notif":    "通知",
     "notif_msg":            "本日18時よりウェルカムカクテルを開催",
@@ -42,7 +42,9 @@
     "website":         "ウェブサイト",
     "today":           "今日",
     "offline_banner":  "オフラインモード — キャッシュデータ",
-    "change_language": "言語を変更"
+    "change_language": "言語を変更",
+    "link_loading": "コンテンツを読み込み中…",
+    "link_unavailable": "このコンテンツはここに表示できません。"
   },
   "weather": {
     "title":           "天気",
@@ -91,7 +93,21 @@
     },
     "airport":     "ワガドゥグ国際空港",
     "no_results":  "フライトが見つかりません",
-    "error":       "フライト情報を取得できません"
+    "error":       "フライト情報を取得できません",
+    "time": "時刻",
+    "origin": "出発地",
+    "destination": "目的地",
+    "status_col": "状況",
+    "search_label": "便名を検索",
+    "clear_search": "検索をクリア",
+    "updated_now": "たった今更新",
+    "updated_ago": "{{min}} 分前に更新",
+    "stale_ago": "{{min}} 分前のデータ",
+    "today": "今日",
+    "tomorrow": "明日",
+    "total": "{{n}} 便",
+    "local_times": "現地時間",
+    "pending": "フライト時刻を読み込み中"
   },
   "map": {
     "title":         "地図＆観光スポット",
@@ -118,6 +134,7 @@
     "price":           "料金",
     "minutes":         "分",
     "fcfa":            "フラン",
+    "free":            "無料",
     "available_hours": "営業時間",
     "available_days":  "ご利用可能",
     "how_to_book":     "ご予約方法",
@@ -156,6 +173,12 @@
       "festival":    "フェスティバル",
       "exhibition":  "展示",
       "hotel":       "ホテルイベント"
+    },
+    "groups": {
+      "today":       "今日",
+      "tomorrow":    "明日",
+      "this_week":   "今週",
+      "later":       "今後"
     },
     "free":        "無料",
     "price":       "入場料",
@@ -198,6 +221,7 @@
     "welcome_title":         "ご滞在の改善にご協力ください！",
     "welcome_sub":           "1分で評価できます — お客様のご意見は大切です",
     "start":                 "始める",
+    "step_counter":          "ステップ {{n}} / {{total}}",
     "step_rating":           "ご滞在はいかがでしたか？",
     "step_rating_sub":       "ご利用になったサービスのみ評価してください",
     "step_comment":          "コメントはありますか？",

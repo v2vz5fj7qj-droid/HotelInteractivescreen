@@ -77,7 +77,7 @@ function getDefaultTheme() {
     font_secondary:     'Playfair Display',
     logo_url:           '/images/logo.png',
     logo_url_dark:      '/images/logo-dark.png',
-    idle_timeout_ms:    '30000',
+    idle_timeout_ms:    '60000',
   };
 }
 

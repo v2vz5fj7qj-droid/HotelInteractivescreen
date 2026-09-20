@@ -50,7 +50,7 @@ INSERT IGNORE INTO hotel_settings (
     'contact@azalai-ouaga.bf',
     12.3624,
     -1.5336,
-    30000,
+    60000,
     'fs1234'
 );
 
@@ -85,7 +85,7 @@ INSERT IGNORE INTO hotel_settings (
     'info@silmande.bf',
     12.3701,
     -1.5289,
-    30000,
+    60000,
     'fs1234'
 );
 

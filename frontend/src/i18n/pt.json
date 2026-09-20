@@ -20,7 +20,7 @@
     "wellness_sub":         "Massagens & tratamentos",
     "flights_sub":          "Horários & estados",
     "events_sub":           "Agenda local",
-    "map_sub":              "Explorar a cidade",
+    "map_sub":              "Explorar a área",
     "notif_title":          "Bom saber",
     "notif_title_notif":    "Notificação",
     "notif_msg":            "Cocktail de boas-vindas esta noite às 18h",
@@ -42,7 +42,9 @@
     "website":         "Site web",
     "today":           "Hoje",
     "offline_banner":  "Modo offline — Dados em cache",
-    "change_language": "Mudar de língua"
+    "change_language": "Mudar de língua",
+    "link_loading": "A carregar conteúdo…",
+    "link_unavailable": "Este conteúdo não pode ser exibido aqui."
   },
   "weather": {
     "title":           "Clima",
@@ -91,7 +93,21 @@
     },
     "airport":     "Aeroporto Internacional de Ouagadougou",
     "no_results":  "Nenhum voo encontrado",
-    "error":       "Informação de voos indisponível"
+    "error":       "Informação de voos indisponível",
+    "time": "Hora",
+    "origin": "Origem",
+    "destination": "Destino",
+    "status_col": "Estado",
+    "search_label": "Procurar um número de voo",
+    "clear_search": "Limpar pesquisa",
+    "updated_now": "Atualizado agora mesmo",
+    "updated_ago": "Atualizado há {{min}} min",
+    "stale_ago": "Dados de há {{min}} min",
+    "today": "Hoje",
+    "tomorrow": "Amanhã",
+    "total": "{{n}} voos",
+    "local_times": "Hora local",
+    "pending": "A carregar os horários"
   },
   "map": {
     "title":         "Mapa & Pontos de interesse",
@@ -118,6 +134,7 @@
     "price":           "Preço",
     "minutes":         "min",
     "fcfa":            "FCFA",
+    "free":            "Grátis",
     "available_hours": "Horário",
     "available_days":  "Disponível",
     "how_to_book":     "Como reservar",
@@ -156,6 +173,12 @@
       "festival":    "Festivais",
       "exhibition":  "Exposições",
       "hotel":       "No hotel"
+    },
+    "groups": {
+      "today":       "Hoje",
+      "tomorrow":    "Amanhã",
+      "this_week":   "Esta semana",
+      "later":       "Mais tarde"
     },
     "free":        "Grátis",
     "price":       "Entrada",
@@ -198,6 +221,7 @@
     "welcome_title":         "Ajude-nos a melhorar a sua estadia!",
     "welcome_sub":           "Avalie-nos em 1 minuto — a sua opinião conta",
     "start":                 "Começar",
+    "step_counter":          "Passo {{n}} de {{total}}",
     "step_rating":           "Como avalia a sua estadia?",
     "step_rating_sub":       "Avalie apenas os serviços que utilizou",
     "step_comment":          "Algum comentário a partilhar?",

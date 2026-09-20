@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import api from '../../useAdminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSuperHotelId } from '../../components/SuperHotelSelector';
+import { WEEKDAYS, ORDINALS, EMPTY_RECURRENCE, buildRecurrenceRule, parseRecurrenceRule, describeRecurrenceRule } from '../../utils/recurrence';
 import styles from '../../Admin.module.css';
 
 const STATUS_STYLE = {
@@ -15,6 +16,7 @@ const STATUS_STYLE = {
 const EMPTY_EV = {
   slug: '', category: 'culture', start_date: '', end_date: '', start_time: '', end_time: '',
   location: '', price_fcfa: 0, is_featured: false, title_fr: '', description_fr: '',
+  is_recurrent: false, recurrence: EMPTY_RECURRENCE,
 };
 
 const CATEGORIES = ['culture', 'sport', 'gastronomie', 'musique', 'art', 'business', 'tourisme', 'autre'];
@@ -54,7 +56,8 @@ export default function HotelEventsManager() {
     setForm({ slug: ev.slug, category: ev.category, start_date: ev.start_date?.split('T')[0] || '',
       end_date: ev.end_date?.split('T')[0] || '', start_time: ev.start_time || '', end_time: ev.end_time || '',
       location: ev.location || '', price_fcfa: ev.price_fcfa || 0, is_featured: !!ev.is_featured,
-      title_fr: ev.title || '', description_fr: ev.description || '' });
+      title_fr: ev.title || '', description_fr: ev.description || '',
+      is_recurrent: !!ev.is_recurrent, recurrence: parseRecurrenceRule(ev.recurrence_rule) });
     setModal(ev);
   };
 
@@ -63,9 +66,11 @@ export default function HotelEventsManager() {
     try {
       const body = {
         slug: form.slug, category: form.category, start_date: form.start_date,
-        end_date: form.end_date || null, start_time: form.start_time || null,
+        end_date: form.is_recurrent ? null : (form.end_date || null), start_time: form.start_time || null,
         end_time: form.end_time || null, location: form.location || null,
         price_fcfa: form.price_fcfa || 0, is_featured: form.is_featured ? 1 : 0,
+        is_recurrent: form.is_recurrent ? 1 : 0,
+        recurrence_rule: form.is_recurrent ? buildRecurrenceRule(form.recurrence) : null,
         translations: [{ locale: 'fr', title: form.title_fr, description: form.description_fr }],
       };
       if (modal === 'create') {
@@ -255,15 +260,17 @@ export default function HotelEventsManager() {
               </div>
               <div className={styles.fieldRow}>
                 <div className={styles.field}>
-                  <label className={styles.label}>Date début *</label>
+                  <label className={styles.label}>{form.is_recurrent ? '1ère occurrence *' : 'Date début *'}</label>
                   <input className={styles.input} type="date" value={form.start_date}
                     onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} />
                 </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Date fin</label>
-                  <input className={styles.input} type="date" value={form.end_date}
-                    onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
-                </div>
+                {!form.is_recurrent && (
+                  <div className={styles.field}>
+                    <label className={styles.label}>Date fin</label>
+                    <input className={styles.input} type="date" value={form.end_date}
+                      onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} />
+                  </div>
+                )}
               </div>
               <div className={styles.fieldRow}>
                 <div className={styles.field}>
@@ -289,6 +296,90 @@ export default function HotelEventsManager() {
                     onChange={e => setForm(f => ({ ...f, price_fcfa: parseInt(e.target.value) || 0 }))} />
                 </div>
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.88rem', cursor: 'pointer', marginBottom: 12 }}>
+                <input type="checkbox" checked={form.is_recurrent}
+                  onChange={e => setForm(f => ({ ...f, is_recurrent: e.target.checked }))} />
+                Événement récurrent (se répète sans date de fin)
+              </label>
+
+              {form.is_recurrent && (
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: 12, marginBottom: 12, background: '#FAFAFA' }}>
+                  <div className={styles.field}>
+                    <label className={styles.label}>Fréquence</label>
+                    <select className={styles.select} value={form.recurrence.freq}
+                      onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, freq: e.target.value } }))}>
+                      <option value="daily">Quotidien</option>
+                      <option value="weekly">Chaque semaine (jours choisis)</option>
+                      <option value="monthly_weekday">Chaque mois (ex : 1er jeudi)</option>
+                      <option value="monthly_day">Chaque mois (jour fixe)</option>
+                      <option value="yearly">Chaque année</option>
+                    </select>
+                  </div>
+
+                  {form.recurrence.freq === 'weekly' && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                      {WEEKDAYS.map(d => (
+                        <label key={d.code} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.82rem', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={form.recurrence.byday?.includes(d.code)}
+                            onChange={e => setForm(f => {
+                              const cur = f.recurrence.byday || [];
+                              const byday = e.target.checked ? [...cur, d.code] : cur.filter(c => c !== d.code);
+                              return { ...f, recurrence: { ...f.recurrence, byday } };
+                            })} />
+                          {d.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {form.recurrence.freq === 'monthly_weekday' && (
+                    <div className={styles.fieldRow}>
+                      <div className={styles.field}>
+                        <label className={styles.label}>Occurrence</label>
+                        <select className={styles.select} value={form.recurrence.ordinal}
+                          onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, ordinal: parseInt(e.target.value, 10) } }))}>
+                          {ORDINALS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <div className={styles.field}>
+                        <label className={styles.label}>Jour</label>
+                        <select className={styles.select} value={form.recurrence.byday?.[0] || 'MO'}
+                          onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, byday: [e.target.value] } }))}>
+                          {WEEKDAYS.map(d => <option key={d.code} value={d.code}>{d.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {form.recurrence.freq === 'monthly_day' && (
+                    <div className={styles.field}>
+                      <label className={styles.label}>Jour du mois</label>
+                      <input className={styles.input} type="number" min={1} max={31} value={form.recurrence.monthday}
+                        onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, monthday: parseInt(e.target.value, 10) || 1 } }))} />
+                    </div>
+                  )}
+
+                  {form.recurrence.freq === 'yearly' && (
+                    <div className={styles.fieldRow}>
+                      <div className={styles.field}>
+                        <label className={styles.label}>Mois</label>
+                        <input className={styles.input} type="number" min={1} max={12} value={form.recurrence.month}
+                          onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, month: parseInt(e.target.value, 10) || 1 } }))} />
+                      </div>
+                      <div className={styles.field}>
+                        <label className={styles.label}>Jour</label>
+                        <input className={styles.input} type="number" min={1} max={31} value={form.recurrence.monthday}
+                          onChange={e => setForm(f => ({ ...f, recurrence: { ...f.recurrence, monthday: parseInt(e.target.value, 10) || 1 } }))} />
+                      </div>
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: 8, marginBottom: 0 }}>
+                    Aperçu : {describeRecurrenceRule(buildRecurrenceRule(form.recurrence))}
+                  </p>
+                </div>
+              )}
+
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.88rem', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.is_featured}
                   onChange={e => setForm(f => ({ ...f, is_featured: e.target.checked }))} />

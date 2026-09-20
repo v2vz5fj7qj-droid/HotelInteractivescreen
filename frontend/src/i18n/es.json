@@ -20,7 +20,7 @@
     "wellness_sub":         "Masajes & tratamientos",
     "flights_sub":          "Horarios & estados",
     "events_sub":           "Agenda local",
-    "map_sub":              "Explorar la ciudad",
+    "map_sub":              "Explorar la zona",
     "notif_title":          "Bueno saber",
     "notif_title_notif":    "Notificación",
     "notif_msg":            "Cóctel de bienvenida esta noche a las 18h",
@@ -42,7 +42,9 @@
     "website":         "Sitio web",
     "today":           "Hoy",
     "offline_banner":  "Modo sin conexión — Datos en caché",
-    "change_language": "Cambiar idioma"
+    "change_language": "Cambiar idioma",
+    "link_loading": "Cargando contenido…",
+    "link_unavailable": "Este contenido no se puede mostrar aquí."
   },
   "weather": {
     "title":           "Clima",
@@ -91,7 +93,21 @@
     },
     "airport":     "Aeropuerto Internacional de Ouagadougou",
     "no_results":  "No se encontraron vuelos",
-    "error":       "Información de vuelos no disponible"
+    "error":       "Información de vuelos no disponible",
+    "time": "Hora",
+    "origin": "Origen",
+    "destination": "Destino",
+    "status_col": "Estado",
+    "search_label": "Buscar un número de vuelo",
+    "clear_search": "Borrar búsqueda",
+    "updated_now": "Actualizado ahora mismo",
+    "updated_ago": "Actualizado hace {{min}} min",
+    "stale_ago": "Datos de hace {{min}} min",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "total": "{{n}} vuelos",
+    "local_times": "Hora local",
+    "pending": "Cargando los horarios"
   },
   "map": {
     "title":         "Mapa & Puntos de interés",
@@ -118,6 +134,7 @@
     "price":           "Precio",
     "minutes":         "min",
     "fcfa":            "FCFA",
+    "free":            "Gratis",
     "available_hours": "Horario",
     "available_days":  "Disponible",
     "how_to_book":     "Cómo reservar",
@@ -156,6 +173,12 @@
       "festival":    "Festivales",
       "exhibition":  "Exposiciones",
       "hotel":       "En el hotel"
+    },
+    "groups": {
+      "today":       "Hoy",
+      "tomorrow":    "Mañana",
+      "this_week":   "Esta semana",
+      "later":       "Más adelante"
     },
     "free":        "Gratis",
     "price":       "Entrada",
@@ -198,6 +221,7 @@
     "welcome_title":         "¡Ayúdenos a mejorar su estancia!",
     "welcome_sub":           "Valórenos en 1 minuto — su opinión importa",
     "start":                 "Comenzar",
+    "step_counter":          "Paso {{n}} de {{total}}",
     "step_rating":           "¿Cómo valora su estancia?",
     "step_rating_sub":       "Valore únicamente los servicios que utilizó",
     "step_comment":          "¿Algún comentario que compartir?",

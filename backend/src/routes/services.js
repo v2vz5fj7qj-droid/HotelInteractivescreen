@@ -18,12 +18,13 @@ router.get('/', async (req, res) => {
 
     const [rows] = await db.query(
       `SELECT
-         s.id, s.slug, s.image_url, s.contact_phone,
+         s.id, s.slug, s.image_url, s.contact_phone, s.category_id,
          s.available_hours, s.available_days, s.display_order,
          s.price_fcfa, s.duration_min, s.booking_info,
          COALESCE(sc_h.label_fr, sc_g.label_fr) AS category_label_fr,
          COALESCE(sc_h.label_en, sc_g.label_en) AS category_label_en,
          COALESCE(sc_h.icon,     sc_g.icon)     AS category_icon,
+         COALESCE(sc_h.display_order, sc_g.display_order) AS category_display_order,
          COALESCE(t.name,        tf.name)        AS name,
          COALESCE(t.description, tf.description) AS description,
          COALESCE(t.benefits,    tf.benefits)    AS benefits
@@ -33,7 +34,7 @@ router.get('/', async (req, res) => {
        LEFT JOIN service_translations t  ON t.service_id = s.id AND t.locale = ?
        LEFT JOIN service_translations tf ON tf.service_id = s.id AND tf.locale = 'fr'
        WHERE s.hotel_id = ? AND s.is_active = 1
-       ORDER BY s.display_order ASC, s.id ASC`,
+       ORDER BY category_display_order ASC, s.display_order ASC, s.id ASC`,
       [locale, hotelId]
     );
 

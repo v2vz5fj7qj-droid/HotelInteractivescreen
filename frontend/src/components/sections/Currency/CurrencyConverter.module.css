@@ -3,7 +3,9 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  padding: clamp(72px, 9vh, 110px) clamp(20px, 4vw, 56px) clamp(16px, 3vh, 32px);
+  /* Le padding bas réserve la place du WeatherBadge flottant (bas-gauche, ~60px de haut)
+     affiché par KioskLayout sur cette section — sans quoi il chevauche le dernier bloc. */
+  padding: clamp(72px, 9vh, 110px) clamp(20px, 4vw, 56px) clamp(76px, 10vh, 110px);
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 1.8vh, 18px);
@@ -145,11 +147,16 @@
 }
 
 /* ── Clavier numérique ───────────────────────────────────────── */
+/* Rangées dimensionnées par la hauteur réellement disponible (grid-template-rows)
+   plutôt que par un aspect-ratio calculé sur la largeur — sinon, en paysage où les
+   colonnes sont larges, les touches deviennent trop hautes et débordent hors écran. */
 .numpad {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: clamp(6px, 1.1vh, 12px);
   flex: 1;
+  min-height: 0;
 }
 
 .numkey {
@@ -165,7 +172,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1.6 / 1;
+  min-height: 0;
+  min-width: 0;
   transition: background 120ms, transform 100ms;
   -webkit-tap-highlight-color: transparent;
 }
@@ -339,4 +347,20 @@
   color: var(--c-accent);
   text-align: center;
   padding: 8px;
+}
+
+/* ── Borne en portrait : empiler saisie/clavier au-dessus des résultats
+   plutôt que de les écraser côte à côte dans une largeur trop étroite ── */
+@media (orientation: portrait) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+  }
+
+  .inputCol { flex: 0 0 auto; }
+
+  .numpad { flex: 0 0 auto; height: clamp(220px, 32vh, 340px); }
+
+  .resultsCol { min-height: 0; }
 }

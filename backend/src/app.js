@@ -29,6 +29,7 @@ const servicesRoutes     = require('./routes/services');
 const tipsRoutes         = require('./routes/tips');
 const feedbackRoutes     = require('./routes/feedback');
 const currencyRoutes     = require('./routes/currency');
+const directionsRoutes   = require('./routes/directions');
 
 // ── Routes admin (ancien monolithe — rétrocompatibilité) ──────────
 const adminRoutesLegacy  = require('./routes/admin');
@@ -142,6 +143,7 @@ app.use('/api/services',      servicesRoutes);
 app.use('/api/tips',          tipsRoutes);
 app.use('/api/feedback',      feedbackRoutes);
 app.use('/api/currency',      currencyRoutes);
+app.use('/api/directions',    directionsRoutes);
 app.use('/api/kiosk-device',  kioskDeviceRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────

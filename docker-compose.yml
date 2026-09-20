@@ -101,6 +101,7 @@ services:
       - VITE_HOTEL_LNG=${HOTEL_LNG}
       - VITE_HOTEL_NAME=${HOTEL_NAME}
       - VITE_IDLE_TIMEOUT_MS=${IDLE_TIMEOUT_MS}
+      - VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY}
     networks:
       - connectbe_net
 

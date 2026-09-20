@@ -57,13 +57,6 @@ const uploadPoiImg = multer({
 });
 
 // ════════════════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════════════════
-
-// POST /api/admin/logout (révocation côté client — token non invalidé côté serveur)
-router.post('/logout', adminAuth, (req, res) => res.json({ ok: true }));
-
-// ════════════════════════════════════════════════════════
 //  BIEN-ÊTRE
 // ════════════════════════════════════════════════════════
 
@@ -505,8 +498,16 @@ router.get('/localities', adminAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+function isValidCoord(v) {
+  return v !== undefined && v !== null && v !== '' && Number.isFinite(parseFloat(v));
+}
+
 router.post('/localities', adminAuth, async (req, res) => {
   const { name, country, owm_city_id, lat, lng, timezone, is_active, is_default, display_order } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Le nom de la ville est requis' });
+  if (!isValidCoord(lat) || !isValidCoord(lng)) {
+    return res.status(400).json({ error: 'Latitude et longitude sont requises pour que la météo fonctionne' });
+  }
   try {
     if (is_default) await db.query('UPDATE localities SET is_default = 0');
     const [r] = await db.query(
@@ -520,13 +521,23 @@ router.post('/localities', adminAuth, async (req, res) => {
 });
 
 router.put('/localities/:id', adminAuth, async (req, res) => {
-  const { name, country, owm_city_id, lat, lng, timezone, is_active, is_default, display_order } = req.body;
   try {
+    const [[current]] = await db.query('SELECT * FROM localities WHERE id=?', [req.params.id]);
+    if (!current) return res.status(404).json({ error: 'Localité introuvable' });
+    const {
+      name = current.name, country = current.country, owm_city_id = current.owm_city_id,
+      lat = current.lat, lng = current.lng, timezone = current.timezone,
+      is_active = current.is_active, is_default = current.is_default, display_order = current.display_order,
+    } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'Le nom de la ville est requis' });
+    if (!isValidCoord(lat) || !isValidCoord(lng)) {
+      return res.status(400).json({ error: 'Latitude et longitude sont requises pour que la météo fonctionne' });
+    }
     if (is_default) await db.query('UPDATE localities SET is_default = 0 WHERE id != ?', [req.params.id]);
     await db.query(
       'UPDATE localities SET name=?, country=?, owm_city_id=?, lat=?, lng=?, timezone=?, is_active=?, is_default=?, display_order=? WHERE id=?',
       [name, country, owm_city_id || null, lat || null, lng || null,
-       timezone, is_active ?? 1, is_default ? 1 : 0, display_order || 0, req.params.id]
+       timezone, is_active ? 1 : 0, is_default ? 1 : 0, display_order, req.params.id]
     );
     await cache.delPattern('weather:*');
     res.json({ ok: true });

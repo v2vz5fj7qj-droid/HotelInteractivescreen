@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS hotel_settings (
     lat               DECIMAL(10,7),
     lng               DECIMAL(10,7),
     -- Kiosque
-    idle_timeout_ms   INT          DEFAULT 30000,
+    idle_timeout_ms   INT          DEFAULT 60000,
     fullscreen_password VARCHAR(100) DEFAULT 'fs1234',
     -- Dates
     updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS airports (
     code                VARCHAR(10)  NOT NULL PRIMARY KEY,  -- Code IATA ex: "OUA"
     label               VARCHAR(200) NOT NULL,
     -- Planification
-    schedule_enabled    BOOLEAN      DEFAULT TRUE,           -- FALSE = manuel uniquement
+    schedule_enabled    BOOLEAN      DEFAULT FALSE,          -- TRUE = auto-refresh, FALSE = manuel uniquement
     schedule_mode       ENUM('interval','fixed_hours') DEFAULT 'interval',
     interval_minutes    INT          DEFAULT 30,             -- si mode interval
     fixed_hours         JSON         DEFAULT NULL,           -- si mode fixed_hours : [6,12,18]

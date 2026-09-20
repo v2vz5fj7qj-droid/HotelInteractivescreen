@@ -63,21 +63,28 @@
   padding-right: 4px;
 }
 
-/* ── Cartes featured ──────────────────────────────────── */
-.featuredRow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(clamp(300px, 40vw, 520px), 1fr));
+/* ── Cartes featured : défilement horizontal, hauteur fixe ─
+   (ne grandit plus avec le nombre d'événements à la une) ── */
+.featuredScroll {
+  display: flex;
   gap: clamp(12px, 1.8vw, 18px);
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x proximity;
+  flex-shrink: 0;
 }
 
 .cardFeatured {
+  flex: 0 0 clamp(320px, 36vw, 440px);
+  height: clamp(190px, 27vh, 234px);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-xl);
   overflow: hidden;
   display: grid;
-  grid-template-columns: clamp(120px, 18vw, 220px) 1fr;
+  grid-template-columns: clamp(110px, 15vw, 150px) 1fr;
   text-align: left;
+  scroll-snap-align: start;
   transition: transform var(--duration-base) var(--ease-spring),
               box-shadow var(--duration-base),
               border-color var(--duration-fast);
@@ -106,99 +113,177 @@
 }
 
 .cardFeaturedBody {
-  padding: clamp(12px, 1.8vh, 18px);
+  padding: clamp(10px, 1.5vh, 15px) clamp(12px, 1.8vh, 18px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
+  min-height: 0;
 }
 
 .cardTopRow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .cardFeaturedTitle {
   font-family: var(--font-display);
-  font-size: clamp(0.95rem, 1.6vh, 1.2rem);
+  font-size: clamp(0.9rem, 1.5vh, 1.1rem);
   font-weight: 700;
   color: var(--c-text);
-  line-height: 1.3;
-}
-.cardFeaturedDesc {
-  font-size: clamp(0.72rem, 1.1vh, 0.85rem);
-  color: var(--c-text-muted);
-  line-height: 1.4;
+  line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.cardFeaturedDesc {
+  font-size: clamp(0.7rem, 1.05vh, 0.82rem);
+  color: var(--c-text-muted);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .cardMeta {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: auto;
-  font-size: clamp(0.68rem, 1vh, 0.8rem);
+  gap: 2px;
+  font-size: clamp(0.66rem, 0.95vh, 0.78rem);
   color: var(--c-text-muted);
+  flex-shrink: 0;
+}
+.cardMetaDate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardMetaLocation {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
 }
 
-/* ── Cartes petites ───────────────────────────────────── */
-.listGrid {
+/* ── Groupes par date : ancres de lecture quand il y a
+   beaucoup d'événements ────────────────────────────────── */
+.dateGroup { display: flex; flex-direction: column; gap: 8px; }
+
+.dateGroupHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.dateGroupLabel {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.5vh, 1.15rem);
+  font-weight: 700;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+.dateGroupCount {
+  font-size: clamp(0.65rem, 0.95vh, 0.75rem);
+  font-weight: 600;
+  color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 15%, transparent);
+  border-radius: var(--radius-full);
+  padding: 1px 9px;
+}
+.dateGroupRule {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+/* ── Cartes compactes (une ligne par événement) ─────────── */
+.compactGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 28vw, 380px), 1fr));
-  gap: clamp(8px, 1.2vw, 14px);
+  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 26vw, 360px), 1fr));
+  gap: clamp(6px, 1vw, 10px);
 }
 
-.cardSmall {
+.cardCompact {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(8px, 1.2vw, 12px);
+  padding: clamp(7px, 1vh, 10px) clamp(10px, 1.4vw, 14px);
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  padding: clamp(12px, 1.6vh, 16px);
-  display: flex;
-  gap: clamp(10px, 1.5vw, 16px);
+  border-radius: var(--radius-md);
   text-align: left;
-  align-items: flex-start;
+  min-width: 0;
   transition: transform var(--duration-fast), border-color var(--duration-fast);
 }
-.cardSmall:hover, .cardSmall:focus-visible {
+.cardCompact:hover, .cardCompact:focus-visible {
   transform: translateX(3px);
   border-color: var(--c-primary);
   outline: none;
 }
 
-.cardSmallDate {
+.cardCompactIcon {
+  flex-shrink: 0;
+  width: clamp(30px, 3.4vh, 38px);
+  height: clamp(30px, 3.4vh, 38px);
+  border-radius: var(--radius-sm);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--c-primary) 15%, var(--c-surface));
-  border: 1.5px solid var(--c-primary);
-  border-radius: var(--radius-md);
-  padding: 8px 12px;
-  min-width: 52px;
-  flex-shrink: 0;
+  font-size: clamp(0.85rem, 1.5vh, 1.05rem);
+  background: color-mix(in srgb, currentColor 16%, var(--c-bg));
+  color: var(--c-text-muted);
 }
-.cardSmallDay   { font-size: clamp(1.2rem, 2vh, 1.6rem); font-weight: 800; color: var(--c-primary); line-height: 1; }
-.cardSmallMonth { font-size: clamp(0.62rem, 0.9vh, 0.75rem); font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; }
 
-.cardSmallBody  { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.cardSmallTop   { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.cardSmallTitle {
-  font-size: clamp(0.82rem, 1.3vh, 1rem);
+.cardCompactBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cardCompactTitle {
+  font-size: clamp(0.78rem, 1.2vh, 0.92rem);
   font-weight: 700;
   color: var(--c-text);
-  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardCompactDate {
+  font-size: clamp(0.65rem, 0.95vh, 0.76rem);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardCompactLocation {
+  font-size: clamp(0.65rem, 0.95vh, 0.76rem);
+  color: var(--c-text-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.3;
 }
-.cardSmallLocation, .cardSmallTime {
+
+.cardCompactHotel {
+  flex-shrink: 0;
+  font-size: clamp(0.72rem, 1vh, 0.85rem);
+  margin-top: 1px;
+}
+
+.cardCompactPrice {
+  flex-shrink: 0;
   font-size: clamp(0.65rem, 0.95vh, 0.78rem);
-  color: var(--c-text-muted);
+  font-weight: 700;
+  color: var(--c-accent);
+  margin-top: 2px;
 }
+.cardCompactPrice.priceFree { color: #34D399; }
 
 /* ── Badges communs ───────────────────────────────────── */
 .categoryBadge {
@@ -396,18 +481,20 @@
   .detailImg,
   .detailImgPlaceholder { max-height: 32vh; }
 
-  /* Cartes featured en colonne unique */
-  .featuredRow {
-    grid-template-columns: 1fr;
+  /* Cartes featured : plus étroites pour laisser deviner la suite au doigt */
+  .cardFeatured {
+    flex-basis: clamp(240px, 72vw, 340px);
+    grid-template-columns: clamp(100px, 30vw, 160px) 1fr;
   }
 
-  .cardFeatured {
-    grid-template-columns: clamp(100px, 30vw, 160px) 1fr;
+  /* Une seule colonne pour les lignes compactes en portrait */
+  .compactGrid {
+    grid-template-columns: 1fr;
   }
 }
 
 /* ─── Très petits écrans (< 480px) ────────────────────── */
 @media (max-width: 480px) {
-  .cardFeatured { grid-template-columns: 1fr; }
+  .cardFeatured { grid-template-columns: 1fr; height: auto; }
   .cardFeaturedImg { min-height: clamp(80px, 22vw, 120px); }
 }

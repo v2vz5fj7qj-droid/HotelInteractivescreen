@@ -5,13 +5,14 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
+import api              from '../../../services/api';
 import { trackEvent }   from '../../../services/analytics';
 import BackButton       from '../../BackButton/BackButton';
 import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import styles           from './MapSection.module.css';
 
-const ORS_KEY = import.meta.env.VITE_ORS_API_KEY;
+const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY;
 
 const FALLBACK_LAT  = parseFloat(import.meta.env.VITE_HOTEL_LAT  || '12.3641');
 const FALLBACK_LNG  = parseFloat(import.meta.env.VITE_HOTEL_LNG  || '-1.5332');
@@ -35,27 +36,15 @@ function formatDist(meters) {
 }
 
 async function fetchWalkingDistance(lat, lng, hotelLat, hotelLng) {
-  if (!ORS_KEY) return null;
-  const url = 'https://api.openrouteservice.org/v2/directions/foot-walking';
-  const body = {
-    coordinates: [
-      [hotelLng, hotelLat],
-      [lng, lat],
-    ],
-  };
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': ORS_KEY,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const meters = data?.routes?.[0]?.summary?.distance;
-  if (!meters) return null;
-  return { meters, label: formatDist(meters), mode: 'walk' };
+  try {
+    const { data } = await api.get('/directions/walking', {
+      params: { from_lat: hotelLat, from_lng: hotelLng, to_lat: lat, to_lng: lng },
+    });
+    if (!data?.meters) return null;
+    return { meters: data.meters, label: formatDist(data.meters), mode: 'walk' };
+  } catch {
+    return null;
+  }
 }
 
 const ALL_CAT = { key: 'all', labelFr: 'Tout', labelEn: 'All', icon: '📍', color: '#C2782A' };
@@ -110,6 +99,7 @@ export default function MapSection() {
   const [bubblePos, setBubblePos] = useState(null);  // { x, y } pixels dans le container carte
   const [lightbox,  setLightbox]  = useState(null);
   const [distance,  setDistance]  = useState(null);  // { label, mode } | null
+  const [showZoomHint, setShowZoomHint] = useState(true); // indice pincer-zoomer, s'efface tout seul
 
   const { data: allPoi, loading, offline } = useApi('/poi', { locale }, { deps: [locale] });
   const { data: catsData } = useApi('/poi/categories');
@@ -157,7 +147,10 @@ export default function MapSection() {
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     map.attributionControl.setPrefix('');
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
+    const cartoUrl = CARTO_KEY
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png';
+    L.tileLayer(cartoUrl, {
       attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20,
@@ -181,6 +174,9 @@ export default function MapSection() {
 
     // Clic sur le fond de carte → ferme la bulle
     map.on('click', () => { setSelected(null); setBubblePos(null); setLightbox(null); });
+
+    // Dès que l'utilisateur zoome, l'indice n'a plus lieu d'être
+    map.on('zoomstart', () => setShowZoomHint(false));
 
     leafletRef.current = map;
     return () => { map.remove(); leafletRef.current = null; };
@@ -274,6 +270,18 @@ export default function MapSection() {
         )}
         {loading && <div className={styles.mapOverlay}><div className="spinner" /></div>}
         <div ref={mapRef} className={styles.map} />
+
+        {/* ── Indice discret : pincer à deux doigts pour zoomer ── */}
+        {showZoomHint && !loading && (
+          <div
+            className={styles.zoomHint}
+            role="status"
+            aria-live="polite"
+            onAnimationEnd={() => setShowZoomHint(false)}
+          >
+            🤏 {locale === 'fr' ? 'Pincez avec deux doigts pour zoomer' : 'Pinch with two fingers to zoom'}
+          </div>
+        )}
 
         {/* ── Bulle détail POI ── */}
         {selected && bubbleStyle && (

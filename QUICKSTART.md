@@ -107,7 +107,7 @@ La plateforme dispose de **3 niveaux d'accès** distincts :
 
 | Rôle | URL d'accès | Login par défaut | Mot de passe |
 |----|---|---|---|
-| Super-admin | http://localhost:5173/admin | `admin@iconnectbe.com` | `connectbe2026` (valeur de `ADMIN_PASSWORD`) | TnwVGgIqZpqoTGEHmnqy
+| Super-admin | http://localhost:5173/admin | `admin@iconnectbe.com` | `connectbe2026` (valeur de `ADMIN_PASSWORD`) |
 | Hotel-admin | http://localhost:5173/admin | selon création | selon création |
 | Contributeur | http://localhost:5173/admin | selon création | selon création |
 
@@ -293,7 +293,8 @@ Les valeurs à renseigner obligatoirement :
 | `ADMIN_PASSWORD` | Mot de passe super-admin — appliqué une seule fois au premier démarrage (voir [Premier mot de passe super-admin](#premier-mot-de-passe-super-admin)) |
 | `OPENWEATHERMAP_API_KEY` | Météo (optionnel — mode mock si absent) |
 | `FLIGHTAPI_KEY` | Vols temps réel (optionnel — mode mock si absent) |
-| `VITE_ORS_API_KEY` | Itinéraires carte (optionnel) |
+| `ORS_API_KEY` | Itinéraires carte, proxifié côté backend (optionnel) |
+| `VITE_CARTO_API_KEY` | Fond de carte CARTO (optionnel — sans clé, le fond de carte affiche "API KEY REQUIRED") |
 
 > Pour transférer le `.env` entre machines sans le commiter, utiliser `scp` ou un gestionnaire de secrets (Bitwarden, 1Password, etc.).
 > ```bash
@@ -331,6 +332,7 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 | FlightAPI          | flightapi.io                   | 30 crédits (trial)   |
 | OpenRouteService   | openrouteservice.org           | 2 000 req/jour       |
 | ExchangeRate-API   | open.er-api.com                | Gratuit sans clé (1 500 req/mois avec clé) |
+| CARTO Basemaps     | carto.com/basemaps             | Gratuit              |
 
 > **FlightAPI — points importants :**
 > - L'endpoint correct est `/compschedule/{API_KEY}` (clé dans le chemin, pas en query param)

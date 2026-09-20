@@ -20,7 +20,7 @@
     "wellness_sub":         "Massagen & Behandlungen",
     "flights_sub":          "Flugpläne & Status",
     "events_sub":           "Lokale Veranstaltungen",
-    "map_sub":              "Die Stadt erkunden",
+    "map_sub":              "Die Umgebung erkunden",
     "notif_title":          "Gut zu wissen",
     "notif_title_notif":    "Benachrichtigung",
     "notif_msg":            "Willkommenscocktail heute Abend um 18 Uhr",
@@ -42,7 +42,9 @@
     "website":         "Webseite",
     "today":           "Heute",
     "offline_banner":  "Offline-Modus — Zwischengespeicherte Daten",
-    "change_language": "Sprache ändern"
+    "change_language": "Sprache ändern",
+    "link_loading": "Inhalt wird geladen…",
+    "link_unavailable": "Dieser Inhalt kann hier nicht angezeigt werden."
   },
   "weather": {
     "title":           "Wetter",
@@ -91,7 +93,21 @@
     },
     "airport":     "Internationaler Flughafen Ouagadougou",
     "no_results":  "Keine Flüge gefunden",
-    "error":       "Fluginformationen nicht verfügbar"
+    "error":       "Fluginformationen nicht verfügbar",
+    "time": "Zeit",
+    "origin": "Von",
+    "destination": "Nach",
+    "status_col": "Status",
+    "search_label": "Flugnummer suchen",
+    "clear_search": "Suche löschen",
+    "updated_now": "Gerade aktualisiert",
+    "updated_ago": "Vor {{min}} Min. aktualisiert",
+    "stale_ago": "Daten sind {{min}} Min. alt",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "total": "{{n}} Flüge",
+    "local_times": "Ortszeit",
+    "pending": "Flugplan wird geladen"
   },
   "map": {
     "title":         "Karte & Sehenswürdigkeiten",
@@ -118,6 +134,7 @@
     "price":           "Preis",
     "minutes":         "Min",
     "fcfa":            "FCFA",
+    "free":            "Kostenlos",
     "available_hours": "Öffnungszeiten",
     "available_days":  "Verfügbar",
     "how_to_book":     "Wie buchen",
@@ -156,6 +173,12 @@
       "festival":    "Festivals",
       "exhibition":  "Ausstellungen",
       "hotel":       "Im Hotel"
+    },
+    "groups": {
+      "today":       "Heute",
+      "tomorrow":    "Morgen",
+      "this_week":   "Diese Woche",
+      "later":       "Später"
     },
     "free":        "Kostenlos",
     "price":       "Eintritt",
@@ -198,6 +221,7 @@
     "welcome_title":         "Helfen Sie uns, Ihren Aufenthalt zu verbessern!",
     "welcome_sub":           "Bewerten Sie uns in 1 Minute — Ihre Meinung zählt",
     "start":                 "Beginnen",
+    "step_counter":          "Schritt {{n}} von {{total}}",
     "step_rating":           "Wie bewerten Sie Ihren Aufenthalt?",
     "step_rating_sub":       "Bewerten Sie nur die Leistungen, die Sie genutzt haben",
     "step_comment":          "Möchten Sie einen Kommentar hinterlassen?",

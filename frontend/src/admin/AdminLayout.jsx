@@ -14,6 +14,7 @@ const NAV_SUPER = [
   { to: '/admin/super/places',             icon: '🗺️', label: 'Carte & Lieux'              },
   { to: '/admin/super/events',             icon: '🗓️', label: 'Agenda'                     },
   { to: '/admin/super/info',               icon: '📞', label: 'Infos utiles'               },
+  { to: '/admin/super/services',           icon: '💆', label: 'Services & bien-être'        },
   {
     group: 'categories', icon: '🏷️', label: 'Catégories',
     children: [
@@ -23,6 +24,7 @@ const NAV_SUPER = [
       { to: '/admin/super/service-categories', icon: '💆', label: 'Services'     },
     ],
   },
+  { to: '/admin/super/devises',            icon: '💱', label: 'Devises'                    },
   { to: '/admin/super/weather',            icon: '🌍', label: 'Météo'                      },
   { to: '/admin/super/airports',           icon: '✈️', label: 'Aéroports'                  },
   { to: '/admin/super/tokens',             icon: '🔑', label: 'Tokens API'                 },
@@ -86,8 +88,12 @@ function useOpenGroups(nav) {
 
 // ── Layout ───────────────────────────────────────────────────────
 
+// Pages super-admin qui pilotent des données propres à un hôtel — nécessitent le sélecteur d'hôtel.
+const SUPER_HOTEL_SCOPED_PREFIXES = ['/admin/super/services'];
+
 export default function AdminLayout({ section }) {
   const navigate               = useNavigate();
+  const { pathname }           = useLocation();
   const { user, logout }       = useAuth();
   const [collapsed, setCollapsed]  = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -97,6 +103,8 @@ export default function AdminLayout({ section }) {
   const roleInfo   = ROLE_LABELS[user?.role] || { label: user?.role, color: '#6B7280' };
   const hotelSlug  = useHotelSlug(user);
   const borneHref  = hotelSlug ? `/${hotelSlug}` : null;
+  const showHotelSelector = user?.role === 'super_admin' &&
+    (section === 'hotel' || SUPER_HOTEL_SCOPED_PREFIXES.some(p => pathname.startsWith(p)));
   const [openGroups, setOpenGroups] = useOpenGroups(nav);
 
   const toggleGroup = group =>
@@ -243,7 +251,7 @@ export default function AdminLayout({ section }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {switchLinks}
-            {section === 'hotel' && user?.role === 'super_admin' && <SuperHotelSelector />}
+            {showHotelSelector && <SuperHotelSelector />}
             <NotificationBell />
             {borneHref && (
               <a href={borneHref} target="_blank" rel="noreferrer" className={styles.previewLink}>

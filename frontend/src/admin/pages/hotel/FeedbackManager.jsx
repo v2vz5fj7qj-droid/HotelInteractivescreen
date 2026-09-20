@@ -33,13 +33,27 @@ const CATEGORIES = [
   { key: 'services',     label: 'Services'     },
 ];
 
-function Stars({ value }) {
+// Couleur de la note : vert (bon), orange (moyen), rouge (à surveiller)
+function ratingColor(note) {
+  const v = parseFloat(note) || 0;
+  if (v >= 4) return '#10B981';
+  if (v >= 3) return '#F59E0B';
+  return '#EF4444';
+}
+
+function RatingBadge({ value }) {
   const v = parseFloat(value) || 0;
   return (
-    <span title={`${v}/5`} style={{ color: '#F59E0B', letterSpacing: 1, fontSize: '1.1rem' }}>
-      {'★'.repeat(Math.round(v))}{'☆'.repeat(5 - Math.round(v))}
-      <span style={{ fontSize: '0.8rem', color: '#9CA3AF', marginLeft: 4 }}>{v.toFixed(1)}</span>
-    </span>
+    <div
+      title={`${v}/5`}
+      style={{
+        width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+        background: ratingColor(v), color: '#fff', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.84rem',
+      }}
+    >
+      {v.toFixed(1)}
+    </div>
   );
 }
 
@@ -48,10 +62,10 @@ function StatBar({ label, value, color = '#C2782A' }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ fontSize: '0.88rem', color: '#D1D5DB' }}>{label}</span>
+        <span style={{ fontSize: '0.88rem', color: '#1E1004' }}>{label}</span>
         <span style={{ fontSize: '0.88rem', fontWeight: 700, color }}>{value ? parseFloat(value).toFixed(2) : '—'}</span>
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)' }}>
+      <div style={{ height: 8, borderRadius: 4, background: '#E5E7EB' }}>
         <div style={{ height: '100%', borderRadius: 4, background: color, width: `${pct}%`, transition: 'width 0.6s ease' }} />
       </div>
     </div>
@@ -69,10 +83,13 @@ export default function FeedbackManager() {
   const [loading, setLoading] = useState(true);
   const [page,    setPage]    = useState(0);
 
-  const [from,       setFrom]       = useState('');
-  const [to,         setTo]         = useState('');
-  const [minNote,    setMinNote]    = useState('');
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [from,        setFrom]        = useState('');
+  const [to,          setTo]          = useState('');
+  const [minNote,     setMinNote]     = useState('');
+  const [hasComment,  setHasComment]  = useState(false);
+  const [search,      setSearch]      = useState('');
+  const [expanded,    setExpanded]    = useState(() => new Set());
+  const [pdfLoading,  setPdfLoading]  = useState(false);
 
   const LIMIT = 20;
 
@@ -80,9 +97,11 @@ export default function FeedbackManager() {
     setLoading(true);
     try {
       const params = { limit: LIMIT, offset: p * LIMIT, hotel_id: hotelId };
-      if (from)    params.from     = from;
-      if (to)      params.to       = to;
-      if (minNote) params.min_note = minNote;
+      if (from)             params.from        = from;
+      if (to)               params.to          = to;
+      if (minNote)          params.min_note    = minNote;
+      if (hasComment)       params.has_comment = 1;
+      if (search.trim())    params.q           = search.trim();
 
       const [listRes, statsRes] = await Promise.all([
         api.get('/hotel/feedbacks',       { params }),
@@ -97,9 +116,21 @@ export default function FeedbackManager() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, minNote, hotelId]);
+  }, [from, to, minNote, hasComment, search, hotelId]);
 
   useEffect(() => { load(0); }, [load]);
+
+  const toggleExpanded = (id) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const resetFilters = () => {
+    setFrom(''); setTo(''); setMinNote(''); setHasComment(false); setSearch('');
+  };
 
   const handleExportPDF = async () => {
     setPdfLoading(true);
@@ -110,9 +141,11 @@ export default function FeedbackManager() {
       const filename = `feedbacks_${hotelSlug || hotelId}_${datePart}_${timePart}`;
 
       const params = { hotel_id: hotelId, limit: 5000, offset: 0 };
-      if (from)    params.from     = from;
-      if (to)      params.to       = to;
-      if (minNote) params.min_note = minNote;
+      if (from)          params.from        = from;
+      if (to)            params.to          = to;
+      if (minNote)       params.min_note    = minNote;
+      if (hasComment)    params.has_comment = 1;
+      if (search.trim()) params.q           = search.trim();
 
       const [rowsRes, settingsRes] = await Promise.all([
         api.get('/hotel/feedbacks', { params }),
@@ -146,9 +179,11 @@ export default function FeedbackManager() {
 
   const handleExport = async () => {
     const params = new URLSearchParams({ hotel_id: hotelId });
-    if (from)    params.set('from',     from);
-    if (to)      params.set('to',       to);
-    if (minNote) params.set('min_note', minNote);
+    if (from)          params.set('from',        from);
+    if (to)            params.set('to',          to);
+    if (minNote)       params.set('min_note',    minNote);
+    if (hasComment)    params.set('has_comment', '1');
+    if (search.trim()) params.set('q',           search.trim());
     const now      = new Date();
     const datePart = now.toISOString().slice(0, 10);
     const timePart = now.toTimeString().slice(0, 5).replace(':', 'h');
@@ -166,13 +201,14 @@ export default function FeedbackManager() {
   };
 
   const pages = Math.ceil(total / LIMIT);
+  const pctAvecCommentaire = stats?.total ? Math.round((stats.avec_commentaire / stats.total) * 100) : 0;
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#F5E6C8' }}>⭐ Évaluations clients</h2>
-          <p style={{ margin: '4px 0 0', color: '#9CA3AF', fontSize: '0.88rem' }}>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#1E1004' }}>⭐ Évaluations clients</h2>
+          <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '0.88rem' }}>
             {total} avis reçus
           </p>
         </div>
@@ -188,39 +224,47 @@ export default function FeedbackManager() {
 
       {/* ── Stats ── */}
       {stats && (
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28,
-        }}>
-          {/* Note globale */}
-          <div className={styles.card} style={{ textAlign: 'center', padding: '24px 16px' }}>
-            <p style={{ margin: '0 0 4px', fontSize: '0.8rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 }}>
-              Note globale
-            </p>
-            <p style={{ margin: 0, fontSize: '3rem', fontWeight: 800, color: '#F59E0B', lineHeight: 1 }}>
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard} style={{ textAlign: 'center' }}>
+            <p className={styles.statLabel} style={{ marginBottom: 6 }}>Note globale</p>
+            <p className={styles.statValue} style={{ color: '#F59E0B' }}>
               {stats.moyenne_globale ? parseFloat(stats.moyenne_globale).toFixed(2) : '—'}
             </p>
-            <p style={{ margin: '6px 0 0', color: '#F59E0B', fontSize: '1.4rem' }}>
-              {'★'.repeat(Math.round(stats.moyenne_globale || 0))}
-            </p>
-            <p style={{ margin: '8px 0 0', fontSize: '0.82rem', color: '#6B7280' }}>
-              sur {stats.total || 0} avis
+            <p style={{ margin: '6px 0 0', color: '#F59E0B', fontSize: '1rem' }}>
+              {'★'.repeat(Math.round(stats.moyenne_globale || 0))}{'☆'.repeat(5 - Math.round(stats.moyenne_globale || 0))}
             </p>
           </div>
-
-          {/* Barres par catégorie */}
-          <div className={styles.card} style={{ padding: '20px 20px' }}>
-            <p style={{ margin: '0 0 14px', fontSize: '0.82rem', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 }}>
-              Par catégorie
+          <div className={styles.statCard} style={{ textAlign: 'center' }}>
+            <p className={styles.statLabel} style={{ marginBottom: 6 }}>Total avis</p>
+            <p className={styles.statValue}>{stats.total || 0}</p>
+          </div>
+          <div className={styles.statCard} style={{ textAlign: 'center' }}>
+            <p className={styles.statLabel} style={{ marginBottom: 6 }}>Avec commentaire</p>
+            <p className={styles.statValue}>{pctAvecCommentaire}%</p>
+          </div>
+          <div className={styles.statCard} style={{ textAlign: 'center', borderColor: stats.a_surveiller > 0 ? '#FCA5A5' : undefined }}>
+            <p className={styles.statLabel} style={{ marginBottom: 6 }}>À surveiller</p>
+            <p className={styles.statValue} style={{ color: stats.a_surveiller > 0 ? '#EF4444' : '#1E1004' }}>
+              {stats.a_surveiller || 0}
             </p>
-            {CATEGORIES.map(c => (
-              <StatBar key={c.key} label={c.label} value={stats[`moy_${c.key}`]} />
-            ))}
           </div>
         </div>
       )}
 
+      {/* ── Barres par catégorie ── */}
+      {stats && (
+        <div className={styles.card} style={{ marginBottom: 20 }}>
+          <p style={{ margin: '0 0 14px', fontSize: '0.82rem', color: '#6B7280', textTransform: 'uppercase', letterSpacing: 1 }}>
+            Par catégorie
+          </p>
+          {CATEGORIES.map(c => (
+            <StatBar key={c.key} label={c.label} value={stats[`moy_${c.key}`]} />
+          ))}
+        </div>
+      )}
+
       {/* ── Filtres ── */}
-      <div className={styles.card} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16, marginBottom: 20, padding: '16px 20px', flexWrap: 'nowrap' }}>
+      <div className={styles.card} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16, marginBottom: 20, padding: '16px 20px', flexWrap: 'wrap' }}>
         <div className={styles.field}>
           <span className={styles.label}>Du</span>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} className={styles.input} style={{ width: 155 }} />
@@ -236,58 +280,109 @@ export default function FeedbackManager() {
             {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}+</option>)}
           </select>
         </div>
+        <div className={styles.field} style={{ flex: 1, minWidth: 200 }}>
+          <span className={styles.label}>Rechercher</span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Dans les commentaires…"
+            className={styles.input}
+          />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#1E1004', paddingBottom: 10 }}>
+          <input type="checkbox" checked={hasComment} onChange={e => setHasComment(e.target.checked)} />
+          Avec commentaire uniquement
+        </label>
         <button className={styles.btnPrimary} onClick={() => load(0)}>Filtrer</button>
-        <button className={styles.btnSecondary} onClick={() => { setFrom(''); setTo(''); setMinNote(''); }}>Réinitialiser</button>
+        <button className={styles.btnSecondary} onClick={resetFilters}>Réinitialiser</button>
       </div>
 
-      {/* ── Tableau ── */}
+      {/* ── Liste des avis ── */}
       {loading ? (
-        <p style={{ color: '#9CA3AF' }}>Chargement…</p>
+        <p style={{ color: '#6B7280' }}>Chargement…</p>
       ) : rows.length === 0 ? (
         <div className={styles.card} style={{ textAlign: 'center', padding: 40, color: '#6B7280' }}>
           <p style={{ fontSize: '2rem' }}>📭</p>
           <p>Aucun avis pour cette période</p>
         </div>
       ) : (
-        <div className={styles.card} style={{ overflowX: 'auto', padding: 0 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                {['Date', 'Note', 'Propreté', 'Accueil', 'Chambre', 'Restau.', 'Services', 'Commentaire', 'Langue'].map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: '#9CA3AF', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => {
-                const cats = typeof r.categories === 'string' ? JSON.parse(r.categories) : r.categories;
-                return (
-                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <td style={{ padding: '10px 12px', color: '#D1D5DB', whiteSpace: 'nowrap' }}>
-                      {new Date(r.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td style={{ padding: '10px 12px' }}><Stars value={r.note_globale} /></td>
-                    {CATEGORIES.map(c => (
-                      <td key={c.key} style={{ padding: '10px 12px', color: '#F59E0B', textAlign: 'center' }}>
-                        {cats[c.key] != null ? `${cats[c.key]}★` : '—'}
-                      </td>
-                    ))}
-                    <td style={{ padding: '10px 12px', color: '#D1D5DB', maxWidth: 280 }}>
-                      {r.commentaire
-                        ? <span title={r.commentaire}>{r.commentaire.length > 80 ? r.commentaire.slice(0, 80) + '…' : r.commentaire}</span>
-                        : <span style={{ color: '#6B7280', fontStyle: 'italic' }}>—</span>
-                      }
-                    </td>
-                    <td style={{ padding: '10px 12px', color: '#9CA3AF', textTransform: 'uppercase', fontSize: '0.78rem' }}>
-                      {r.locale}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {rows.map(r => {
+            const cats      = typeof r.categories === 'string' ? JSON.parse(r.categories) : r.categories;
+            const note      = parseFloat(r.note_globale) || 0;
+            const isLow     = note < 3;
+            const comment   = r.commentaire;
+            const isLong    = !!comment && comment.length > 160;
+            const isOpen    = expanded.has(r.id);
+            const created   = new Date(r.created_at);
+
+            return (
+              <div key={r.id} className={styles.card}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <RatingBadge value={r.note_globale} />
+                    <div>
+                      <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700, color: '#1E1004' }}>
+                        {created.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#6B7280' }}>
+                        {created.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    {isLow && (
+                      <span className={`${styles.badge} ${styles.badgeInactive}`}>⚠ À suivre</span>
+                    )}
+                  </div>
+                  <span className={styles.badge} style={{ background: '#F4F6F9', color: '#6B7280' }}>
+                    {(r.locale || '').toUpperCase()}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {CATEGORIES.filter(c => cats[c.key] != null).map(c => (
+                    <span
+                      key={c.key}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 12px',
+                        background: '#F4F6F9', border: '1px solid #E5E7EB', borderRadius: 9999,
+                        fontSize: '0.76rem', fontWeight: 600, color: '#1E1004', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {c.label} {'★'.repeat(cats[c.key])}
+                    </span>
+                  ))}
+                </div>
+
+                {comment ? (
+                  <div>
+                    <p
+                      style={{
+                        margin: 0, fontSize: '0.9rem', color: '#1E1004', lineHeight: 1.5,
+                        ...(isLong && !isOpen
+                          ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+                          : {}),
+                      }}
+                    >
+                      « {comment} »
+                    </p>
+                    {isLong && (
+                      <button
+                        onClick={() => toggleExpanded(r.id)}
+                        style={{ marginTop: 6, background: 'none', border: 'none', padding: 0, color: '#C2782A', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {isOpen ? 'Réduire ‹' : 'Voir le commentaire complet ›'}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#9CA3AF', fontStyle: 'italic' }}>
+                    Aucun commentaire laissé
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -301,7 +396,7 @@ export default function FeedbackManager() {
           >
             ← Précédent
           </button>
-          <span style={{ padding: '8px 14px', color: '#9CA3AF', fontSize: '0.88rem' }}>
+          <span style={{ padding: '8px 14px', color: '#6B7280', fontSize: '0.88rem' }}>
             {page + 1} / {pages}
           </span>
           <button

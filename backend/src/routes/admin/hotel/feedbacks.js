@@ -20,8 +20,8 @@ router.get('/', async (req, res) => {
   const hotel_id = resolveHotelId(req);
   if (!hotel_id) return res.status(400).json({ error: 'Contexte hôtel manquant' });
 
-  const { from, to, min_note, limit = 50, offset = 0 } = req.query;
-  const data = await Feedback.list({ hotel_id, from, to, min_note, limit, offset });
+  const { from, to, min_note, has_comment, q, limit = 50, offset = 0 } = req.query;
+  const data = await Feedback.list({ hotel_id, from, to, min_note, has_comment, q, limit, offset });
   res.json(data);
 });
 
@@ -38,8 +38,8 @@ router.get('/export', async (req, res) => {
   const hotel_id = resolveHotelId(req);
   if (!hotel_id) return res.status(400).json({ error: 'Contexte hôtel manquant' });
 
-  const { from, to, min_note } = req.query;
-  const { rows } = await Feedback.list({ hotel_id, from, to, min_note, limit: 5000, offset: 0 });
+  const { from, to, min_note, has_comment, q } = req.query;
+  const { rows } = await Feedback.list({ hotel_id, from, to, min_note, has_comment, q, limit: 5000, offset: 0 });
 
   const escape = v => {
     if (v == null) return '';

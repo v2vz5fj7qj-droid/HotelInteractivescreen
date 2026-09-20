@@ -22,6 +22,7 @@ import TokensManager           from './pages/super/TokensManager';
 import AuditLog               from './pages/super/AuditLog';
 import HotelConfig            from './pages/super/HotelConfig';
 import SuperKiosksManager     from './pages/super/KiosksManager';
+import SuperDevisesManager    from './pages/super/DevisesManager';
 
 // Pages hotel-admin
 import HotelDashboard       from './pages/hotel/Dashboard';
@@ -98,11 +99,13 @@ export default function AdminApp() {
           <Route index                  element={<SuperDashboard />} />
           <Route path="hotels"              element={<HotelsManager />} />
           <Route path="hotels/:id/config" element={<HotelConfig />} />
+          <Route path="devises"             element={<SuperDevisesManager />} />
           <Route path="users"           element={<UsersManager />} />
           <Route path="airports"        element={<AirportsManager />} />
           <Route path="places"          element={<SuperPlacesManager />} />
           <Route path="events"          element={<SuperEventsManager />} />
           <Route path="info"            element={<SuperInfoManager />} />
+          <Route path="services"        element={<ServicesManager />} />
           <Route path="service-categories"  element={<ServiceCategoriesManager />} />
           <Route path="poi-categories"     element={<PoiCategoriesManager />} />
           <Route path="event-categories"   element={<EventCategoriesManager />} />

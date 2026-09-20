@@ -14,6 +14,14 @@ async function addCredits(count = 2) {
       [String(count), count]
     );
   } catch (_) { /* non-bloquant */ }
+
+  // Alimente aussi le suivi global consulté par le super-admin (table api_token_tracking)
+  try {
+    await db.query(
+      `UPDATE api_token_tracking SET used_tokens = used_tokens + ? WHERE service = 'flightapi'`,
+      [count]
+    );
+  } catch (_) { /* non-bloquant */ }
 }
 
 async function getCreditsStats() {

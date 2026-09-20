@@ -159,9 +159,9 @@ function ContactCard({ contact, color, t }) {
       {(contact.phone || contact.whatsapp || contact.website) && (
         <div className={styles.cardActions}>
           {contact.phone && (
-            <a href={`tel:${contact.phone}`} className={styles.actionBtn}>
+            <span className={`${styles.actionBtn} ${styles.actionStatic}`}>
               📞 {contact.phone}
-            </a>
+            </span>
           )}
           {contact.whatsapp && (
             <a

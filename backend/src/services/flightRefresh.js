@@ -10,6 +10,28 @@ const { addCredits } = require('./creditTracker');
 
 let schedulerTimer = null;
 
+const THROTTLE_MS = 4000;
+const MAX_ATTEMPTS = 3;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// FlightAPI masque sa limitation de débit derrière un 401 : on retente avec un délai croissant
+async function fetchScheduleWithRetry(key, mode, airport) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await axios.get(`https://api.flightapi.io/compschedule/${key}`, {
+        params: { mode, iata: airport, day: 0 },
+        timeout: 30000,
+      });
+    } catch (e) {
+      const throttled = e.response?.status === 401 || e.response?.status === 429;
+      const timedOut  = e.code === 'ECONNABORTED';
+      if ((!throttled && !timedOut) || attempt >= MAX_ATTEMPTS) throw e;
+      await sleep(THROTTLE_MS * attempt);
+    }
+  }
+}
+
 function getHourInTZ(timezone) {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -103,13 +125,26 @@ async function refreshFlights(airportOverride) {
   }
 
   let refreshed = 0;
+  let first = true;
   for (const type of ['arrivals', 'departures']) {
     try {
-      const response = await axios.get(`https://api.flightapi.io/compschedule/${FLIGHT_KEY}`, {
-        params: { mode: type, iata: airport, day: 0 },
-        timeout: 15000,
-      });
+      // FlightAPI répond 401 (et non 429) quand deux appels s'enchaînent trop vite
+      if (!first) await sleep(THROTTLE_MS);
+      first = false;
+
+      const response = await fetchScheduleWithRetry(FLIGHT_KEY, type, airport);
       const raw = response.data?.[0]?.airport?.pluginData?.schedule?.[type]?.data || [];
+      const key = `flights:${airport}:${type}`;
+
+      // FlightAPI renvoie par intermittence un 200 vide : ne pas effacer un cache déjà rempli
+      if (raw.length === 0) {
+        const previous = await cache.get(key);
+        if (previous && JSON.parse(previous).flights?.length > 0) {
+          console.warn(`[Flight Refresh] ${type} vide (${airport}) — anciennes données conservées`);
+          continue;
+        }
+      }
+
       const payload = {
         airport, type,
         flights:      raw.map(normalizeFlightData),
@@ -117,7 +152,7 @@ async function refreshFlights(airportOverride) {
         stale:        false,
       };
       // Stockage sans TTL : les données persistent même si le réseau tombe
-      await cache.setPersist(`flights:${airport}:${type}`, JSON.stringify(payload));
+      await cache.setPersist(key, JSON.stringify(payload));
       await addCredits(2);
       refreshed++;
     } catch (e) {

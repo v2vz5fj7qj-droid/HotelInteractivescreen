@@ -4,6 +4,7 @@
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');
+const { getNextOccurrence, describeRecurrence } = require('../utils/recurrence');
 const router  = express.Router();
 
 // GET /api/events?hotel_id=1&locale=fr&category=music&upcoming=true&limit=20
@@ -26,6 +27,7 @@ router.get('/', async (req, res) => {
         e.start_date, e.end_date, e.start_time, e.end_time,
         e.location, e.lat, e.lng, e.price_fcfa,
         e.image_url, e.is_featured, e.display_order,
+        e.is_recurrent, e.recurrence_rule,
         COALESCE(t.title,       tf.title)       AS title,
         COALESCE(t.description, tf.description) AS description,
         COALESCE(t.tags,        tf.tags)        AS tags
@@ -42,7 +44,9 @@ router.get('/', async (req, res) => {
 
     query += ' WHERE e.status = \'published\'';
     if (upcoming) {
-      query += ' AND (e.end_date >= CURDATE() OR (e.end_date IS NULL AND e.start_date >= CURDATE()))';
+      // Un événement récurrent (ex: cérémonie mensuelle) reste "à venir" indéfiniment —
+      // sa prochaine occurrence est calculée après coup à partir de recurrence_rule.
+      query += ' AND (e.is_recurrent = 1 OR e.end_date >= CURDATE() OR (e.end_date IS NULL AND e.start_date >= CURDATE()))';
     }
     if (category) { query += ' AND e.category = ?'; params.push(category); }
     if (featured)  { query += ' AND e.is_featured = 1'; }
@@ -52,12 +56,20 @@ router.get('/', async (req, res) => {
 
     const [rows] = await db.query(query, params);
 
-    const payload = rows.map(r => ({
-      ...r,
-      tags:       r.tags ? r.tags.split(',') : [],
-      is_free:    r.price_fcfa === 0,
-      is_hotel:   r.category === 'hotel',
-    }));
+    const payload = rows.map(r => {
+      const isRecurrent = !!r.is_recurrent;
+      const nextDate     = isRecurrent ? getNextOccurrence(r.recurrence_rule) : null;
+      return {
+        ...r,
+        tags:             r.tags ? r.tags.split(',') : [],
+        is_free:          r.price_fcfa === 0,
+        is_hotel:         r.category === 'hotel',
+        is_recurrent:     isRecurrent,
+        recurrence_label: isRecurrent ? describeRecurrence(r.recurrence_rule, locale) : null,
+        // Date affichée : la prochaine occurrence pour un événement récurrent, sinon start_date.
+        display_date:     isRecurrent && nextDate ? nextDate.toISOString().slice(0, 10) : r.start_date,
+      };
+    }).sort((a, b) => new Date(a.display_date) - new Date(b.display_date));
 
     await cache.set(cacheKey, JSON.stringify(payload), 1800); // 30 min
     res.json(payload);

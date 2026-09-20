@@ -4,7 +4,7 @@ import api from './api';
 const LOCALE_FREE = [
   '/weather/localities',
   '/weather/current',
-  '/flights/list',
+  '/flights',
   '/currency/rates',
   '/currency/config',
   '/events/categories',

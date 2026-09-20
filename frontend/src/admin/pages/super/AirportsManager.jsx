@@ -5,7 +5,7 @@ import styles from '../../Admin.module.css';
 
 const EMPTY_AIRPORT = {
   code: '', label: '',
-  schedule_enabled: true, schedule_mode: 'interval',
+  schedule_enabled: false, schedule_mode: 'interval',
   interval_minutes: 30, fixed_hours: '',
 };
 

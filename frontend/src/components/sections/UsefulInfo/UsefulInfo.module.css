@@ -173,6 +173,10 @@
 .actionWa:hover       { border-color: #25D366; color: #25D366; }
 .actionWeb:hover      { border-color: var(--c-primary); color: var(--c-primary); }
 
+/* Numéro affiché à titre indicatif — pas d'appel possible depuis le kiosque */
+.actionStatic         { cursor: default; }
+.actionStatic:hover   { border-color: var(--c-border); color: var(--c-text); }
+
 /* ── États vides ──────────────────────────────────────── */
 .empty {
   display: flex;

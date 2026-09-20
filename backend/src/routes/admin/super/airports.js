@@ -76,7 +76,7 @@ router.post('/', async (req, res) => {
   try {
     const {
       code, label,
-      schedule_enabled = true,
+      schedule_enabled = false,
       schedule_mode    = 'interval',
       interval_minutes = 30,
       fixed_hours      = null,

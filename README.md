@@ -45,7 +45,7 @@ HotelInteractivescreen/
 | Couche      | Technologies                                                                                      |
 |-------------|---------------------------------------------------------------------------------------------------|
 | Frontend    | React 18, Vite 6, React Router 6, CSS Modules, Lucide, axios                                     |
-| Carte       | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB Voyager (gratuit)                                |
+| Carte       | Leaflet 1.9 + react-leaflet 4.2, tuiles CartoDB (clé gratuite carto.com — sans clé, la tuile affiche "API KEY REQUIRED") |
 | QR code     | qrcode.react (kiosque) + qrcode (backend) — token signé TTL 10 min                               |
 | Export PDF  | jsPDF 4 + jspdf-autotable 5 — génération PDF côté client (FeedbackManager)                       |
 | Backend     | Node.js, Express, JWT (jsonwebtoken), multer, bcrypt, helmet, express-rate-limit, axios           |
@@ -162,28 +162,30 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 |---|---|
 | Tableau de bord | Vue globale, notifications de workflow (soumissions en attente) |
 | Hôtels | CRUD hôtels (nom, slug, statut) + bouton **Configurer** par hôtel |
-| Configuration hôtel | Page dédiée par hôtel — onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Bon à savoir**, **Météo** (localités, défaut, refresh), **Aéroports** (affectation/retrait), **Devises** (convertisseur, même module que côté hotel-admin) |
-| Carte & POI | CRUD lieux, **modal détail** (coordonnées, carte OSM, contributeur, historique rejet) avant validation/rejet, affectation → hôtels |
+| Utilisateurs | CRUD comptes, rôles, permissions contributeurs |
+| Carte & Lieux | CRUD lieux, **modal détail** (coordonnées, carte OSM, contributeur, historique rejet) avant validation/rejet, affectation → hôtels |
 | Agenda | CRUD événements globaux, **modal détail** (titre, description, dates, lieu, contributeur) avant validation/rejet/archivage |
 | Infos utiles | CRUD, **modal détail** (contacts, description, contributeur) avant validation/rejet |
-| Services (catégories globales) | Catégories modèles réutilisables par les hôtels |
+| Services & bien-être | Catégories modèles globales réutilisables par les hôtels |
+| Catégories (sous-menu) | Gestion des catégories globales : **Lieux**, **Agenda**, **Infos utiles**, **Services** |
+| Devises | Consultation/config du convertisseur devises par hôtel (sélecteur d'hôtel, même module que côté hotel-admin) |
 | Météo | Localités par hôtel (max 5), cache partagé par localité |
-| Vols | Clé API, aéroports par hôtel, planification par aéroport, suivi tokens |
-| Users | CRUD comptes, rôles, permissions contributeurs |
+| Aéroports | Affectation/retrait d'aéroports par hôtel |
+| Tokens API | Suivi et alerte de consommation des tokens FlightAPI |
+| Journal d'activité | Historique filtrable de l'`audit_log` (par type d'entité, hôtel, utilisateur, date) |
 | **Bornes kiosques** | Liste toutes les bornes (tous hôtels), statut temps réel (en ligne / hors ligne / désactivée), génération de clés d'inscription usage unique avec expiration configurable, copie de clé, toggle actif/inactif, suppression |
+| Configuration hôtel | Page dédiée par hôtel (accessible depuis Hôtels → **Configurer**) — onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Bon à savoir**, **Météo**, **Aéroports**, **Devises** |
 
 ### Hotel-admin
 
 | Page | Fonctionnalité |
 |---|---|
 | Tableau de bord | Notifications de workflow, compteurs de contenu |
-| Paramètres hôtel | Logo, image de fond, thème couleurs, nom, contacts, WiFi, check-in/check-out |
-| Images de bannière | Galerie carrousel (max 10 images) affichée à l'accueil de la borne |
+| Paramètres hôtel | Logo, image de fond, thème couleurs, nom, contacts, WiFi, check-in/check-out, galerie carrousel (max 10 images), upload police personnalisée (`.ttf`/`.otf`) |
 | Services et bien-être | Catégories propres + CRUD services |
 | Bon à savoir | CRUD informations propres à l'hôtel — flag "notification" pour affichage clochette sur la borne |
 | Agenda | CRUD événements propres (visibles hôtel uniquement) |
 | Évaluations | Consultation des feedbacks kiosque — statistiques par catégorie, filtres date/note, export CSV et PDF |
-| Police personnalisée | Upload d'un fichier `.ttf`/`.otf` pour remplacer la police de la borne |
 | Devises | Devise de base, devises cibles (max 10), tableau des taux affiché sur la borne (max 5), MAJ auto (intervalle ou heures fixes) ou manuelle, refresh forcé |
 | **Bornes kiosques** | Vue des bornes de l'hôtel avec statut temps réel, toggle actif/inactif |
 
@@ -196,7 +198,7 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Mes événements | Soumettre/modifier ses événements (si can_submit_events) |
 | Mes infos utiles | Soumettre/modifier ses fiches (si can_submit_info) |
 
-**Sécurité :** Authentification JWT (8h), token en sessionStorage, route guards par rôle sur toutes les pages protégées.
+**Sécurité :** Authentification JWT (8h) transmis via **cookie HttpOnly `admin_token`** (`Secure` en prod, `SameSite=Strict`) — jamais exposé au JavaScript ni stocké en sessionStorage. Le sessionStorage ne conserve que des métadonnées non-sensibles (rôle, hôtel, email) pour l'UI. Requêtes admin en `withCredentials: true`. Route guards par rôle sur toutes les pages protégées.
 
 ---
 
@@ -241,9 +243,9 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 1. Créer `frontend/src/i18n/xx.json` (copier `en.json` comme base)
 2. Ajouter une entrée dans `frontend/src/i18n/locales.json` :
    ```json
-   "xx": { "nativeName": "Nom natif", "flag": "🏳️", "dir": "ltr" }
+   "xx": { "nativeName": "Nom natif", "dir": "ltr" }
    ```
-3. C'est tout. La langue apparaît automatiquement dans le sélecteur.
+3. C'est tout. La langue apparaît automatiquement dans le sélecteur (affichage par nom natif, sans drapeau).
 
 > Pour les langues RTL (ex. arabe), mettre `"dir": "rtl"` — le sens d'écriture est appliqué automatiquement sur `<html dir="...">`.
 
@@ -251,7 +253,7 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 
 ## Carte & Points d'intérêt
 
-- Fond de carte **CartoDB Voyager** (gratuit, aucune clé API requise)
+- Fond de carte **CartoDB** — clé `VITE_CARTO_API_KEY` recommandée (gratuite sur carto.com) : sans elle, la tuile affiche "API KEY REQUIRED"
 - Marqueurs par catégorie avec bulle de détail positionnée près du point cliqué
 - La bulle suit le déplacement/zoom de la carte
 - Galerie d'images scrollable dans la bulle (max 3 images par POI, gérées depuis le backoffice)
@@ -270,7 +272,8 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 | `ADMIN_PASSWORD`          | Mot de passe initial du super-admin (appliqué une seule fois, au 1er démarrage) | Non (connectbe2026) |
 | `OPENWEATHERMAP_API_KEY`  | Clé OpenWeatherMap (météo)                    | Non (mock)       |
 | `FLIGHTAPI_KEY`           | Clé FlightAPI.io (vols temps réel)            | Non (mock)       |
-| `VITE_ORS_API_KEY`        | Clé OpenRouteService (itinéraires carte)      | Non              |
+| `ORS_API_KEY`             | Clé OpenRouteService (itinéraires carte, proxifiée côté backend via `/api/directions`) | Non |
+| `VITE_CARTO_API_KEY`      | Clé CartoDB (fond de carte) — sans clé, tuile affiche "API KEY REQUIRED" | Recommandé |
 | `HOTEL_NAME`              | Nom de l'hôtel par défaut                     | Non (ConnectBé)  |
 | `HOTEL_LAT` / `HOTEL_LNG` | Coordonnées GPS par défaut (héritage v1)     | Non (Ouaga)      |
 | `HOTEL_CITY_OWM_ID`       | ID OpenWeatherMap de la ville (héritage v1)   | Non (Ouaga)      |
@@ -284,6 +287,7 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 
 L'application est **offline-first** :
 - Le **Service Worker** (`public/sw.js`) met en cache les assets statiques
+- Au chargement de la borne, un **préchargement automatique** (`services/cacheWarmup.js`) interroge en arrière-plan tous les endpoints kiosque (météo, vols, devises, agenda, infos, POI, services, bon à savoir) — dans toutes les langues supportées — pour alimenter le cache avant toute interaction utilisateur
 - L'**intercepteur Axios** lit le `localStorage` si le réseau est coupé
 - Le **backend** retourne des données mock si une API externe est indisponible
 - Une **bannière orange** s'affiche en cas de perte de connexion

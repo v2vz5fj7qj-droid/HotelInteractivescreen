@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
@@ -12,6 +12,8 @@ export default function Wellness() {
   const { data, loading, error }    = useApi('/services', { locale });
   const [selected, setSelected]     = useState(null);
 
+  const categories = useMemo(() => groupServicesByCategory(data), [data]);
+
   useEffect(() => { trackEvent('wellness', 'open'); }, []);
 
   if (loading) return <div className={styles.center}><div className="spinner" /></div>;
@@ -20,6 +22,12 @@ export default function Wellness() {
   if (selected) {
     return <ServiceDetail service={selected} t={t} onBack={() => setSelected(null)} />;
   }
+
+  const showGroups = categories.length > 1;
+
+  const scrollToCategory = (id) => {
+    document.getElementById(`svc-cat-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className={styles.page}>
@@ -32,52 +40,103 @@ export default function Wellness() {
         <p className={styles.subtitle}>{t('wellness.subtitle')}</p>
       </div>
 
-      <div className={styles.grid}>
-        {(data || []).map(service => (
-          <ServiceCard
-            key={service.id}
-            service={service}
-            t={t}
-            onClick={() => {
-              setSelected(service);
-              trackEvent('wellness', 'view_service', { service: service.slug });
-            }}
-          />
+      {/* Raccourcis catégories — pour sauter directement à une section */}
+      {showGroups && (
+        <div className={styles.categoryNav} role="group" aria-label="Catégories">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              className={styles.categoryChip}
+              onClick={() => scrollToCategory(cat.id)}
+            >
+              <span aria-hidden="true">{cat.icon}</span>
+              {locale === 'fr' ? cat.label_fr : cat.label_en}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Services regroupés par catégorie pour rester lisibles en nombre */}
+      <div className={styles.content}>
+        {categories.map(cat => (
+          <div key={cat.id} id={`svc-cat-${cat.id}`} className={styles.categoryGroup}>
+            {showGroups && (
+              <div className={styles.categoryHeader}>
+                <span className={styles.categoryLabel}>
+                  {cat.icon} {locale === 'fr' ? cat.label_fr : cat.label_en}
+                </span>
+                <span className={styles.categoryCount}>{cat.services.length}</span>
+                <div className={styles.categoryRule} />
+              </div>
+            )}
+            <div className={styles.grid}>
+              {cat.services.map(service => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  t={t}
+                  onClick={() => {
+                    setSelected(service);
+                    trackEvent('wellness', 'view_service', { service: service.slug });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
   );
 }
 
-/* ── Carte de service ─────────────────────────────────── */
+/* ── Regroupement par catégorie (lisibilité quand il y a
+   beaucoup de services) — l'API les trie déjà par ordre de
+   catégorie puis d'affichage, on ne fait que les répartir ── */
+function groupServicesByCategory(data) {
+  if (!data?.length) return [];
+  const byId = new Map();
+  data.forEach(service => {
+    if (!byId.has(service.category_id)) {
+      byId.set(service.category_id, {
+        id: service.category_id,
+        icon: service.category_icon || '✨',
+        label_fr: service.category_label_fr,
+        label_en: service.category_label_en,
+        services: [],
+      });
+    }
+    byId.get(service.category_id).services.push(service);
+  });
+  return Array.from(byId.values());
+}
+
+/* ── Carte de service (compacte) ───────────────────────── */
 function ServiceCard({ service, t, onClick }) {
+  const hasDuration = service.duration_min != null;
+  const isFree = service.price_fcfa === 0;
   return (
-    <button className={styles.card} onClick={onClick} aria-label={`${service.name} — ${service.duration_min} min`}>
+    <button
+      className={styles.card}
+      onClick={onClick}
+      aria-label={hasDuration ? `${service.name} — ${service.duration_min} min` : service.name}
+    >
       {service.image_url ? (
         <img src={service.image_url} alt={service.name} className={styles.cardImg} />
       ) : (
-        <div className={styles.cardImgPlaceholder}>💆</div>
+        <div className={styles.cardImgPlaceholder} aria-hidden="true">{service.category_icon || '✨'}</div>
       )}
       <div className={styles.cardBody}>
         <h2 className={styles.cardName}>{service.name}</h2>
         <p className={styles.cardDesc}>{service.description}</p>
 
         <div className={styles.cardMeta}>
-          <span className={styles.pill}>
-            ⏱ {service.duration_min} {t('wellness.minutes')}
-          </span>
-          <span className={`${styles.pill} ${styles.pillPrimary}`}>
-            {service.price_fcfa.toLocaleString('fr-BF')} {t('wellness.fcfa')}
+          {hasDuration && (
+            <span className={styles.pill}>⏱ {service.duration_min} {t('wellness.minutes')}</span>
+          )}
+          <span className={`${styles.pill} ${styles.pillPrimary} ${isFree ? styles.pillFree : ''}`}>
+            {isFree ? t('wellness.free') : `${service.price_fcfa.toLocaleString('fr-BF')} ${t('wellness.fcfa')}`}
           </span>
         </div>
-
-        {service.benefits?.length > 0 && (
-          <ul className={styles.benefits}>
-            {service.benefits.slice(0, 3).map((b, i) => (
-              <li key={i}>{b}</li>
-            ))}
-          </ul>
-        )}
       </div>
     </button>
   );

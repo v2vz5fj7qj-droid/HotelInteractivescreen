@@ -21,105 +21,163 @@
   margin-top: 4px;
 }
 
-/* ── Grille de cartes ────────────────────────────── */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(12px, 1.8vw, 20px);
+/* ── Raccourcis catégories ──────────────────────────── */
+.categoryNav {
+  display: flex;
+  gap: clamp(6px, 1vw, 10px);
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.categoryNav::-webkit-scrollbar { display: none; }
+
+.categoryChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-full);
+  font-size: clamp(0.72rem, 1.1vh, 0.85rem);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--duration-fast);
+}
+.categoryChip:hover, .categoryChip:focus-visible { border-color: var(--c-primary); color: var(--c-primary); outline: none; }
+
+/* ── Contenu scrollable, regroupé par catégorie ────────── */
+.content {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2.2vh, 22px);
   padding-right: 4px;
+  scroll-behavior: smooth;
+}
+
+.categoryGroup { display: flex; flex-direction: column; gap: 8px; }
+
+.categoryHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.categoryLabel {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.5vh, 1.15rem);
+  font-weight: 700;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+.categoryCount {
+  font-size: clamp(0.65rem, 0.95vh, 0.75rem);
+  font-weight: 600;
+  color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 15%, transparent);
+  border-radius: var(--radius-full);
+  padding: 1px 9px;
+}
+.categoryRule {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+/* ── Grille de cartes compactes ──────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 26vw, 320px), 1fr));
+  gap: clamp(8px, 1.2vw, 14px);
 }
 
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
+  padding: clamp(8px, 1.2vh, 12px);
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  gap: clamp(10px, 1.4vw, 14px);
+  align-items: center;
   text-align: left;
-  transition: transform var(--duration-base) var(--ease-spring),
-              box-shadow var(--duration-base),
-              border-color var(--duration-fast);
+  transition: transform var(--duration-fast), border-color var(--duration-fast);
 }
 
 .card:hover, .card:focus-visible {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: var(--shadow-lg);
+  transform: translateX(3px);
   border-color: var(--c-primary);
   outline: none;
 }
 
 .cardImg {
-  width: 100%;
-  height: clamp(100px, 14vh, 160px);
+  flex-shrink: 0;
+  width: clamp(56px, 7vh, 72px);
+  height: clamp(56px, 7vh, 72px);
+  border-radius: var(--radius-md);
   object-fit: cover;
 }
 
 .cardImgPlaceholder {
-  width: 100%;
-  height: clamp(100px, 14vh, 160px);
+  flex-shrink: 0;
+  width: clamp(56px, 7vh, 72px);
+  height: clamp(56px, 7vh, 72px);
+  border-radius: var(--radius-md);
   background: var(--c-bg-secondary, var(--c-bg));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(2.5rem, 5vh, 4rem);
+  font-size: clamp(1.4rem, 2.6vh, 1.8rem);
 }
 
 .cardBody {
-  padding: clamp(12px, 1.8vh, 18px);
+  min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
+  gap: 3px;
 }
 
 .cardName {
   font-family: var(--font-display);
-  font-size: clamp(0.9rem, 1.5vh, 1.1rem);
+  font-size: clamp(0.85rem, 1.35vh, 1rem);
   font-weight: 700;
   color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cardDesc {
-  font-size: clamp(0.7rem, 1.1vh, 0.85rem);
+  font-size: clamp(0.68rem, 1vh, 0.8rem);
   color: var(--c-text-muted);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  line-height: 1.35;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.cardMeta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.cardMeta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 .pill {
-  padding: 4px 10px;
+  padding: 3px 9px;
   background: var(--c-bg-secondary, var(--c-bg));
   border: 1px solid var(--c-border);
   border-radius: var(--radius-full);
-  font-size: clamp(0.65rem, 1vh, 0.78rem);
+  font-size: clamp(0.62rem, 0.92vh, 0.74rem);
   font-weight: 600;
   color: var(--c-text-muted);
   user-select: none;
   -webkit-user-select: none;
 }
 .pillPrimary { color: var(--c-primary); border-color: var(--c-primary); }
-
-.benefits {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.benefits li {
-  font-size: clamp(0.62rem, 0.9vh, 0.75rem);
-  color: var(--c-text-dim);
-}
-.benefits li::before { content: '✦ '; color: var(--c-secondary); }
+.pillFree { color: #34D399; border-color: #34D399; }
 
 /* ── Page détail ──────────────────────────────────── */
 .detailPage {
@@ -298,7 +356,7 @@
     padding-right: clamp(16px, 3vw, 40px);
   }
 
-  .grid { grid-template-columns: repeat(2, 1fr); }
+  .grid { grid-template-columns: 1fr; }
 
   /* Détail : empiler image + infos verticalement */
   .detailContent {
