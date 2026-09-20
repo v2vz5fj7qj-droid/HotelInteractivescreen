@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
+import { useDebounce }  from '../../../hooks/useDebounce';
 import { trackEvent }   from '../../../services/analytics';
 import BackButton       from '../../BackButton/BackButton';
 import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
@@ -11,6 +12,9 @@ import styles           from './Flights.module.css';
 const RETRY_DELAY_MS   = 30_000;
 const STALE_THRESHOLD  = 35 * 60 * 1000; // 35 min — dépasse l'intervalle de 30 min
 const POLL_INTERVAL_MS = 2 * 60 * 1000;  // re-fetch toutes les 2 min pour capter auto & manuel
+const SUGGEST_DEBOUNCE_MS = 300;
+const SUGGEST_MIN_CHARS   = 2;
+const SUGGEST_MAX_ITEMS   = 6;
 
 const PLANE_PATH =
   'M12 2.5c.7 0 1.2.6 1.2 1.3v5.6l7.3 4.3v2.1l-7.3-2.2v4.5l2.2 1.6v1.8L12 20.8l-3.4 1.7v-1.8l2.2-1.6v-4.5L3.5 16.8v-2.1l7.3-4.3V3.8c0-.7.5-1.3 1.2-1.3z';
@@ -45,6 +49,9 @@ export default function Flights() {
   const [submitted, setSubmitted]             = useState('');
   const [retryKey, setRetryKey]               = useState(0);
   const [now, setNow]                         = useState(Date.now());
+  const [suggestOpen, setSuggestOpen]         = useState(false);
+  const [activeIndex, setActiveIndex]         = useState(-1);
+  const searchBarRef                          = useRef(null);
 
   useEffect(() => {
     if (airports?.length > 0 && !selectedAirport) setSelectedAirport(airports[0].code);
@@ -66,6 +73,28 @@ export default function Flights() {
   const searchData = useApi('/flights/search', { flight: submitted }, { enabled: isSearch, deps: [submitted] });
 
   const { data, loading, error } = isSearch ? searchData : listData;
+
+  // Suggestions en direct pendant la saisie, avant validation de la recherche
+  const debouncedSearch  = useDebounce(search.trim(), SUGGEST_DEBOUNCE_MS);
+  const suggestEnabled   = suggestOpen && !isSearch && debouncedSearch.length >= SUGGEST_MIN_CHARS;
+  const suggestData      = useApi(
+    '/flights/search',
+    { flight: debouncedSearch },
+    { enabled: suggestEnabled, deps: [debouncedSearch] }
+  );
+  const suggestions       = suggestEnabled ? (suggestData.data?.flights ?? []).slice(0, SUGGEST_MAX_ITEMS) : [];
+  const showSuggestions   = suggestEnabled && (suggestData.loading || suggestions.length > 0);
+
+  // Ferme la liste de suggestions au clic/tap en dehors de la barre de recherche
+  useEffect(() => {
+    function handleOutside(e) {
+      if (searchBarRef.current && !searchBarRef.current.contains(e.target)) {
+        setSuggestOpen(false);
+      }
+    }
+    if (suggestOpen) document.addEventListener('pointerdown', handleOutside);
+    return () => document.removeEventListener('pointerdown', handleOutside);
+  }, [suggestOpen]);
 
   const isPending   = !isSearch && data?._pending;
   const refreshedAt = data?.refreshed_at ?? null;
@@ -133,9 +162,41 @@ export default function Flights() {
       setSubmitted(search.trim().toUpperCase());
       trackEvent('flights', 'search', { query: search.trim() });
     }
+    setSuggestOpen(false);
+    setActiveIndex(-1);
   };
 
-  const clearSearch = () => { setSearch(''); setSubmitted(''); };
+  const clearSearch = () => {
+    setSearch('');
+    setSubmitted('');
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const selectSuggestion = (flight) => {
+    setSearch(flight.flight_number);
+    setSubmitted(flight.flight_number);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+    trackEvent('flights', 'search_suggestion', { flight: flight.flight_number });
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(i => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(i => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(suggestions[activeIndex]);
+    } else if (e.key === 'Escape') {
+      setSuggestOpen(false);
+      setActiveIndex(-1);
+    }
+  };
 
   const heading = isSearch ? t('flights.title') : t(`flights.${tab}`);
 
@@ -183,7 +244,7 @@ export default function Flights() {
               role="tab"
               aria-selected={selectedAirport === ap.code}
               className={`${styles.airportTab} ${selectedAirport === ap.code ? styles.airportTabActive : ''}`}
-              onClick={() => { setSelectedAirport(ap.code); setSubmitted(''); setSearch(''); }}
+              onClick={() => { setSelectedAirport(ap.code); setSubmitted(''); setSearch(''); setSuggestOpen(false); }}
             >
               <span className={styles.airportCode}>{ap.code}</span>
               <span className={styles.airportLabel}>{ap.label}</span>
@@ -209,7 +270,7 @@ export default function Flights() {
         </div>
       )}
 
-      <form className={styles.searchBar} onSubmit={handleSearch}>
+      <form className={styles.searchBar} onSubmit={handleSearch} ref={searchBarRef}>
         <label className={styles.searchLabel} htmlFor="flight-search">
           {t('flights.search_label')}
         </label>
@@ -218,10 +279,18 @@ export default function Flights() {
             id="flight-search"
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value.toUpperCase())}
+            onChange={e => { setSearch(e.target.value.toUpperCase()); setSuggestOpen(true); setActiveIndex(-1); }}
+            onFocus={() => { if (search.trim().length >= SUGGEST_MIN_CHARS) setSuggestOpen(true); }}
+            onKeyDown={handleSearchKeyDown}
             placeholder={t('flights.search_placeholder')}
             className={styles.searchInput}
-            maxLength={8}
+            maxLength={40}
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-controls="flight-suggestions"
+            aria-autocomplete="list"
+            aria-activedescendant={activeIndex >= 0 ? `flight-suggestion-${activeIndex}` : undefined}
           />
           <button type="submit" className={styles.searchBtn} disabled={!search.trim()}>
             {t('flights.search')}
@@ -237,6 +306,33 @@ export default function Flights() {
             </button>
           )}
         </div>
+
+        {showSuggestions && (
+          <ul id="flight-suggestions" className={styles.suggestions} role="listbox" aria-label={t('flights.search_label')}>
+            {suggestData.loading && suggestions.length === 0 && (
+              <li className={styles.suggestionLoading} aria-disabled="true">…</li>
+            )}
+            {suggestions.map((f, i) => (
+              <li key={`${f.flight_number}-${f.departure?.iata}-${f.arrival?.iata}`}>
+                <button
+                  type="button"
+                  id={`flight-suggestion-${i}`}
+                  role="option"
+                  aria-selected={i === activeIndex}
+                  className={`${styles.suggestionItem} ${i === activeIndex ? styles.suggestionItemActive : ''}`}
+                  onClick={() => selectSuggestion(f)}
+                  onMouseEnter={() => setActiveIndex(i)}
+                >
+                  <span className={styles.suggestionFlight}>{f.flight_number}</span>
+                  <span className={styles.suggestionAirline}>{f.airline}</span>
+                  <span className={styles.suggestionRoute}>
+                    {placeName(f.departure?.airport, f.departure?.iata)} → {placeName(f.arrival?.airport, f.arrival?.iata)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </form>
 
       {!isSearch && !loading && !error && rows.length > 0 && (
