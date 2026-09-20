@@ -314,8 +314,12 @@ VALUES (1, 'Ouagadougou', 'Burkina Faso', '2355426', 12.3641, -1.5332, 'Africa/O
 -- ─────────────────────────────────────────────────
 --  TOKENS QR CODE (validité temporaire)
 -- ─────────────────────────────────────────────────
+-- hotel_id : le téléphone qui scanne le QR n'a aucun contexte hôtel, c'est le
+-- token qui le porte. La clé étrangère vers hotels(id) est posée par la
+-- migration 014 — la table hotels n'existe qu'à partir de la migration 001.
 CREATE TABLE IF NOT EXISTS qr_tokens (
     token       CHAR(36)     PRIMARY KEY,
+    hotel_id    INT          NULL,
     section     VARCHAR(50)  NOT NULL,
     locale      VARCHAR(5)   NOT NULL DEFAULT 'fr',
     expires_at  DATETIME     NOT NULL,
