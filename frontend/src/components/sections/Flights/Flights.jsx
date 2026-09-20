@@ -488,6 +488,9 @@ function RouteCard({ flight, fallbackCode, fallbackName, fmtTime, t }) {
     terminal: flight.arrival?.terminal,
   };
 
+  const delay  = Math.max(flight.departure?.delay || 0, flight.arrival?.delay || 0);
+  const status = delay > 0 ? 'delayed' : flight.status;
+
   const detail = [
     flight.airline,
     dep.gate      && `${t('flights.gate')} ${dep.gate}`,
@@ -500,7 +503,7 @@ function RouteCard({ flight, fallbackCode, fallbackName, fmtTime, t }) {
         <span className={styles.routeFlight}>
           {flight.flight_number} · {flight.airline}
         </span>
-        <StatusPill status={flight.status} t={t} />
+        <StatusPill status={status} t={t} />
       </div>
 
       <div className={styles.routeBody}>

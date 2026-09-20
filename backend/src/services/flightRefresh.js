@@ -83,9 +83,23 @@ function normalizeStatus(text) {
   return STATUS_MAP[text.toLowerCase().trim()] || 'scheduled';
 }
 
+// FlightAPI (schéma compschedule) ne renvoie pas de champ "delay" dédié :
+// le retard se déduit de l'écart entre l'heure prévue et l'heure réelle/estimée (en secondes epoch).
+function delayMinutes(scheduledTs, revisedTs) {
+  if (!scheduledTs || !revisedTs) return 0;
+  const diffMin = Math.round((revisedTs - scheduledTs) / 60);
+  return diffMin > 0 ? diffMin : 0;
+}
+
 function normalizeFlightData(f) {
   const fl    = f?.flight || {};
   const toISO = (ts) => ts ? new Date(ts * 1000).toISOString() : null;
+
+  const depScheduledTs = fl.time?.scheduled?.departure;
+  const depRevisedTs   = fl.time?.real?.departure || fl.time?.estimated?.departure;
+  const arrScheduledTs = fl.time?.scheduled?.arrival;
+  const arrRevisedTs   = fl.time?.real?.arrival || fl.time?.estimated?.arrival;
+
   return {
     flight_number: fl.identification?.number?.default || 'N/A',
     airline:       fl.airline?.name || 'Compagnie inconnue',
@@ -94,22 +108,22 @@ function normalizeFlightData(f) {
     departure: {
       airport:   fl.airport?.origin?.name           || '',
       iata:      fl.airport?.origin?.code?.iata     || '',
-      scheduled: toISO(fl.time?.scheduled?.departure),
+      scheduled: toISO(depScheduledTs),
       estimated: toISO(fl.time?.estimated?.departure),
       actual:    toISO(fl.time?.real?.departure),
       terminal:  fl.airport?.origin?.info?.terminal || null,
       gate:      fl.airport?.origin?.info?.gate     || null,
-      delay:     0,
+      delay:     delayMinutes(depScheduledTs, depRevisedTs),
     },
     arrival: {
       airport:   fl.airport?.destination?.name           || '',
       iata:      fl.airport?.destination?.code?.iata     || '',
-      scheduled: toISO(fl.time?.scheduled?.arrival),
+      scheduled: toISO(arrScheduledTs),
       estimated: toISO(fl.time?.estimated?.arrival),
       actual:    toISO(fl.time?.real?.arrival),
       terminal:  fl.airport?.destination?.info?.terminal || null,
       gate:      fl.airport?.destination?.info?.gate     || null,
-      delay:     0,
+      delay:     delayMinutes(arrScheduledTs, arrRevisedTs),
     },
   };
 }
