@@ -6,6 +6,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: '0.0.0.0',
+    // Hôtes autorisés à joindre le serveur Vite (protection anti-DNS-rebinding).
+    // Requis tant que la prod tourne sur `vite dev` derrière un nom de domaine.
+    allowedHosts: ['connectbe.tech', 'www.connectbe.tech', '.connectbe.tech'],
     hmr: { clientPort: 5173 },
     watch: { usePolling: true, interval: 300 },
     proxy: {

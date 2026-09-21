@@ -80,29 +80,29 @@ services:
     networks:
       - connectbe_net
 
+  # PRODUCTION : build statique servi par nginx, qui proxifie /api et /uploads
+  # vers le backend. Pour le développement (serveur Vite + HMR) :
+  #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: prod
+      # Vite inline les VITE_* au moment du build : ce sont des build args,
+      # pas des variables d'environnement d'exécution. Changer l'une d'elles
+      # impose un `docker compose build frontend`.
+      args:
+        VITE_HOTEL_LAT: ${HOTEL_LAT}
+        VITE_HOTEL_LNG: ${HOTEL_LNG}
+        VITE_HOTEL_NAME: ${HOTEL_NAME}
+        VITE_IDLE_TIMEOUT_MS: ${IDLE_TIMEOUT_MS}
+        VITE_CARTO_API_KEY: ${VITE_CARTO_API_KEY}
     container_name: connectbe_frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"    # Vite écoute sur 5173 dans le conteneur
+      - "5173:80"      # port hôte inchangé : nginx écoute sur 80 dans le conteneur
     depends_on:
       - backend
-    volumes:
-      - ./frontend/src:/app/src          # hot-reload du code source
-      - ./frontend/vite.config.js:/app/vite.config.js   # hot-reload config Vite
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - /app/node_modules                # préserve les node_modules du container
-    environment:
-      - VITE_API_PROXY=http://backend:4000
-      - VITE_HOTEL_LAT=${HOTEL_LAT}
-      - VITE_HOTEL_LNG=${HOTEL_LNG}
-      - VITE_HOTEL_NAME=${HOTEL_NAME}
-      - VITE_IDLE_TIMEOUT_MS=${IDLE_TIMEOUT_MS}
-      - VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY}
     networks:
       - connectbe_net
 

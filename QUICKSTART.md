@@ -41,12 +41,17 @@ JWT_SECRET=une_chaine_aleatoire_strictement_superieure_a_32_caracteres
 Tout démarre en une seule commande :
 
 ```bash
-docker compose up --build
+# Développement : serveur Vite + rechargement à chaud
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+
+> **Production** : `docker compose up --build` (sans `-f`) construit le frontend et le sert
+> avec nginx. C'est le mode par défaut, volontairement : un serveur de développement n'a rien
+> à faire sur un VPS. Voir [Mettre à jour une production en service](README.md#mettre-à-jour-une-production-en-service).
 
 > **La première fois prend 5-10 minutes** : téléchargement des images Docker + chargement des modèles de langue LibreTranslate (traduction automatique). Les démarrages suivants sont instantanés.
 
-> **Après toute modification du code source** (`.jsx`, `.js`), les fichiers sont rechargés à chaud grâce aux volumes Docker — aucun rebuild nécessaire.
+> **Après toute modification du code source** (`.jsx`, `.js`), les fichiers sont rechargés à chaud grâce aux volumes Docker — aucun rebuild nécessaire. Cela vaut **uniquement en mode développement** : en production le frontend est compilé dans l'image, il faut `docker compose up -d --build frontend`.
 
 > **Après l'ajout ou la mise à jour d'une dépendance npm** (`package.json` modifié), il faut reconstruire le service concerné :
 > ```bash

@@ -1,0 +1,33 @@
+# ════════════════════════════════════════════════════════════
+#  ConnectBé — surcouche DÉVELOPPEMENT
+#
+#  Remet le frontend sur le serveur Vite (HMR, pas de build).
+#  Usage :
+#    docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+#  Ce fichier n'est volontairement PAS nommé docker-compose.override.yml :
+#  un override est chargé automatiquement, et il suffirait qu'il traîne sur
+#  le VPS pour que la production reparte sur le serveur de dev.
+# ════════════════════════════════════════════════════════════
+services:
+
+  frontend:
+    build:
+      target: dev
+    # !override : sans ça, Compose CUMULE les ports du fichier de base
+    # (5173:80) et ceux d'ici → conflit d'allocation sur le port 5173.
+    ports: !override
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src                        # hot-reload du code source
+      - ./frontend/vite.config.js:/app/vite.config.js  # hot-reload config Vite
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - /app/node_modules                              # node_modules du conteneur
+    environment:
+      - VITE_API_PROXY=http://backend:4000
+      - VITE_HOTEL_LAT=${HOTEL_LAT}
+      - VITE_HOTEL_LNG=${HOTEL_LNG}
+      - VITE_HOTEL_NAME=${HOTEL_NAME}
+      - VITE_IDLE_TIMEOUT_MS=${IDLE_TIMEOUT_MS}
+      - VITE_CARTO_API_KEY=${VITE_CARTO_API_KEY}

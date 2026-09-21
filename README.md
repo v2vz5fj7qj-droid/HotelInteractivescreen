@@ -32,7 +32,7 @@ HotelInteractivescreen/
 
 | Service          | Port hôte | Port interne |
 |------------------|-----------|--------------|
-| Frontend (borne) | **5173**  | 5173         |
+| Frontend (borne) | **5173**  | 80 (nginx)   |
 | Backend API      | **4001**  | 4000         |
 | MySQL            | **3307**  | 3306         |
 | Redis            | **6380**  | 6379         |
@@ -329,15 +329,20 @@ Deux choses circulent, et elles ne se traitent pas de la même façon.
 
 ```bash
 cd /opt/connectbe
-./scripts/db-backup.sh              # filet de sécurité — toujours en premier
+./scripts/db-backup.sh                   # filet de sécurité — toujours en premier
 git pull
-docker compose restart backend      # runMigrations applique les changements de schéma
+docker compose restart backend           # runMigrations applique les changements de schéma
+docker compose up -d --build frontend    # recompile le build statique servi par nginx
 ```
 
 `mysql_data` est un volume nommé, jamais recréé : **les données saisies par le client ne sont
-pas touchées**. `backend/src` et `frontend/src` sont montés depuis le dépôt, donc `git pull`
-suffit à livrer le code. Un `docker compose up -d --build` n'est nécessaire que si les
-dépendances (`package.json`) ont changé.
+pas touchées**.
+
+`backend/src` est monté depuis le dépôt : un `git pull` + `restart` suffit à livrer le code
+serveur. Le **frontend, lui, est compilé dans l'image** (`vite build` → nginx) : toute
+modification de `frontend/` — code, `public/`, ou une variable `VITE_*` du `.env` — exige un
+`--build`. C'est le prix du passage en production : plus de serveur de développement exposé,
+mais plus de rechargement à chaud non plus.
 
 > ⚠️ **Ne jamais rejouer `data_live.sql` sur une production en service.** C'est un
 > `REPLACE INTO` global : il écrase toute ligne de même identifiant par votre version locale,

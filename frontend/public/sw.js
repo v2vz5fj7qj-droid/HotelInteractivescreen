@@ -2,8 +2,8 @@
 //  ConnectBé — Service Worker (Offline First)
 // ════════════════════════════════════════════════
 
-const CACHE_NAME  = 'connectbe-v1';
-const API_CACHE   = 'connectbe-api-v1';
+const CACHE_NAME  = 'connectbe-v2';
+const API_CACHE   = 'connectbe-api-v2';
 
 // Ressources statiques à mettre en cache immédiatement
 const STATIC_ASSETS = [
