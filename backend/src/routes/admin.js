@@ -574,7 +574,7 @@ router.post('/weather/refresh', adminAuth, async (req, res) => {
 //  VOLS — CONFIGURATION & RAFRAÎCHISSEMENT
 // ════════════════════════════════════════════════════════
 
-const { getFlightConfig, refreshFlights, startFlightScheduler } = require('../services/flightRefresh');
+const { getFlightConfig, refreshFlights, refreshAllAirports, startFlightScheduler } = require('../services/flightRefresh');
 const { getCreditsStats, resetCredits } = require('../services/creditTracker');
 
 // GET /api/admin/flights/config
@@ -612,6 +612,17 @@ router.put('/flights/config', adminAuth, async (req, res) => {
     }
     await cache.delPattern('flights:*');
     await startFlightScheduler(); // applique le nouvel intervalle
+
+    // Le cache vient d'être vidé : sans refill immédiat, les bornes affichent un écran
+    // vide jusqu'au prochain passage du scheduler (jusqu'à 30 min, ou plusieurs heures
+    // en mode horaires fixes). On relance donc un cycle tout de suite, en arrière-plan
+    // pour ne pas faire attendre la réponse HTTP.
+    if (updates.flight_auto_refresh === '1') {
+      refreshAllAirports().catch(e =>
+        console.warn(`[Flights] Refill après sauvegarde échoué (${e.message})`)
+      );
+    }
+
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -620,7 +631,19 @@ router.put('/flights/config', adminAuth, async (req, res) => {
 router.post('/flights/refresh', adminAuth, async (req, res) => {
   try {
     const result = await refreshFlights();
-    res.json({ ok: true, ...result });
+
+    // Aucun sens récupéré (réseau, DNS, quota, clé absente) : le cache est inchangé.
+    // Répondre en erreur plutôt qu'un « ok » trompeur.
+    if (result.refreshed === 0) {
+      return res.status(502).json({
+        ok:     false,
+        error:  `Rafraîchissement impossible (${result.airport}) — anciennes données conservées`,
+        detail: result.errors?.join(' · ') || result.message || 'cause inconnue',
+        ...result,
+      });
+    }
+
+    res.json({ ok: true, partial: result.refreshed < result.total, ...result });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

@@ -164,10 +164,28 @@ router.post('/:code/refresh', async (req, res) => {
 
     // Déclencher le refresh via le service existant
     const { refreshFlightsForAirport } = require('../../../services/flightRefresh');
-    await refreshFlightsForAirport(code);
+    const result = await refreshFlightsForAirport(code);
+
+    // Aucun sens récupéré : le cache n'a pas bougé. Ne pas estampiller last_fetched_at,
+    // sinon l'interface affiche « rafraîchi à l'instant » au-dessus de données périmées.
+    if (result.refreshed === 0) {
+      return res.status(502).json({
+        error:  `Rafraîchissement impossible pour ${code} — anciennes données conservées`,
+        detail: result.errors?.join(' · ') || result.message || 'cause inconnue',
+        refreshed: 0,
+        total: result.total ?? 2,
+      });
+    }
 
     await db.query('UPDATE airports SET last_fetched_at = NOW() WHERE code = ?', [code]);
-    res.json({ message: `Vols rafraîchis pour ${code}`, fetched_at: new Date() });
+    res.json({
+      message:   `Vols rafraîchis pour ${code} — ${result.refreshed}/${result.total} sens`,
+      partial:   result.refreshed < result.total,
+      detail:    result.errors?.join(' · ') || null,
+      refreshed: result.refreshed,
+      total:     result.total,
+      fetched_at: new Date(),
+    });
   } catch (err) {
     console.error('[super/airports POST /refresh]', err);
     res.status(500).json({ error: 'Erreur lors du rafraîchissement' });

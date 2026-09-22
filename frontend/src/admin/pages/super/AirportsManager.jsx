@@ -77,9 +77,14 @@ export default function AirportsManager() {
   const refresh = async (code) => {
     setRefreshing(r => ({ ...r, [code]: true }));
     try {
-      await api.post(`/super/airports/${code}/refresh`, {});
-      showToast(`Vols rafraîchis pour ${code}`); load();
-    } catch (err) { alert(err.response?.data?.error || 'Erreur refresh'); }
+      // Le serveur renvoie 502 si aucun sens n'a été récupéré : le message ci-dessous
+      // ne doit refléter que ce qui a réellement été rafraîchi.
+      const r = await api.post(`/super/airports/${code}/refresh`, {});
+      showToast(r.data?.message || `Vols rafraîchis pour ${code}`); load();
+    } catch (err) {
+      const d = err.response?.data;
+      alert([d?.error || 'Erreur refresh', d?.detail].filter(Boolean).join('\n'));
+    }
     finally { setRefreshing(r => ({ ...r, [code]: false })); }
   };
 

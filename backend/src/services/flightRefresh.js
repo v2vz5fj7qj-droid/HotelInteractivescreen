@@ -15,6 +15,14 @@ const MAX_ATTEMPTS = 3;
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// Erreurs réseau transitoires : DNS momentanément injoignable, connexion coupée, hôte
+// temporairement inaccessible. Fréquent derrière une liaison instable (4G, partage de
+// connexion) — c'est ce qui figeait les bornes pendant des jours sur une coupure d'une seconde.
+const TRANSIENT_NET_CODES = new Set([
+  'EAI_AGAIN', 'ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED',
+  'ETIMEDOUT', 'EHOSTUNREACH', 'ENETUNREACH', 'EPIPE',
+]);
+
 // FlightAPI masque sa limitation de débit derrière un 401 : on retente avec un délai croissant
 async function fetchScheduleWithRetry(key, mode, airport) {
   for (let attempt = 1; ; attempt++) {
@@ -26,7 +34,11 @@ async function fetchScheduleWithRetry(key, mode, airport) {
     } catch (e) {
       const throttled = e.response?.status === 401 || e.response?.status === 429;
       const timedOut  = e.code === 'ECONNABORTED';
-      if ((!throttled && !timedOut) || attempt >= MAX_ATTEMPTS) throw e;
+      const netGlitch = TRANSIENT_NET_CODES.has(e.code);
+      if ((!throttled && !timedOut && !netGlitch) || attempt >= MAX_ATTEMPTS) throw e;
+      if (netGlitch) {
+        console.warn(`[Flight Refresh] ${mode} (${airport}) — ${e.code}, tentative ${attempt}/${MAX_ATTEMPTS}`);
+      }
       await sleep(THROTTLE_MS * attempt);
     }
   }
@@ -135,11 +147,13 @@ async function refreshFlights(airportOverride) {
 
   if (!FLIGHT_KEY) {
     await cache.delPattern(`flights:${airport}:*`);
-    return { refreshed: 0, airport, message: 'Clé API FlightAPI absente' };
+    return { refreshed: 0, total: 0, airport, message: 'Clé API FlightAPI absente',
+             errors: ['Clé API FlightAPI absente'] };
   }
 
   let refreshed = 0;
   let first = true;
+  const errors = [];
   for (const type of ['arrivals', 'departures']) {
     try {
       // FlightAPI répond 401 (et non 429) quand deux appels s'enchaînent trop vite
@@ -155,6 +169,7 @@ async function refreshFlights(airportOverride) {
         const previous = await cache.get(key);
         if (previous && JSON.parse(previous).flights?.length > 0) {
           console.warn(`[Flight Refresh] ${type} vide (${airport}) — anciennes données conservées`);
+          errors.push(`${type} : réponse vide de FlightAPI — anciennes données conservées`);
           continue;
         }
       }
@@ -170,13 +185,51 @@ async function refreshFlights(airportOverride) {
       await addCredits(2);
       refreshed++;
     } catch (e) {
-      // Réseau indisponible ou erreur API — on conserve les anciennes données sans toucher au cache
+      // Réseau indisponible ou erreur API — on conserve les anciennes données sans toucher au
+      // cache. L'échec est aussi remonté à l'appelant : un rafraîchissement qui n'a rien
+      // récupéré ne doit pas être annoncé comme réussi.
+      const detail = e.response?.status ? `HTTP ${e.response.status}` : (e.code || e.message);
       console.warn(`[Flight Refresh] ${type} échoué (${e.message}) — anciennes données conservées`);
+      errors.push(`${type} : ${detail}`);
     }
   }
 
   console.log(`[Flights] Rafraîchissement : ${refreshed}/2 (${airport})`);
-  return { refreshed, total: 2, airport };
+  return { refreshed, total: 2, airport, errors };
+}
+
+// Tous les aéroports réellement desservis par les bornes, c'est-à-dire ceux rattachés à un
+// hôtel (table hotel_airports). L'aéroport de theme_config ne sert que de repli : en
+// multi-hôtel, s'en tenir à lui laisserait les autres aéroports figés indéfiniment.
+async function getScheduledAirports() {
+  try {
+    const [rows] = await db.query(
+      'SELECT DISTINCT airport_code FROM hotel_airports WHERE airport_code IS NOT NULL'
+    );
+    const codes = rows.map(r => r.airport_code.toUpperCase()).filter(Boolean);
+    if (codes.length > 0) return codes;
+  } catch (e) {
+    console.warn(`[Flights] Lecture de hotel_airports impossible (${e.message}) — repli sur la config`);
+  }
+  const config = await getFlightConfig().catch(() => ({ airport_iata: 'OUA' }));
+  return [config.airport_iata.toUpperCase()];
+}
+
+// Rafraîchit tous les aéroports desservis, en série (FlightAPI répond 401 si on l'inonde)
+async function refreshAllAirports() {
+  const airports = await getScheduledAirports();
+  const results  = [];
+  for (const code of airports) {
+    try {
+      results.push(await refreshFlights(code));
+    } catch (e) {
+      console.warn(`[Flights] Rafraîchissement de ${code} interrompu (${e.message})`);
+      results.push({ airport: code, refreshed: 0, total: 2, errors: [e.message] });
+    }
+  }
+  const ok = results.filter(r => r.refreshed > 0).length;
+  console.log(`[Flights] Cycle terminé — ${ok}/${airports.length} aéroport(s) rafraîchi(s) : ${airports.join(', ')}`);
+  return results;
 }
 
 function stopFlightScheduler() {
@@ -212,7 +265,7 @@ async function startFlightScheduler() {
       if (key === lastFiredKey) return;
       lastFiredKey = key;
       console.log(`[Cron] Rafraîchissement vols programmé — ${hour}h (${config.timezone})`);
-      refreshFlights().catch(() => {});
+      refreshAllAirports().catch(() => {});
     }, 60_000);
 
     console.log(`[Flights] Scheduler admin programmé — ${config.schedule_times.map(h => h + 'h').join(', ')} (${config.timezone})`);
@@ -220,11 +273,19 @@ async function startFlightScheduler() {
     const intervalMs = config.refresh_interval * 60 * 1000;
     schedulerTimer = setInterval(() => {
       console.log(`[Cron] Rafraîchissement vols admin — ${new Date().toLocaleTimeString()}`);
-      refreshFlights().catch(() => {});
+      refreshAllAirports().catch(() => {});
     }, intervalMs);
 
     console.log(`[Flights] Scheduler admin actif — toutes les ${config.refresh_interval} min`);
   }
 }
 
-module.exports = { getFlightConfig, refreshFlights, refreshFlightsForAirport: refreshFlights, startFlightScheduler, stopFlightScheduler };
+module.exports = {
+  getFlightConfig,
+  refreshFlights,
+  refreshFlightsForAirport: refreshFlights,
+  refreshAllAirports,
+  getScheduledAirports,
+  startFlightScheduler,
+  stopFlightScheduler,
+};

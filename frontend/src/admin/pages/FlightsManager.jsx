@@ -97,15 +97,19 @@ export default function FlightsManager() {
     setRefreshing(true);
     try {
       const r = await api.post('/flights/refresh');
+      // N'horodater que si des données ont réellement été récupérées : un échec
+      // laisse le cache intact, afficher « rafraîchi à l'instant » serait mensonger.
       setLastRefresh(new Date());
       await loadCredits(); // actualise le compteur
       notify(
-        r.data.message
-          ? `Rafraîchi (${r.data.message})`
-          : `Vols rafraîchis — ${r.data.refreshed}/2 type(s) (${r.data.airport})`
+        `Vols rafraîchis — ${r.data.refreshed}/${r.data.total} sens (${r.data.airport})` +
+          (r.data.partial && r.data.detail ? ` — ${r.data.detail}` : ''),
+        r.data.partial ? 'warn' : 'ok'
       );
     } catch (err) {
-      const detail = err?.response?.data?.error || err?.message || 'erreur inconnue';
+      const d      = err?.response?.data;
+      const detail = [d?.error || err?.message || 'erreur inconnue', d?.detail]
+        .filter(Boolean).join(' — ');
       notify(`Rafraîchissement échoué — ${detail}`, 'err');
     } finally { setRefreshing(false); }
   };
@@ -141,7 +145,13 @@ export default function FlightsManager() {
       </div>
 
       {msg && (
-        <div className={styles.toast} style={msgType === 'err' ? { background: '#EF4444' } : {}}>
+        <div
+          className={styles.toast}
+          style={
+            msgType === 'err'  ? { background: '#EF4444' } :
+            msgType === 'warn' ? { background: '#F59E0B' } : {}
+          }
+        >
           {msg}
         </div>
       )}
