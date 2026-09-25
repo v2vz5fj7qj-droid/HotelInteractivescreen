@@ -6,38 +6,14 @@ import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
 import api              from '../../../services/api';
 import { getHotelId }  from '../../../services/hotelStore';
+import { loadCurrencyCatalog, currencyMeta, isZeroDecimal }
+                      from '../../../services/currencyCatalog';
 import RatesBoard       from './RatesBoard';
 import styles           from './CurrencyConverter.module.css';
 
-/* ── Méta devises ────────────────────────────────────────────── */
-const CURRENCY_META = {
-  XOF: { flag: '🌍', name: 'Franc CFA (UEMOA)' },
-  XAF: { flag: '🌍', name: 'Franc CFA (CEMAC)' },
-  EUR: { flag: '🇪🇺', name: 'Euro' },
-  USD: { flag: '🇺🇸', name: 'Dollar US' },
-  GBP: { flag: '🇬🇧', name: 'Livre Sterling' },
-  CHF: { flag: '🇨🇭', name: 'Franc Suisse' },
-  JPY: { flag: '🇯🇵', name: 'Yen Japonais' },
-  CNY: { flag: '🇨🇳', name: 'Yuan Chinois' },
-  CAD: { flag: '🇨🇦', name: 'Dollar Canadien' },
-  AUD: { flag: '🇦🇺', name: 'Dollar Australien' },
-  MAD: { flag: '🇲🇦', name: 'Dirham Marocain' },
-  GHS: { flag: '🇬🇭', name: 'Cedi Ghanéen' },
-  NGN: { flag: '🇳🇬', name: 'Naira Nigérian' },
-  ZAR: { flag: '🇿🇦', name: 'Rand Sud-Africain' },
-  EGP: { flag: '🇪🇬', name: 'Livre Égyptienne' },
-  KES: { flag: '🇰🇪', name: 'Shilling Kényan' },
-  TND: { flag: '🇹🇳', name: 'Dinar Tunisien' },
-  INR: { flag: '🇮🇳', name: 'Roupie Indienne' },
-  BRL: { flag: '🇧🇷', name: 'Real Brésilien' },
-  AED: { flag: '🇦🇪', name: 'Dirham Émirati' },
-  RUB: { flag: '🇷🇺', name: 'Rouble Russe' },
-  SAR: { flag: '🇸🇦', name: 'Riyal Saoudien' },
-};
-
 function fmt(amount, code) {
   if (amount === null || amount === undefined) return '—';
-  const decimals = ['JPY', 'KES', 'NGN', 'IDR'].includes(code) ? 0 : 2;
+  const decimals = isZeroDecimal(code) ? 0 : 2;
   return new Intl.NumberFormat('fr-FR', {
     maximumFractionDigits: decimals,
     minimumFractionDigits: decimals,
@@ -77,7 +53,12 @@ function Calculator({ t, onBack }) {
   const debounceTimer               = useRef(null);
 
   useEffect(() => {
-    api.get('/currency/config').then(r => {
+    // Catalogue + config en parallèle : le catalogue ne doit jamais bloquer
+    // l'écran (il échoue silencieusement et les devises tombent sur leur code).
+    Promise.all([
+      loadCurrencyCatalog(),
+      api.get('/currency/config'),
+    ]).then(([, r]) => {
       setConfig(r.data);
       setLoading(false);
     }).catch(() => {
@@ -139,7 +120,7 @@ function Calculator({ t, onBack }) {
   );
 
   const base     = config?.base_currency || 'XOF';
-  const baseMeta = CURRENCY_META[base] || { flag: '💱', name: base };
+  const baseMeta = currencyMeta(base);
   const amount   = parseFloat(rawInput.replace(',', '.')) || 0;
 
   return (
@@ -216,7 +197,7 @@ function Calculator({ t, onBack }) {
           {!converting && results && results.length > 0 && (
             <div className={styles.resultsList}>
               {results.map(({ code, amount: converted }) => {
-                const meta = CURRENCY_META[code] || { flag: '💱', name: code };
+                const meta = currencyMeta(code);
                 return (
                   <div key={code} className={styles.resultRow}>
                     <div className={styles.resultLeft}>

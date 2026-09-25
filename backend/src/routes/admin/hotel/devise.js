@@ -1,11 +1,13 @@
 // Hotel-admin — Configuration du convertisseur de devises
-// GET  /api/admin/hotel/devise        → lire la config
-// PUT  /api/admin/hotel/devise        → sauvegarder
-// POST /api/admin/hotel/devise/refresh → forcer maj des taux
+// GET  /api/admin/hotel/devise            → lire la config
+// GET  /api/admin/hotel/devise/currencies  → catalogue des devises sélectionnables
+// PUT  /api/admin/hotel/devise            → sauvegarder
+// POST /api/admin/hotel/devise/refresh    → forcer maj des taux
 const express  = require('express');
 const router   = express.Router();
 const db       = require('../../../services/db');
 const { refreshRates, getConfig } = require('../../../services/currencyService');
+const { CURRENCIES, isValidCurrency } = require('../../../data/currencies');
 
 function resolveHotelId(req) {
   if (req.user.role === 'super_admin' && req.query.hotel_id) {
@@ -21,12 +23,13 @@ const DEFAULT_CONFIG = {
   update_interval_hours: 6,
 };
 
-const VALID_CURRENCIES = [
-  'XOF','XAF','EUR','USD','GBP','CHF','JPY','CNY','CAD','AUD',
-  'MAD','GHS','NGN','ZAR','EGP','KES','TND','INR','BRL','AED',
-  'RUB','SAR','MXN','SGD','HKD','NOK','SEK','DKK','PLN','CZK',
-  'HUF','RON','TRY','IDR','MYR','THB','VND','PKR','BDT','ETB',
-];
+
+// GET /api/admin/hotel/devise/currencies — catalogue des devises sélectionnables
+// Doublon volontaire de GET /api/currency/catalog : le client admin est monté
+// sur /api/admin et ne doit pas taper les routes publiques.
+router.get('/currencies', (_req, res) => {
+  res.json({ currencies: CURRENCIES });
+});
 
 // GET /api/admin/hotel/devise
 router.get('/', async (req, res) => {
@@ -77,13 +80,13 @@ router.put('/', async (req, res) => {
   } = req.body;
 
   // Validation
-  if (!base_currency || !VALID_CURRENCIES.includes(base_currency)) {
+  if (!base_currency || !isValidCurrency(base_currency)) {
     return res.status(400).json({ error: 'Devise de base invalide' });
   }
   if (!Array.isArray(target_currencies) || target_currencies.length === 0 || target_currencies.length > 10) {
     return res.status(400).json({ error: 'Devises cibles : 1 à 10 requises' });
   }
-  const invalidTargets = target_currencies.filter(c => !VALID_CURRENCIES.includes(c));
+  const invalidTargets = target_currencies.filter(c => !isValidCurrency(c));
   if (invalidTargets.length) {
     return res.status(400).json({ error: `Devises inconnues : ${invalidTargets.join(', ')}` });
   }
@@ -117,9 +120,15 @@ router.put('/', async (req, res) => {
     dailyTimes = daily_update_times;
   }
 
+  let baseCurrencyChanged = false;
+
   try {
     const existing = await getConfig(hotelId);
     if (existing) {
+      // Les taux stockés sont exprimés PAR RAPPORT à l'ancienne devise de base :
+      // si la base change, ils deviennent faux. On les purge (avec last_update)
+      // pour que getRates() refasse un appel live au lieu de les juger « frais ».
+      baseCurrencyChanged = existing.base_currency !== base_currency;
       await db.query(
         `UPDATE devise_config
             SET base_currency         = ?,
@@ -130,6 +139,7 @@ router.put('/', async (req, res) => {
                 daily_update_times    = ?,
                 api_provider          = ?,
                 api_key               = ?
+                ${baseCurrencyChanged ? ', rates = NULL, last_update = NULL' : ''}
           WHERE hotel_id = ?`,
         [
           base_currency,
@@ -163,7 +173,7 @@ router.put('/', async (req, res) => {
       );
     }
 
-    res.json({ success: true });
+    res.json({ success: true, rates_reset: baseCurrencyChanged });
   } catch (e) {
     console.error('[PUT /admin/hotel/devise]', e.message);
     res.status(500).json({ error: 'Erreur sauvegarde' });

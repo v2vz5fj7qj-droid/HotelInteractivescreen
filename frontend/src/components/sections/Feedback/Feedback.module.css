@@ -3,6 +3,9 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
   background: var(--c-bg, #1A1208);
   color: var(--c-text, #F5E6C8);
   font-family: var(--font-body, sans-serif);
@@ -44,10 +47,17 @@
 
 .body {
   flex: 1;
+  min-height: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: clamp(20px, 4vw, 60px) clamp(16px, 5vw, 80px);
+  /* "safe" évite que le haut du contenu devienne inatteignable au scroll */
+  justify-content: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(16px, 3vw, 56px) clamp(16px, 5vw, 80px);
 }
 
 /* ── Écran d'accueil ──────────────────────────────────────────── */
@@ -93,7 +103,7 @@
   flex-direction: column;
   gap: clamp(16px, 2.5vw, 28px);
   width: 100%;
-  max-width: 720px;
+  max-width: min(720px, 100%);
   animation: fadeUp 0.35s ease;
 }
 
@@ -227,12 +237,39 @@
 /* ── Navigation ───────────────────────────────────────────────── */
 .navRow {
   display: flex;
+  align-items: center;
   gap: clamp(10px, 1.5vw, 16px);
   justify-content: flex-end;
   flex-wrap: wrap;
+  /* reste visible quand la liste des catégories déborde en hauteur */
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-top: clamp(10px, 1.5vw, 18px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 2px);
+  background: linear-gradient(
+    to top,
+    var(--c-bg, #1A1208) 0%,
+    var(--c-bg, #1A1208) 62%,
+    transparent 100%
+  );
 }
 
 /* ── Boutons ──────────────────────────────────────────────────── */
+.btnPrimary,
+.btnSecondary,
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target, 52px);
+  max-width: 100%;
+  flex: 0 1 auto;
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+
 .btnPrimary {
   padding: clamp(14px, 2vw, 20px) clamp(28px, 4vw, 48px);
   font-size: clamp(1rem, 2.2vw, 1.2rem);
@@ -378,4 +415,82 @@
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — barre de navigation et notation
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Écrans étroits (portrait téléphone / kiosque étroit) ─────── */
+@media (max-width: 600px) {
+  /* Boutons empilés pleine largeur, action principale en premier
+     (l'ordre DOM est retour → passer → valider) */
+  .navRow {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .btnPrimary,
+  .btnSecondary,
+  .btnGhost {
+    width: 100%;
+    flex: 0 0 auto;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* La ligne catégorie passe sur 2 lignes : libellé puis étoiles */
+  .catRow {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .catLabel { flex: 1 1 auto; min-width: 0; }
+  .stars {
+    flex: 1 0 100%;
+    justify-content: space-between;
+    gap: 2px;
+  }
+  .star {
+    font-size: clamp(26px, 8vw, 40px);
+    min-width: 0;
+    flex: 1 1 0;
+  }
+
+  .emojiRow { justify-content: space-between; }
+}
+
+/* ── Écrans peu hauts (tablette paysage, 1024×600, TV 16:9) ──── */
+@media (max-height: 620px) {
+  .body { padding-top: clamp(12px, 2vh, 24px); padding-bottom: 0; }
+  .stepWrap { gap: clamp(8px, 1.4vh, 16px); }
+  .categoriesList { gap: clamp(6px, 1vh, 12px); }
+  .catRow { padding-top: 6px; padding-bottom: 6px; }
+  .star { font-size: clamp(24px, 4.5vh, 40px); min-height: 40px; }
+  .stepSub { display: none; }
+  .textarea { min-height: clamp(70px, 14vh, 120px); }
+
+  .btnPrimary,
+  .btnSecondary,
+  .btnGhost {
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+/* ── Très grands écrans 55"–65" : garder les boutons proportionnés */
+@media (min-width: 2560px) {
+  .navRow { gap: 24px; }
+  .btnPrimary  { padding: 24px 64px; font-size: 1.35rem; }
+  .btnSecondary,
+  .btnGhost    { padding: 22px 48px; font-size: 1.15rem; }
+}
+
+/* ── Accessibilité : respect de prefers-reduced-motion ────────── */
+@media (prefers-reduced-motion: reduce) {
+  .welcomeIcon,
+  .thanksEmoji,
+  .welcomeWrap,
+  .stepWrap,
+  .thanksWrap { animation: none; }
 }

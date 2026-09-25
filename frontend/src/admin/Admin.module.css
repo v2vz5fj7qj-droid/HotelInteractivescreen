@@ -417,45 +417,6 @@
 .toggleLabel  { display: flex; align-items: center; gap: 6px; font-size: 0.87rem; cursor: pointer; }
 .modalOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; }
 
-/* ════════════ SETTINGS PAGE (FlightsManager) ════════════ */
-
-.settingsCard {
-  background: var(--a-surface);
-  border: 1px solid var(--a-border);
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 0;
-}
-.settingsCardTitle {
-  font-size: 0.9rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.07em; color: var(--a-muted);
-  margin: 0 0 20px;
-}
-.settingsRow {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  gap: 24px; padding: 14px 0;
-}
-.settingsRowInfo  { display: flex; flex-direction: column; gap: 3px; }
-.settingsRowLabel { font-size: 0.93rem; font-weight: 600; color: var(--a-text); }
-.settingsRowHint  { font-size: 0.8rem; color: var(--a-muted); }
-.settingsRowControl { display: flex; align-items: center; flex-shrink: 0; }
-.settingsDivider  { height: 1px; background: var(--a-border); }
-.settingsFooter   {
-  display: flex; align-items: center; justify-content: flex-end;
-  margin-top: 20px; padding-top: 16px;
-  border-top: 1px solid var(--a-border);
-}
-
-/* Status grid */
-.statusGrid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-.statusItem   { display: flex; flex-direction: column; gap: 4px; }
-.statusLabel  { font-size: 0.75rem; color: var(--a-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-.statusValue  { font-size: 1rem; font-weight: 700; color: var(--a-text); }
-
 /* ══════════════════════════════════════════════════════════
    RESPONSIVE ADMIN
    ══════════════════════════════════════════════════════════ */
@@ -539,7 +500,6 @@
 
   /* Grilles 2 colonnes sur smartphone */
   .statsGrid  { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-  .statusGrid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
 
   /* Formulaires en 1 colonne */
   .formGrid2 { grid-template-columns: 1fr; }
@@ -722,7 +682,6 @@
 /* ─────────────────── TRÈS PETITS ÉCRANS (≤ 400px) ─────────── */
 @media (max-width: 400px) {
   .statsGrid  { grid-template-columns: 1fr; }
-  .statusGrid { grid-template-columns: repeat(2, 1fr); }
   .statValue  { font-size: 1.6rem; }
   .content    { padding: 8px; }
 }

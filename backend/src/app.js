@@ -76,8 +76,8 @@ const superAuditLogRoutes   = require('./routes/admin/super/auditLog');
 // ── Services ─────────────────────────────────────────────────────
 const { startWeatherScheduler }  = require('./services/weatherRefresh');
 const { startCurrencyScheduler } = require('./services/currencyService');
-const { startFlightScheduler }   = require('./services/flightRefresh');
 const { startArchiveScheduler }  = require('./services/archiveService');
+const { startAirportScheduler }  = require('./services/airportScheduler');
 const { runMigrations }          = require('./services/runMigrations');
 const { startKioskMonitor }      = require('./services/kioskMonitor');
 
@@ -217,7 +217,7 @@ app.listen(PORT, async () => {
   console.log(`✅ ConnectBé API démarrée sur le port ${PORT}`);
   await runMigrations();
   startWeatherScheduler();
-  startFlightScheduler().catch(e => console.error('[Flights Scheduler]', e.message));
+  startAirportScheduler();
   startArchiveScheduler();
   startCurrencyScheduler().catch(e => console.error('[Currency Scheduler]', e.message));
   startKioskMonitor();

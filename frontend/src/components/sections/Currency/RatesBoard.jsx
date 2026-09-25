@@ -1,43 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import api             from '../../../services/api';
+import { loadCurrencyCatalog, currencyMeta, isZeroDecimal }
+                          from '../../../services/currencyCatalog';
 import styles          from './RatesBoard.module.css';
 
-/* ── Méta devises ────────────────────────────────────────────── */
-const CURRENCY_META = {
-  XOF: { flag: '🌍', name: 'Franc CFA' },
-  XAF: { flag: '🌍', name: 'Franc CFA' },
-  EUR: { flag: '🇪🇺', name: 'Euro' },
-  USD: { flag: '🇺🇸', name: 'Dollar' },
-  GBP: { flag: '🇬🇧', name: 'Livre' },
-  CHF: { flag: '🇨🇭', name: 'Franc CH' },
-  JPY: { flag: '🇯🇵', name: 'Yen' },
-  CNY: { flag: '🇨🇳', name: 'Yuan' },
-  CAD: { flag: '🇨🇦', name: 'Dollar CA' },
-  AUD: { flag: '🇦🇺', name: 'Dollar AU' },
-  MAD: { flag: '🇲🇦', name: 'Dirham' },
-  GHS: { flag: '🇬🇭', name: 'Cedi' },
-  NGN: { flag: '🇳🇬', name: 'Naira' },
-  ZAR: { flag: '🇿🇦', name: 'Rand' },
-  EGP: { flag: '🇪🇬', name: 'Livre EG' },
-  KES: { flag: '🇰🇪', name: 'Shilling' },
-  TND: { flag: '🇹🇳', name: 'Dinar' },
-  INR: { flag: '🇮🇳', name: 'Roupie' },
-  BRL: { flag: '🇧🇷', name: 'Real' },
-  AED: { flag: '🇦🇪', name: 'Dirham' },
-  RUB: { flag: '🇷🇺', name: 'Rouble' },
-  SAR: { flag: '🇸🇦', name: 'Riyal' },
-};
-
+// Nombre de décimales d'un taux : piloté par l'ordre de grandeur, et non par une
+// liste de devises en dur. Un taux exprimé dans une devise sans sous-unité
+// (francs CFA/GNF/RWF…) n'a jamais besoin de 4 décimales.
 function fmtRate(rate, toCode) {
   if (rate == null) return '—';
-  const noDecimals = ['JPY', 'KES', 'NGN', 'IDR'];
-  const manyDecimals = ['XOF', 'XAF'];
-  let digits = 4;
-  if (noDecimals.includes(toCode))   digits = 0;
-  if (manyDecimals.includes(toCode)) digits = 2;
-  if (rate >= 100)  digits = 2;
-  if (rate >= 1000) digits = 0;
+  let digits;
+  if      (rate >= 1000)         digits = 0;
+  else if (rate >= 100)          digits = 2;
+  else if (isZeroDecimal(toCode)) digits = 2;
+  else                            digits = 4;
   return new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
@@ -56,6 +33,8 @@ export default function RatesBoard({ onOpenCalculator }) {
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
+      // Catalogue d'abord : les libellés doivent être prêts au premier rendu
+      await loadCurrencyCatalog();
       const r = await api.get('/currency/rates');
       setData(r.data);
       setLastAnim(Date.now());
@@ -133,8 +112,8 @@ export default function RatesBoard({ onOpenCalculator }) {
       {/* ── Grille des paires ── */}
       <div className={styles.pairsGrid}>
         {data.pairs.map(({ from, to, rate }, idx) => {
-          const metaFrom  = CURRENCY_META[from] || { flag: '💱', name: from };
-          const metaTo    = CURRENCY_META[to]   || { flag: '💱', name: to };
+          const metaFrom  = currencyMeta(from, { short: true });
+          const metaTo    = currencyMeta(to,   { short: true });
           const inverseRate = rate > 0 ? 1 / rate : null;
           return (
             <div

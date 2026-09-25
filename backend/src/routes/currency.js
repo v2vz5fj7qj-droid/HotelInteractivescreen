@@ -1,9 +1,11 @@
 // Route publique kiosque — convertisseur de devises
+// GET /api/currency/catalog                    → métadonnées des devises
 // GET /api/currency/config?hotel_id=X          → config (base + cibles)
 // GET /api/currency/convert?hotel_id=X&amount=N → équivalences
 const express  = require('express');
 const router   = express.Router();
 const { convert, getRates, getConfig, refreshRates } = require('../services/currencyService');
+const { CURRENCIES } = require('../data/currencies');
 
 // Validation montant
 function parseAmount(raw) {
@@ -11,6 +13,13 @@ function parseAmount(raw) {
   if (isNaN(n) || n < 0 || n > 1_000_000_000) return null;
   return n;
 }
+
+// GET /api/currency/catalog — métadonnées d'affichage (drapeau, nom, décimales)
+// Indépendant de l'hôtel : le kiosque s'en sert pour libeller n'importe quel code
+// devise renvoyé par /config, /convert ou /rates.
+router.get('/catalog', (_req, res) => {
+  res.json({ currencies: CURRENCIES });
+});
 
 // GET /api/currency/config
 router.get('/config', async (req, res) => {

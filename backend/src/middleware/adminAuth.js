@@ -10,13 +10,21 @@ module.exports = function adminAuth(req, res, next) {
         ? req.headers.authorization.slice(7)
         : null);
 
-  if (!token) return res.status(401).json({ error: 'Token manquant' });
+  // Un refus est journalisé : côté navigateur il se traduit par une redirection
+  // silencieuse vers /admin/login, ce qui donne l'impression d'un enregistrement
+  // qui « ne fait rien ». Sans cette trace, impossible de distinguer une session
+  // expirée d'une requête jamais partie.
+  if (!token) {
+    console.warn(`[Admin] 401 sans token — ${req.method} ${req.originalUrl}`);
+    return res.status(401).json({ error: 'Token manquant' });
+  }
 
   try {
     req.user  = jwt.verify(token, JWT_SECRET);
     req.admin = req.user; // rétrocompatibilité
     next();
-  } catch {
+  } catch (e) {
+    console.warn(`[Admin] 401 token ${e.name === 'TokenExpiredError' ? 'expiré' : 'invalide'} — ${req.method} ${req.originalUrl}`);
     res.status(401).json({ error: 'Token invalide ou expiré' });
   }
 };

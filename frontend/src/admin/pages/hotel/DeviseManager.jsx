@@ -4,32 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSuperHotelId } from '../../components/SuperHotelSelector';
 import styles from '../../Admin.module.css';
 
-/* ── Liste de toutes les devises supportées ──────────────────── */
-const ALL_CURRENCIES = [
-  { code: 'XOF', label: 'XOF — Franc CFA (UEMOA)',    flag: '🌍' },
-  { code: 'XAF', label: 'XAF — Franc CFA (CEMAC)',    flag: '🌍' },
-  { code: 'EUR', label: 'EUR — Euro',                  flag: '🇪🇺' },
-  { code: 'USD', label: 'USD — Dollar US',             flag: '🇺🇸' },
-  { code: 'GBP', label: 'GBP — Livre Sterling',        flag: '🇬🇧' },
-  { code: 'CHF', label: 'CHF — Franc Suisse',          flag: '🇨🇭' },
-  { code: 'JPY', label: 'JPY — Yen Japonais',          flag: '🇯🇵' },
-  { code: 'CNY', label: 'CNY — Yuan Chinois',          flag: '🇨🇳' },
-  { code: 'CAD', label: 'CAD — Dollar Canadien',       flag: '🇨🇦' },
-  { code: 'AUD', label: 'AUD — Dollar Australien',     flag: '🇦🇺' },
-  { code: 'MAD', label: 'MAD — Dirham Marocain',       flag: '🇲🇦' },
-  { code: 'GHS', label: 'GHS — Cedi Ghanéen',          flag: '🇬🇭' },
-  { code: 'NGN', label: 'NGN — Naira Nigérian',        flag: '🇳🇬' },
-  { code: 'ZAR', label: 'ZAR — Rand Sud-Africain',    flag: '🇿🇦' },
-  { code: 'EGP', label: 'EGP — Livre Égyptienne',      flag: '🇪🇬' },
-  { code: 'KES', label: 'KES — Shilling Kényan',       flag: '🇰🇪' },
-  { code: 'TND', label: 'TND — Dinar Tunisien',        flag: '🇹🇳' },
-  { code: 'INR', label: 'INR — Roupie Indienne',       flag: '🇮🇳' },
-  { code: 'BRL', label: 'BRL — Real Brésilien',        flag: '🇧🇷' },
-  { code: 'AED', label: 'AED — Dirham Émirati',        flag: '🇦🇪' },
-  { code: 'RUB', label: 'RUB — Rouble Russe',          flag: '🇷🇺' },
-  { code: 'SAR', label: 'SAR — Riyal Saoudien',        flag: '🇸🇦' },
-];
-
 const DEFAULT_FORM = {
   base_currency:        'XOF',
   target_currencies:    ['EUR', 'USD', 'GBP', 'CNY'],
@@ -57,6 +31,9 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
   const [refreshing, setRefreshing] = useState(false);
   const [toast,      setToast]      = useState('');
   const [newTime,    setNewTime]    = useState('09:00');
+  // Catalogue des devises : servi par le backend depuis src/data/currencies.json
+  // (source unique). Aucune liste n'est codée en dur dans cette page.
+  const [allCurrencies, setAllCurrencies] = useState([]);
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -65,7 +42,20 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
 
   const load = useCallback(async () => {
     try {
-      const { data } = await api.get('/hotel/devise', { params });
+      const [catalogRes, { data }] = await Promise.all([
+        api.get('/hotel/devise/currencies').catch(() => null),
+        api.get('/hotel/devise', { params }),
+      ]);
+      if (!catalogRes) {
+        showToast('❌ Catalogue des devises indisponible — rechargez la page', false);
+      }
+      setAllCurrencies(
+        (catalogRes?.data?.currencies || []).map(c => ({
+          code:  c.code,
+          flag:  c.flag,
+          label: `${c.code} — ${c.name}`,
+        })),
+      );
       setForm({
         base_currency:         data.base_currency        || 'XOF',
         target_currencies:     Array.isArray(data.target_currencies)  ? data.target_currencies  : ['EUR','USD'],
@@ -89,14 +79,27 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
     if (saving) return;
     setSaving(true);
     try {
-      await api.put('/hotel/devise', {
+      const { data } = await api.put('/hotel/devise', {
         ...form,
         update_interval_hours: parseInt(form.update_interval_hours) || 6,
         daily_update_times:    form.daily_update_times.length > 0 ? form.daily_update_times : null,
         display_currencies:    form.display_currencies.length > 0  ? form.display_currencies  : null,
         api_key:               form.api_key || null,
       }, { params });
-      showToast('✅ Configuration sauvegardée');
+
+      // Changement de devise de base : les taux stockés ont été purgés côté
+      // serveur (ils étaient relatifs à l'ancienne base). On les re-fetche tout
+      // de suite pour ne pas laisser le kiosque sans taux.
+      if (data?.rates_reset) {
+        showToast('✅ Configuration sauvegardée — récupération des nouveaux taux…');
+        try {
+          await api.post('/hotel/devise/refresh', {}, { params });
+        } catch (e) {
+          showToast('⚠️ Sauvegardé, mais les taux n\'ont pas pu être récupérés. Cliquez sur « Actualiser les taux ».', false);
+        }
+      } else {
+        showToast('✅ Configuration sauvegardée');
+      }
       load();
     } catch (e) {
       showToast('❌ ' + (e.response?.data?.error || 'Erreur sauvegarde'), false);
@@ -164,7 +167,7 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
     </div>
   );
 
-  const availableTargets = ALL_CURRENCIES.filter(c => c.code !== form.base_currency);
+  const availableTargets = allCurrencies.filter(c => c.code !== form.base_currency);
 
   return (
     <div className={styles.managerPage}>
@@ -194,7 +197,7 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
             value={form.base_currency}
             onChange={e => setForm(f => ({ ...f, base_currency: e.target.value }))}
           >
-            {ALL_CURRENCIES.map(c => (
+            {allCurrencies.map(c => (
               <option key={c.code} value={c.code}>
                 {c.flag} {c.label}
               </option>
@@ -215,7 +218,7 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
           {/* Devises sélectionnées */}
           <div className={styles.tagList}>
             {form.target_currencies.map(code => {
-              const meta = ALL_CURRENCIES.find(c => c.code === code);
+              const meta = allCurrencies.find(c => c.code === code);
               return (
                 <span key={code} className={styles.tag}>
                   {meta?.flag} {code}
@@ -266,7 +269,7 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
             <>
               <div className={styles.tagList}>
                 {form.display_currencies.map(code => {
-                  const meta = ALL_CURRENCIES.find(c => c.code === code);
+                  const meta = allCurrencies.find(c => c.code === code);
                   return (
                     <span key={code} className={styles.tag}>
                       {meta?.flag} {code}
@@ -283,7 +286,7 @@ export default function DeviseManager({ hotelId: hotelIdProp } = {}) {
 
               <div className={styles.currencyGrid}>
                 {form.target_currencies.filter(c => c !== form.base_currency).map(code => {
-                  const meta     = ALL_CURRENCIES.find(c => c.code === code);
+                  const meta     = allCurrencies.find(c => c.code === code);
                   const selected = form.display_currencies.includes(code);
                   return (
                     <button

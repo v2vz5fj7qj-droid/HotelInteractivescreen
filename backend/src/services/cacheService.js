@@ -22,10 +22,12 @@ module.exports = {
     try { await getClient().setex(key, ttlSeconds, value); }
     catch { /* Redis indisponible — on continue sans cache */ }
   },
-  // Stocke sans expiration — la clé reste jusqu'à suppression explicite
+  // Stocke sans expiration — la clé reste jusqu'à suppression explicite.
+  // Retourne false si l'écriture a échoué : l'appelant doit pouvoir distinguer
+  // « donnée publiée » de « donnée perdue » (cf. rafraîchissement des vols).
   async setPersist(key, value) {
-    try { await getClient().set(key, value); }
-    catch { /* Redis indisponible */ }
+    try { await getClient().set(key, value); return true; }
+    catch { return false; }
   },
   async del(key) {
     try { await getClient().del(key); }
