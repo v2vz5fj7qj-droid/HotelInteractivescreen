@@ -4,9 +4,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useHotel }    from '../../../contexts/HotelContext';
 import { trackEvent }  from '../../../services/analytics';
 import api             from '../../../services/api';
-import BackButton      from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles          from './Feedback.module.css';
 
 const CATEGORIES = [
@@ -270,17 +268,14 @@ export default function Feedback() {
 
   return (
     <div className={styles.shell} onPointerDown={resetIdle}>
-      <LanguageSwitcher />
-      <ThemeToggle />
-      {step < 3 && (
-        <div className={styles.header}>
-          <BackButton />
+      <SectionChrome
+        className={styles.chrome}
+        weather={false}
+        center={step > 0 && step < 3 ? (
           <div className={styles.progress}>
-            {step >= 1 && (
-              <span className={styles.stepLabel}>
-                {t('feedback.step_counter', { n: step, total: 2 })}
-              </span>
-            )}
+            <span className={styles.stepLabel}>
+              {t('feedback.step_counter', { n: step, total: 2 })}
+            </span>
             {[1, 2].map(s => (
               <div
                 key={s}
@@ -288,8 +283,8 @@ export default function Feedback() {
               />
             ))}
           </div>
-        </div>
-      )}
+        ) : null}
+      />
 
       {error && (
         <div className={styles.errorBanner}>

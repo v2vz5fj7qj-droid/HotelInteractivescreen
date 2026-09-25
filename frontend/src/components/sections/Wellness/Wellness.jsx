@@ -2,9 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles           from './Wellness.module.css';
 
 export default function Wellness() {
@@ -31,9 +29,7 @@ export default function Wellness() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      <SectionChrome />
 
       <div className={styles.header}>
         <h1 className={styles.title}>{t('wellness.title')}</h1>
@@ -146,14 +142,8 @@ function ServiceCard({ service, t, onClick }) {
 function ServiceDetail({ service, t, onBack }) {
   return (
     <div className={styles.detailPage}>
-      <BackButton to="#" label={t('common.back')} />
-      <button className={styles.backBtn} onClick={onBack} aria-label={t('common.back')} style={{display:'none'}} />
-
-      {/* On surcharge le BackButton pour revenir à la liste */}
-      <button className={styles.detailBackBtn} onClick={onBack}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        {t('common.back')}
-      </button>
+      {/* Retour à la liste des services — même emplacement que partout ailleurs */}
+      <SectionChrome onBack={onBack} />
 
       <div className={styles.detailContent}>
         {/* Image */}

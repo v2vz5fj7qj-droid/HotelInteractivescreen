@@ -1,7 +1,6 @@
 .wrapper {
-  position: absolute;
-  top: clamp(16px, 3vw, 32px);
-  right: clamp(16px, 3vw, 32px);
+  position: relative;   /* ancre du menu déroulant — la barre gère le placement */
+  flex-shrink: 0;
   z-index: 1060;
 }
 
@@ -45,6 +44,7 @@
 /* ── Grille déroulante ── */
 .dropdown {
   position: absolute;
+  z-index: 1200;
   top: calc(100% + 8px);
   right: 0;
   display: grid;
@@ -102,10 +102,6 @@
 
 /* ── Compact : portrait ou écran étroit ── */
 @media (orientation: portrait), (max-width: 768px) {
-  .wrapper {
-    top: clamp(10px, 2vw, 20px);
-    right: clamp(10px, 2vw, 20px);
-  }
   .trigger {
     padding: 8px 10px;
     gap: 4px;

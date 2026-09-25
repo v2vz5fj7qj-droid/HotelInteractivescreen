@@ -1,5 +1,6 @@
 /* ── Shell ─────────────────────────────────────────────────────── */
 .shell {
+  --page-pad-x: clamp(16px, 3vw, 40px);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -12,11 +13,7 @@
   touch-action: manipulation;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: clamp(12px, 2vw, 24px) clamp(16px, 3vw, 40px);
+.chrome.chrome {
   border-bottom: 1px solid var(--c-border);
 }
 

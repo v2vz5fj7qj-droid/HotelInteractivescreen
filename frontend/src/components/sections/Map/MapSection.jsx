@@ -7,9 +7,7 @@ import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
 import api              from '../../../services/api';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome    from '../../SectionChrome/SectionChrome';
 import styles           from './MapSection.module.css';
 
 const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY;
@@ -243,25 +241,25 @@ export default function MapSection() {
     <div className={styles.page}>
 
       {/* ── Barre de navigation (hors canvas carte) ── */}
-      <header className={styles.header}>
-        <BackButton />
-        <div className={styles.categories} role="toolbar" aria-label="Filtres catégories">
-          {categories.map(cat => (
-            <button
-              key={cat.key}
-              className={`${styles.catBtn} ${activeCategory === cat.key ? styles.catBtnActive : ''}`}
-              style={activeCategory === cat.key ? { '--cat-color': cat.color } : {}}
-              onClick={() => setActiveCategory(cat.key)}
-            >
-              <span aria-hidden="true">{cat.icon}</span>
-              <span>{catLabel(cat)}</span>
-            </button>
-          ))}
-        </div>
-        <LanguageSwitcher />
-      </header>
-
-      <ThemeToggle />
+      <SectionChrome
+        className={styles.chrome}
+        weather={false}
+        center={(
+          <div className={styles.categories} role="toolbar" aria-label="Filtres catégories">
+            {categories.map(cat => (
+              <button
+                key={cat.key}
+                className={`${styles.catBtn} ${activeCategory === cat.key ? styles.catBtnActive : ''}`}
+                style={activeCategory === cat.key ? { '--cat-color': cat.color } : {}}
+                onClick={() => setActiveCategory(cat.key)}
+              >
+                <span aria-hidden="true">{cat.icon}</span>
+                <span>{catLabel(cat)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      />
 
       {/* Carte + bulle positionnée dans le même conteneur relatif */}
       <div className={styles.mapWrapper}>

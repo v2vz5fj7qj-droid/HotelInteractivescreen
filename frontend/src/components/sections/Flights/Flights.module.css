@@ -21,8 +21,9 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  padding-block: clamp(64px, 8vh, 120px) clamp(20px, 3vh, 40px);
-  padding-inline: clamp(20px, 4.5vw, 64px);
+  --page-pad-x: clamp(20px, 4.5vw, 64px);
+  padding-block: 0 clamp(20px, 3vh, 40px);
+  padding-inline: var(--page-pad-x);
   display: flex;
   flex-direction: column;
   gap: clamp(8px, 1.4vh, 18px);
@@ -648,7 +649,7 @@
 
 /* ─── Portrait étroit : la ligne passe sur deux rangs ──── */
 @media (orientation: portrait) and (max-width: 900px) {
-  .page { padding-inline: clamp(14px, 3.5vw, 32px); }
+  .page { --page-pad-x: clamp(14px, 3.5vw, 32px); }
 
   /* Les colonnes ne correspondent plus à la ligne empilée */
   .columns { display: none; }
@@ -707,13 +708,10 @@
 }
 
 /* ─── Téléphone (vue QR mobile) ─────────────────────────
-   Le BackButton (absolu, en haut à gauche) n'est pas rendu hors kiosque :
-   le padding haut qui lui était réservé devient de l'espace mort sur un
-   petit écran. On ne garde que la hauteur du LanguageSwitcher. */
+   La barre de section réserve elle-même sa hauteur : il ne reste qu'à
+   resserrer la gouttière latérale. */
 @media (max-width: 600px) {
   .page {
-    padding-top: 56px;
-    padding-left:  16px;
-    padding-right: 16px;
+    --page-pad-x: 16px;
   }
 }

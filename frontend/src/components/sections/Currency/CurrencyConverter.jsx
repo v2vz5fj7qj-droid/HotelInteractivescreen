@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome    from '../../SectionChrome/SectionChrome';
 import api              from '../../../services/api';
 import { getHotelId }  from '../../../services/hotelStore';
 import { loadCurrencyCatalog, currencyMeta, isZeroDecimal }
@@ -41,7 +39,7 @@ function NumPad({ onKey }) {
 }
 
 /* ── Calculatrice ────────────────────────────────────────────── */
-function Calculator({ t, onBack }) {
+function Calculator({ t }) {
   const [config,     setConfig]     = useState(null);
   const [rawInput,   setRawInput]   = useState('');
   const [results,    setResults]    = useState(null);
@@ -125,11 +123,6 @@ function Calculator({ t, onBack }) {
 
   return (
     <div className={styles.calcWrap}>
-      {/* Bouton retour vers le tableau des taux */}
-      <button className={styles.backToBoard} onClick={onBack} aria-label={t('currency.back_to_rates')}>
-        ← {t('currency.back_to_rates')}
-      </button>
-
       <div className={styles.body}>
         {/* ── Colonne gauche : saisie ── */}
         <div className={styles.inputCol}>
@@ -244,9 +237,11 @@ export default function CurrencyConverter() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      {/* Un seul retour : vers le tableau des taux si la calculatrice est ouverte */}
+      <SectionChrome
+        onBack={view === 'calc' ? () => setView('board') : undefined}
+        backLabel={view === 'calc' ? t('currency.back_to_rates') : undefined}
+      />
 
       <div className={styles.header}>
         <h1 className={styles.title}>
@@ -263,7 +258,7 @@ export default function CurrencyConverter() {
       )}
 
       {view === 'calc' && (
-        <Calculator t={t} onBack={() => setView('board')} />
+        <Calculator t={t} />
       )}
     </div>
   );

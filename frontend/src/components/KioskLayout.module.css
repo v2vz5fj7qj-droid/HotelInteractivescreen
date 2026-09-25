@@ -14,25 +14,26 @@
 }
 
 .offlineBanner {
+  /* En bas : la barre de section occupe désormais le haut de l'écran */
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
   background: rgba(232, 82, 26, 0.9);
   color: #fff;
   padding: 8px 24px;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   font-size: 0.85rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(8px);
-  animation: slideDown 0.3s var(--ease-smooth) both;
+  animation: slideUp 0.3s var(--ease-smooth) both;
 }
 
-@keyframes slideDown {
-  from { transform: translateX(-50%) translateY(-100%); }
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100%); }
   to   { transform: translateX(-50%) translateY(0); }
 }

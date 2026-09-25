@@ -1,0 +1,78 @@
+/* ════════════════════════════════════════════════════════
+   Barre de navigation de section — élément de flux (sticky)
+   Elle occupe sa propre ligne : plus aucun chevauchement
+   possible avec le contenu de la page.
+   Chaque page peut définir --page-pad-x pour que la barre
+   déborde jusqu'aux bords (fond continu au défilement).
+   ════════════════════════════════════════════════════════ */
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  flex-shrink: 0;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(8px, 1.4vw, 18px);
+
+  /* --page-pad-x = gouttière horizontale de la page (définie par celle-ci).
+     La barre la déborde puis la recrée en padding : fond continu bord à bord,
+     contrôles alignés sur le contenu. Sans gouttière déclarée, elle utilise
+     la sienne et ne déborde pas. */
+  margin-inline: calc(-1 * var(--page-pad-x, 0px));
+  padding-inline: var(--page-pad-x, clamp(16px, 3vw, 32px));
+  padding-block: clamp(10px, 1.6vh, 20px) clamp(8px, 1.2vh, 14px);
+
+  min-height: var(--touch-target);
+  /* Voile dégradé : le contenu qui défile dessous reste lisible */
+  background: linear-gradient(
+    to bottom,
+    var(--c-bg) 0%,
+    var(--c-bg) 78%,
+    color-mix(in srgb, var(--c-bg) 0%, transparent) 100%
+  );
+}
+
+.slotStart  { display: flex; align-items: center; justify-content: flex-start; }
+.slotCenter { display: flex; align-items: center; justify-content: center; min-width: 0; }
+.slotEnd    {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(6px, 1vw, 14px);
+}
+
+/* ── Bouton retour ── */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-full);
+  color: var(--c-text);
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-smooth),
+              transform  var(--duration-fast) var(--ease-smooth);
+}
+
+.back:hover,
+.back:focus-visible {
+  background: var(--c-surface-2, var(--c-surface));
+  transform: translateX(-3px);
+}
+
+.back:active { transform: scale(0.95); }
+
+.back svg { flex-shrink: 0; }
+
+/* ── Écrans étroits : le bouton retour garde l'icône seule ── */
+@media (max-width: 620px) {
+  .chrome { gap: 8px; }
+  .back   { padding: 10px 14px; }
+  .backLabel { display: none; }
+}

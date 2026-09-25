@@ -2,9 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles           from './Events.module.css';
 
 const ALL_ENTRY = { key_name: 'all', icon: '🗓️', label_fr: 'Tout', label_en: 'All' };
@@ -46,9 +44,7 @@ export default function Events() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      <SectionChrome />
 
       {/* En-tête */}
       <div className={styles.header}>
@@ -212,12 +208,7 @@ function EventDetail({ event, t, locale, catMeta, onBack }) {
   const catLabel = locale === 'fr' ? (cat?.label_fr || event.category) : (cat?.label_en || event.category);
   return (
     <div className={styles.detailPage}>
-      <button className={styles.detailBackBtn} onClick={onBack}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-        {t('events.detail_back')}
-      </button>
+      <SectionChrome onBack={onBack} backLabel={t('events.detail_back')} />
 
       <div className={styles.detailContent}>
         {/* Image ou placeholder */}

@@ -1,10 +1,10 @@
 .btn {
-  position: absolute;
-  bottom: clamp(16px, 3vw, 32px);
-  right: clamp(16px, 3vw, 32px);
-  z-index: 200;
-  width: 52px;
-  height: 52px;
+  position: relative;   /* dans le flux — placé par la barre de section */
+  flex-shrink: 0;
+  width:  clamp(44px, 5.2vh, 52px);
+  height: clamp(44px, 5.2vh, 52px);
+  min-width:  clamp(44px, 5.2vh, 52px);
+  min-height: clamp(44px, 5.2vh, 52px);
   border-radius: 50%;
   background: var(--c-surface);
   border: 1.5px solid var(--c-border);

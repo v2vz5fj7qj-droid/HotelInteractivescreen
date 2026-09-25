@@ -2,7 +2,8 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  padding: clamp(80px, 10vh, 115px) clamp(20px, 4vw, 56px) clamp(16px, 3vh, 32px);
+  --page-pad-x: clamp(20px, 4vw, 56px);
+  padding: 0 var(--page-pad-x) clamp(16px, 3vh, 32px);
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 1.8vh, 18px);
@@ -198,9 +199,7 @@
 /* ─── Portrait ─────────────────────────────────────────── */
 @media (orientation: portrait) {
   .page {
-    padding-top:   clamp(64px, 8vh, 100px);
-    padding-left:  clamp(16px, 3vw, 40px);
-    padding-right: clamp(16px, 3vw, 40px);
+    --page-pad-x: clamp(16px, 3vw, 40px);
   }
 
   /* Grille de cartes : 1 colonne en portrait étroit */
@@ -254,13 +253,10 @@
 .slideIn { animation: infoSlideIn 0.3s ease; }
 
 /* ─── Téléphone (vue QR mobile) ─────────────────────────
-   Le BackButton (absolu, en haut à gauche) n'est pas rendu hors kiosque :
-   le padding haut qui lui était réservé devient de l'espace mort sur un
-   petit écran. On ne garde que la hauteur du LanguageSwitcher. */
+   La barre de section réserve elle-même sa hauteur : il ne reste qu'à
+   resserrer la gouttière latérale. */
 @media (max-width: 600px) {
   .page {
-    padding-top: 56px;
-    padding-left:  16px;
-    padding-right: 16px;
+    --page-pad-x: 16px;
   }
 }

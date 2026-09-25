@@ -2,9 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles           from './UsefulInfo.module.css';
 
 const ALL_ENTRY = { key: 'all', icon: '📋', color: '#6B7280', label_fr: 'Tout', label_en: 'All' };
@@ -56,9 +54,7 @@ export default function UsefulInfo() {
 
   return (
     <div className={styles.page} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      <SectionChrome />
 
       <div className={styles.header}>
         <h1 className={styles.title}>{t('info.title')}</h1>

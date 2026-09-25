@@ -11,15 +11,10 @@
 }
 
 /* ── Header barre navigation ── */
-.header {
-  position: relative;           /* BackButton et LanguageSwitcher se positionnent ici */
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: clamp(64px, 9vh, 80px);
-  background: var(--c-surface);
+.chrome.chrome {
+  background: var(--c-surface-solid);
   border-bottom: 1px solid var(--c-border);
+  padding-block: clamp(8px, 1.2vh, 14px);
   z-index: 1050;
 }
 
@@ -30,8 +25,8 @@
   gap: clamp(0.3rem, 0.6vw, 0.5rem);
   overflow-x: auto;
   scrollbar-width: none;
-  /* marge latérale pour laisser la place aux boutons absolus */
-  padding: 0 clamp(120px, 17vw, 170px);
+  /* La barre réserve déjà la place du retour et des réglages :
+     plus besoin de marge latérale « à l'aveugle ». */
   width: 100%;
   flex-wrap: nowrap;
 }
@@ -388,21 +383,13 @@
 :global(.leaflet-popup-connectbe .leaflet-popup-close-button){ color: rgba(245,230,200,.6) !important; }
 
 
-/* ─── Téléphone (vue QR mobile) ─────────────────────────
-   Le BackButton n'est pas rendu hors kiosque : on ne réserve plus que la
-   place du LanguageSwitcher à droite. Sans ceci, les 120px de padding
-   gauche écrasent les filtres de catégories sur un écran de 390px. */
+/* ─── Téléphone (vue QR mobile) ───────────────────────── */
 @media (max-width: 600px) {
-  /* On réserve la place du LanguageSwitcher sur le header lui-même : en la
-     mettant sur .categories, la bande scrollable passait sous le bouton. */
-  .header {
-    height: 56px;
-    padding-right: 64px;
-  }
-
-  .categories {
-    padding-left:  12px;
-    padding-right: 12px;
+  /* La barre place retour / langue / thème dans ses propres colonnes :
+     les filtres ne passent plus sous un bouton flottant. */
+  .chrome.chrome {
+    padding-inline: 12px;
+    padding-block: 8px;
   }
 
   .zoomHint  { top: 3.4rem; }

@@ -5,8 +5,7 @@ import { useTheme }    from '../../../contexts/ThemeContext';
 import { useHotel }    from '../../../contexts/HotelContext';
 import { trackEvent }  from '../../../services/analytics';
 import api             from '../../../services/api';
-import BackButton      from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles          from './MobileTransfer.module.css';
 
 const SECTIONS = [
@@ -104,8 +103,7 @@ export default function MobileTransfer() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
+      <SectionChrome theme={false} />
 
       <div className={styles.content}>
         {/* QR Code */}
@@ -126,9 +124,12 @@ export default function MobileTransfer() {
                 </button>
               </div>
             ) : (
+              /* size = résolution de rendu ; la taille affichée est pilotée
+                 en CSS (--qr-size) pour suivre la taille de la borne. */
               <QRCodeSVG
                 value={qrUrl}
-                size={260}
+                size={512}
+                className={styles.qrCode}
                 fgColor={config.color_primary}
                 bgColor="transparent"
                 level="M"

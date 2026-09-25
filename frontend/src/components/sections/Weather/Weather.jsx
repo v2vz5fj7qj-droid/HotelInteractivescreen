@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLanguage }  from '../../../contexts/LanguageContext';
 import { useApi }       from '../../../hooks/useApi';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles           from './Weather.module.css';
 
 const DAY_SHORT = {
@@ -50,9 +48,8 @@ export default function Weather() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      {/* Pas de pastille météo ici : on y est déjà */}
+      <SectionChrome weather={false} />
 
       {offline && (
         <div className={styles.offlineTag} role="status">

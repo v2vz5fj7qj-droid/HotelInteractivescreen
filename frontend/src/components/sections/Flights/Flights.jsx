@@ -4,9 +4,7 @@ import { useHotel }     from '../../../contexts/HotelContext';
 import { useApi }       from '../../../hooks/useApi';
 import { useDebounce }  from '../../../hooks/useDebounce';
 import { trackEvent }   from '../../../services/analytics';
-import BackButton       from '../../BackButton/BackButton';
-import LanguageSwitcher from '../../LanguageSwitcher/LanguageSwitcher';
-import ThemeToggle      from '../../ThemeToggle/ThemeToggle';
+import SectionChrome   from '../../SectionChrome/SectionChrome';
 import styles           from './Flights.module.css';
 
 const RETRY_DELAY_MS   = 30_000;
@@ -202,9 +200,7 @@ export default function Flights() {
 
   return (
     <div className={styles.page}>
-      <BackButton />
-      <LanguageSwitcher />
-      <ThemeToggle />
+      <SectionChrome />
 
       <header className={styles.header}>
         <div className={styles.headerMain}>

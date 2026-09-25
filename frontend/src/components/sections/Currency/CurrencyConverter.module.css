@@ -3,9 +3,10 @@
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  /* Le padding bas réserve la place du WeatherBadge flottant (bas-gauche, ~60px de haut)
-     affiché par KioskLayout sur cette section — sans quoi il chevauche le dernier bloc. */
-  padding: clamp(72px, 9vh, 110px) clamp(20px, 4vw, 56px) clamp(76px, 10vh, 110px);
+  /* La barre de section (SectionChrome) occupe sa propre ligne : aucun
+     padding haut « magique » à réserver pour des boutons flottants. */
+  --page-pad-x: clamp(20px, 4vw, 56px);
+  padding: 0 var(--page-pad-x) clamp(20px, 3vh, 36px);
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 1.8vh, 18px);
@@ -53,26 +54,7 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
-.backToBoard {
-  align-self: flex-start;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border-radius: 999px;
-  border: 1.5px solid var(--c-border);
-  background: var(--c-surface);
-  color: var(--c-text-muted);
-  font-size: clamp(0.72rem, 1.15vh, 0.88rem);
-  font-weight: 600;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background 120ms, color 120ms, transform 100ms;
-  -webkit-tap-highlight-color: transparent;
-}
 .backToBoard:hover  { background: var(--c-bg); color: var(--c-text); }
-.backToBoard:active { transform: scale(0.93); }
-
 /* ── Layout deux colonnes ─────────────────────────────────────── */
 .body {
   flex: 1;

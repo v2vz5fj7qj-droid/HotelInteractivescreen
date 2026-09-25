@@ -4,7 +4,8 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: clamp(80px, 10vh, 120px) clamp(24px, 5vw, 80px) clamp(24px, 4vh, 48px);
+  --page-pad-x: clamp(24px, 5vw, 80px);
+  padding: 0 var(--page-pad-x) clamp(24px, 4vh, 48px);
 }
 
 .content {
@@ -17,6 +18,11 @@
 
 /* ── QR Code ──────────────────────────────── */
 .qrBlock {
+  /* Taille du QR : suit la plus contraignante des deux dimensions de
+     l'écran, pour rester généreux sur une borne 55" verticale sans
+     déborder en paysage. */
+  --qr-size: clamp(220px, min(46vw, 30vh), 640px);
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -32,6 +38,57 @@
   animation: breathe 3s ease-in-out infinite;
 }
 
+/* Le QR est un SVG : la taille d'affichage est purement CSS. */
+.qrCode {
+  display: block;
+  width:  var(--qr-size);
+  height: auto;
+}
+
+/* Placeholder (chargement / erreur) — même empreinte que le QR
+   pour que le bloc ne saute pas entre les trois états.
+   Le cadre a un fond clair fixe quel que soit le thème : les teintes
+   ci-dessous sont donc volontairement sombres (contraste AA). */
+.qrPlaceholder {
+  width:  var(--qr-size);
+  height: var(--qr-size);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vh, 18px);
+  text-align: center;
+}
+
+.errorText {
+  font-size: clamp(0.82rem, 1.3vh, 0.95rem);
+  font-weight: 600;
+  color: #A8380F;              /* accent assombri : lisible sur le cadre crème */
+  line-height: 1.4;
+  max-width: 220px;
+}
+
+.retryBtn {
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--c-primary-dark);
+  background: color-mix(in srgb, var(--c-primary) 14%, transparent);
+  color: var(--c-primary-dark);
+  font-size: clamp(0.8rem, 1.2vh, 0.92rem);
+  font-weight: 700;
+  transition: background var(--duration-fast) var(--ease-smooth),
+              color      var(--duration-fast) var(--ease-smooth),
+              transform  var(--duration-fast) var(--ease-smooth);
+}
+
+.retryBtn:hover,
+.retryBtn:focus-visible {
+  background: var(--c-primary-dark);
+  color: #fff;
+}
+
+.retryBtn:active { transform: scale(0.95); }
+
 .scanInstruction {
   font-size: clamp(0.85rem, 1.4vh, 1rem);
   color: var(--c-text-muted);
@@ -39,9 +96,44 @@
   max-width: 320px;
 }
 
-.validFor {
-  font-size: clamp(0.7rem, 1.05vh, 0.85rem);
-  color: var(--c-text-dim);
+/* ── Compte à rebours de validité du QR ───── */
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  font-size: clamp(0.72rem, 1.05vh, 0.85rem);
+  color: var(--c-text-muted);
+  transition: border-color var(--duration-base) var(--ease-smooth),
+              color        var(--duration-base) var(--ease-smooth);
+}
+
+.countdownIcon  { font-size: 1.05em; line-height: 1; }
+.countdownLabel { font-weight: 500; }
+
+.countdownTime {
+  font-weight: 800;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;   /* pas de tremblement à chaque seconde */
+  letter-spacing: 0.02em;
+}
+
+/* Dernière minute : le token va être renouvelé automatiquement */
+.countdownWarning {
+  border-color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+  color: var(--c-accent);
+  animation: countdownPulse 1.6s ease-in-out infinite;
+}
+
+.countdownWarning .countdownTime { color: var(--c-accent); }
+
+@keyframes countdownPulse {
+  0%, 100% { opacity: 1;    }
+  50%      { opacity: 0.62; }
 }
 
 /* ── Panel sections ───────────────────────── */
@@ -100,33 +192,47 @@
 .sectionIcon  { font-size: clamp(1.2rem, 2vh, 1.6rem); }
 .sectionLabel { font-weight: 600; }
 
-/* URL preview */
-.urlPreview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  padding: 10px 16px;
-  overflow: hidden;
-}
-
-.urlLabel {
-  font-size: 0.75rem;
-  color: var(--c-text-dim);
-  flex-shrink: 0;
-}
-
-.urlText {
-  font-size: clamp(0.7rem, 1vh, 0.82rem);
-  color: var(--c-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 @keyframes breathe {
   0%, 100% { box-shadow: 0 0 20px color-mix(in srgb, var(--c-primary) 30%, transparent); }
   50%       { box-shadow: 0 0 45px color-mix(in srgb, var(--c-primary) 60%, transparent); }
+}
+
+/* ─── Borne verticale (portrait) ────────────────────────
+   Deux colonnes côte à côte écrasent le QR sur une borne
+   verticale : on empile QR puis choix de section. */
+@media (orientation: portrait) {
+  .content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    align-content: center;
+    justify-items: center;
+    gap: clamp(20px, 3vh, 40px);
+    /* Sécurité sur une tablette portrait peu haute */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-block: clamp(8px, 1.5vh, 20px);
+  }
+
+  .qrFrame { padding: clamp(14px, 2.5vw, 24px); }
+
+  .sectionPanel {
+    width: 100%;
+    max-width: 640px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Les sections passent en grille 2 colonnes : moins de hauteur consommée */
+  .sectionGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .sectionBtn { justify-content: center; text-align: center; }
+
+  /* Nombre impair de rubriques : la dernière occupe toute la ligne
+     au lieu de laisser un trou à droite. */
+  .sectionBtn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .sectionBtn:hover { transform: translateY(-3px); }
 }

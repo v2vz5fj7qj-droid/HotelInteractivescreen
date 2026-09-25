@@ -157,8 +157,10 @@ HotelInteractivescreen/
       <HotelProvider>    ← GET /api/kiosk/:slug/config au boot
         <ThemeProvider>  ← CSS vars + auto dark mode 20h–7h
           <KioskRoutes>
-            <KioskLayout>  ← NavBar, WeatherBadge, LanguageSwitcher,
-                              FullscreenManager, IdleTimer (30s → home)
+            <KioskLayout>  ← AttractScreen, FullscreenManager,
+                              bannière offline, IdleTimer (30s → home)
+              <Section>    ← <SectionChrome /> en tête de page :
+                              retour, météo, langue, thème
 ```
 
 ### Stack de contexte — Admin
@@ -185,8 +187,16 @@ HotelInteractivescreen/
 | `AttractScreen` | Écran attractif après 30s d'inactivité |
 | `IdleTimer` | Redirection home après inactivité |
 | `FullscreenManager` | Mode plein écran avec sortie par mot de passe |
-| `WeatherBadge` | Badge météo flottant sur toutes les pages |
+| `SectionChrome` | Barre de navigation de section (sticky, dans le flux) : retour, pastille météo, langue, thème. Seul point d'entrée — aucune page ne place de bouton flottant |
+| `WeatherBadge` | Pastille météo, rendue à l'intérieur de `SectionChrome` |
 | `MobileGate` | Validation du token QR pour transfert mobile |
+
+### Mise en page des sections kiosque
+
+- Chaque section rend `<SectionChrome />` en **premier enfant** de son conteneur racine (`.page` / `.detailPage` / `.shell`). La barre est `position: sticky` **dans le flux** : elle réserve sa hauteur, donc aucun contrôle ne peut chevaucher le contenu.
+- Le conteneur racine déclare sa gouttière horizontale via `--page-pad-x` (ex. `--page-pad-x: clamp(20px, 4vw, 56px); padding: 0 var(--page-pad-x) …`). La barre s'en sert pour s'étendre bord à bord tout en alignant ses contrôles sur le contenu.
+- Les `@media` d'une section ne surchargent que `--page-pad-x`, jamais `padding-top/left/right` du conteneur racine.
+- Vue détail ou étape interne → `<SectionChrome onBack={…} backLabel={…} />` plutôt qu'un bouton retour maison : un seul retour, toujours au même endroit.
 
 ### Appels API
 
