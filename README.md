@@ -131,6 +131,10 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Évaluations          | `/feedback`  | Formulaire multi-étapes : notation étoilée par catégorie, commentaire libre, emojis rapides   |
 | Devises              | `/currency`  | Tableau des taux de change (max 5 devises) + convertisseur interactif (40+ devises, open.er-api.com) |
 
+Les sections affichées sur la borne sont **configurables par hôtel** (`hotel_settings.enabled_sections`) : le catalogue de référence vit dans `backend/src/data/sections.json`, et une valeur nulle signifie « toutes les sections ».
+
+Les mêmes sections sont servies sur le téléphone du client via l'**espace visiteur** (`/<slug-hôtel>/visiteur`) — voir [Accès client par code de séjour](#accès-client-par-code-de-séjour).
+
 **Fonctionnalités transversales :**
 - Multilingue 9 langues : FR, EN, DE, ES, PT, AR (RTL), ZH, JA, RU
 - Sélecteur de langue dans la barre de navigation basse — dropdown vers le haut
@@ -141,7 +145,8 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 - Attract screen après 30s d'inactivité sur l'accueil
 - Retour automatique à l'accueil après 30s d'inactivité sur toute autre page
 - Animations de transition entre pages
-- Badge météo flottant sur toutes les pages secondaires
+- Barre de section unique en tête de chaque page secondaire (`SectionChrome`) : retour, pastille météo, langue, thème — dans le flux, jamais en flottant au-dessus du contenu
+- Sections activables par hôtel : chaque section du catalogue (`backend/src/data/sections.json`) peut être masquée depuis la configuration de l'hôtel
 - Raccourci admin caché : 5 taps sur le logo → `/admin`
 - Mode plein écran protégé par mot de passe (sortie bloquée sans code — configurable dans le thème)
 - QR code avec token signé (TTL 10 min, auto-renouvelé) → page `/mobile/:section?token=…` sur smartphone
@@ -174,7 +179,8 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Tokens API | Suivi et alerte de consommation des tokens FlightAPI |
 | Journal d'activité | Historique filtrable de l'`audit_log` (par type d'entité, hôtel, utilisateur, date) |
 | **Bornes kiosques** | Liste toutes les bornes (tous hôtels), statut temps réel (en ligne / hors ligne / désactivée), génération de clés d'inscription usage unique avec expiration configurable, copie de clé, toggle actif/inactif, suppression |
-| Configuration hôtel | Page dédiée par hôtel (accessible depuis Hôtels → **Configurer**) — onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Bon à savoir**, **Météo**, **Aéroports**, **Devises** |
+| Configuration hôtel | Page dédiée par hôtel (accessible depuis Hôtels → **Configurer**) — onglets : **Paramètres** (logo, fond, couleurs, messages, WiFi, check-in/out), **Sections** (activer/masquer les sections du kiosque), **Bon à savoir**, **Météo**, **Aéroports**, **Devises**, **Codes séjour** |
+| **Sauvegarde & restauration** | Export/import d'archives `.zip` sur trois périmètres (un établissement, catalogue partagé, instance complète), essai à blanc avant écriture, instantanés conservés sur le serveur |
 
 ### Hotel-admin
 
@@ -188,6 +194,8 @@ Les contenus créés directement par HOTEL_ADMIN (événements, services, bon à
 | Évaluations | Consultation des feedbacks kiosque — statistiques par catégorie, filtres date/note, export CSV et PDF |
 | Devises | Devise de base, devises cibles (max 10), tableau des taux affiché sur la borne (max 5), MAJ auto (intervalle ou heures fixes) ou manuelle, refresh forcé |
 | **Bornes kiosques** | Vue des bornes de l'hôtel avec statut temps réel, toggle actif/inactif |
+| **Codes d'accès client** | Création (à l'unité ou en lot) des codes de séjour remis aux clients, fiche imprimable QR + code, suivi des appareils rattachés, révocation |
+| **Sauvegarde & restauration** | Export/import de la configuration et du contenu de son établissement (réservé à `hotel_admin`, inaccessible au staff) |
 
 ### Contributeur
 
@@ -281,6 +289,15 @@ Toutes les actions (création, modification, suppression, validation, rejet) son
 | `IDLE_TIMEOUT_MS`         | Délai inactivité avant retour accueil (ms)    | Non (60000)      |
 | `QR_TOKEN_TTL_MIN`        | Durée de vie des tokens QR (minutes)          | Non (10)         |
 | `CORS_ORIGINS`            | Origines autorisées à appeler l'API, séparées par des virgules | Non (`http://localhost:3000,http://localhost:5173`) |
+| `API_EXTERNAL_ORIGINS`    | Origines externes ajoutées à `connect-src` de la CSP (séparées par des virgules) | Non |
+| `TRUST_PROXY`             | À définir dès qu'nginx ou Cloudflare est devant le backend — sans elle, `req.ip` vaut l'adresse du proxy pour tous les clients | Recommandé en prod |
+| `GUEST_GRACE_HOURS`       | Marge de courtoisie après l'heure de départ, proposée à la création d'un code (heures) | Non (24) |
+| `GUEST_RETENTION_DAYS`    | Délai avant purge RGPD des sessions et du nom du client (jours après la fin d'accès) | Non (30) |
+| `GUEST_FAILURE_BUDGET`    | Échecs de saisie de code tolérés par minute et par client (anti-force brute) | Non (20) |
+| `CONTENT_AUTH_ENFORCE`    | `true` verrouille les routes de contenu (jeton borne/visiteur/QR exigé) ; `false` = mode observation journalisé — [ordre de bascule](#mise-en-service-du-verrouillage--dans-cet-ordre) | Non (false) |
+| `UPLOADS_DIR`             | Emplacement des fichiers uploadés | Non (`/uploads`) |
+| `CONFIG_BACKUP_DIR`       | Emplacement des instantanés du module Sauvegarde & restauration | Non (`/backups/config`) |
+| `LIBRETRANSLATE_URL`      | URL du service de traduction auto-hébergé | Non (`http://libretranslate:5000`) |
 
 ### Accès depuis un autre appareil (test mobile / kiosque)
 
@@ -329,10 +346,10 @@ Deux choses circulent, et elles ne se traitent pas de la même façon.
 
 ```bash
 cd /opt/connectbe
-./scripts/db-backup.sh                   # filet de sécurité — toujours en premier
+./scripts/db-backup.sh                              # filet de sécurité — toujours en premier
 git pull
-docker compose restart backend           # runMigrations applique les changements de schéma
-docker compose up -d --build frontend    # recompile le build statique servi par nginx
+docker compose restart backend                      # runMigrations applique le schéma
+docker compose up -d --build --no-deps frontend     # recompile le build servi par nginx
 ```
 
 `mysql_data` est un volume nommé, jamais recréé : **les données saisies par le client ne sont
@@ -344,21 +361,47 @@ modification de `frontend/` — code, `public/`, ou une variable `VITE_*` du `.e
 `--build`. C'est le prix du passage en production : plus de serveur de développement exposé,
 mais plus de rechargement à chaud non plus.
 
+> ⚠️ **Si le `git pull` a modifié `backend/package.json`**, un `restart` ne suffit plus : la
+> nouvelle dépendance n'est pas dans l'image, et le backend démarrera sur un
+> `Cannot find module`. Il faut alors reconstruire :
+>
+> ```bash
+> docker compose up -d --build --renew-anon-volumes --no-deps backend
+> ```
+>
+> `--renew-anon-volumes` est indispensable — `/app/node_modules` est un volume **anonyme** qui
+> survit à la recréation du conteneur et masquerait la dépendance fraîchement installée.
+> `--no-deps` évite d'entraîner MySQL dans l'opération. Voir
+> [QUICKSTART — dépendances npm](QUICKSTART.md#mode-a--docker-complet-le-plus-simple).
+
+> ⚠️ **Ne jamais employer `--force-recreate` sans `--no-deps`.** `backend` dépend de `mysql` et
+> `frontend` dépend de `backend` : la recréation se propage, et celle du conteneur MySQL peut
+> échouer sur un conflit de nom en laissant la pile à l'arrêt. Les données survivent
+> (`mysql_data` est un volume nommé), mais le service tombe — inacceptable sur une borne en
+> exploitation.
+
 > ⚠️ **Ne jamais rejouer `data_live.sql` sur une production en service.** C'est un
 > `REPLACE INTO` global : il écrase toute ligne de même identifiant par votre version locale,
 > sans distinguer vos modifications des saisies du client. Ce fichier sert à **amorcer** un
 > déploiement, pas à le mettre à jour.
 
-### Les deux scripts de base de données
+### Les trois mécanismes de sauvegarde — ne pas les confondre
 
-| Script | Produit | Contenu | Versionné |
-|---|---|---|---|
-| `scripts/db-backup.sh` | `backups/connectbe_<date>.sql.gz` | **Tout** — schéma, contenus, logs, analytics, avis, bornes | Non (`.gitignore`) |
-| `scripts/db-export.sh` | `database/seeds/data_live.sql` | Contenu éditorial seul | Oui |
+| Mécanisme | Produit | Contenu | Versionné | Sert à |
+|---|---|---|---|---|
+| `scripts/db-backup.sh` | `backups/connectbe_<date>.sql.gz` | **Tout** — schéma, contenus, logs, analytics, avis, bornes | Non (`.gitignore`) | Reprise après sinistre serveur |
+| `scripts/db-export.sh` | `database/seeds/data_live.sql` | Contenu éditorial seul | Oui | Amorcer un serveur vierge (une seule fois) |
+| **Back-office → Sauvegarde & restauration** | `connectbe_<périmètre>_<date>.zip` | Configuration, contenu, traductions et médias | Non | Le client sauvegarde son travail, duplique un établissement, migre entre installations |
+
+Le module du back-office n'est pas un dump SQL : il exporte des lignes logiques et reconstruit
+les identifiants à l'import. C'est ce qui lui permet, contrairement à un `mysqldump`, de
+restaurer sur une autre installation ou de recopier un établissement vers un autre sans
+écraser l'hôtel n°1 existant ni casser les clés étrangères. Détail plus bas.
 
 `db-export.sh` écarte volontairement ce qui est propre à une instance ou purement technique :
 `audit_log`, `workflow_notifications`, `feedbacks`, `analytics_events`, `kiosks`, `kiosk_keys`,
-`qr_tokens`. Une borne enregistrée sur votre machine de dev n'a rien à faire chez le client.
+`qr_tokens`, `guest_codes`, `guest_sessions`. Une borne enregistrée sur votre machine de dev n'a
+rien à faire chez le client, et les codes de séjour d'un hôtel encore moins.
 
 ```bash
 # Rapatrier l'état réel de la production dans git (à lancer SUR le serveur)
@@ -372,6 +415,43 @@ Tant que la production n'est pas lancée, exporter depuis la machine de dev a du
 ce qui amorcera le premier déploiement. **Dès qu'un client saisit ses propres données, le sens
 s'inverse** — la production devient la source de vérité, et `data_live.sql` n'est plus qu'une
 sauvegarde éditoriale versionnée.
+
+### Frontend : basculer entre production et développement
+
+Le frontend a deux modes, et le choix n'est pas cosmétique.
+
+| | Production (défaut) | Développement |
+|---|---|---|
+| Cible du `Dockerfile` | `prod` | `dev` |
+| Ce qui tourne | nginx servant `dist/` | serveur Vite |
+| Compilation | `npm run build` à chaque fois (~1 min) | aucune |
+| Code source | copié dans l'image | monté depuis le dépôt |
+| Modifier un fichier | exige un nouveau `--build` | rechargement à chaud immédiat |
+| Port conteneur | `5173:80` | `5173:5173` |
+| Proxy API | nginx → backend | Vite, via `VITE_API_PROXY` |
+| Variables `VITE_*` | figées à la compilation (build args) | lues à l'exécution |
+
+L'URL reste `http://localhost:5173` dans les deux cas : seul le port interne change.
+
+```bash
+# Production — reconstruit l'artefact réellement livré
+docker compose up -d --build --no-deps frontend
+
+# Développement — serveur Vite, rechargement à chaud
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-deps frontend
+```
+
+**Recommandation.** Travailler une page en mode développement, puis repasser en production
+**avant de committer** pour vérifier que le vrai bundle nginx la sert correctement. Compiler
+n'est pas s'afficher : `vite build` valide la syntaxe et les imports, pas la mise en page.
+C'est aussi l'état dans lequel il faut laisser l'installation — le mode production est le
+défaut, délibérément.
+
+> Le mode développement est **collant** : une fois le conteneur recréé avec la surcouche, il
+> reste sur Vite jusqu'à ce qu'on le recrée avec le fichier de base seul. C'est précisément
+> pourquoi la surcouche ne s'appelle pas `docker-compose.override.yml` : un override est chargé
+> automatiquement, et s'il traînait sur le VPS la production repartirait sur le serveur de
+> développement.
 
 ### Livrer du contenu préparé en dev
 
@@ -410,6 +490,89 @@ par `backend/src/services/runMigrations.js` (migrations idempotentes).
 
 ---
 
+## Sauvegarde & restauration de la configuration (back-office)
+
+Permet au client de sauvegarder son travail et de le rétablir lui-même, sans accès SSH.
+Pages : `/admin/hotel/backup` (son établissement) et `/admin/super/backup` (tous les périmètres).
+Code : `backend/src/services/configBackup/` et `frontend/src/admin/pages/BackupManager.jsx`.
+
+### Périmètres
+
+| Périmètre | Rôle | Contenu |
+|---|---|---|
+| `hotel` | `hotel_admin`, `super_admin` | Paramètres et identité visuelle, devises, bon à savoir, messages défilants, services et leurs catégories, lieux/agenda/infos affichés, localités météo, aéroports suivis, médias |
+| `global` | `super_admin` | Catalogue partagé : lieux, agenda, infos utiles, catégories globales, localités météo, **aéroports et leur planification de rafraîchissement des vols**, thème global |
+| `full` | `super_admin` | `global` + tous les établissements |
+
+`hotel_staff` n'y a pas accès : remplacer la configuration d'un établissement n'est pas une
+opération de saisie courante.
+
+### Ce qui n'est jamais exporté
+
+Comptes et mots de passe (`admin_users`), jetons d'appareils (`kiosks`, `kiosk_keys`,
+`qr_tokens`), codes de séjour et sessions visiteurs (`guest_codes`, `guest_sessions` —
+données personnelles), quotas d'API, journal d'audit, statistiques d'usage, avis clients
+(données personnelles), cache météo. La clé d'API du fournisseur de taux de change
+(`devise_config.api_key`) est retirée de l'archive : l'import conserve celle déjà en place.
+
+### Contenu d'une archive
+
+```
+connectbe_<périmètre>_<date>.zip
+├── manifest.json   périmètre, date, auteur, identifiant d'instance, décompte par table,
+│                   colonnes exportées, champs retirés
+├── data.json       les lignes, par table
+└── uploads/…       logos, fonds, polices, bannières, photos de lieux et d'événements
+```
+
+`manifest.json` porte un numéro de format : une archive produite par une version plus récente
+de l'application est refusée plutôt que d'être appliquée de travers. À l'import, les colonnes
+de l'archive sont comparées au schéma réel, ce qui laisse passer une dérive (colonne ajoutée
+ou retirée depuis l'export) en la signalant au lieu d'échouer.
+
+### Import
+
+Rien n'est écrit avant confirmation : le fichier est d'abord analysé côté serveur et
+l'utilisateur voit le décompte par type de contenu, la correspondance des établissements et
+les avertissements. Deux modes :
+
+- **Fusionner** — les fiches de l'archive écrasent leurs homologues, le reste est conservé.
+  L'opération est neutre si on la rejoue : les lignes sont retrouvées par clé fonctionnelle
+  (slug d'un événement, intitulé français d'une info utile, coordonnées d'un lieu…), pas par
+  identifiant.
+- **Remplacer** — vide le périmètre restauré avant d'insérer.
+
+Un **instantané de sécurité** est créé juste avant toute écriture, et l'import est refusé si
+cet instantané échoue. Les 20 derniers instantanés sont conservés dans `backups/config/` et
+listés dans la page, avec restauration et téléchargement.
+
+### Deux garde-fous qui méritent d'être connus
+
+**Le contenu partagé n'est jamais vidé** (hors périmètre `full`), même en mode remplacement :
+les lieux, l'agenda, les infos utiles, les aéroports et les localités sont rattachés à
+plusieurs établissements. Les effacer pour en restaurer un seul supprimerait les rattachements
+des autres par cascade — ou échouerait sur une contrainte `RESTRICT`. Ces lignes sont mises à
+jour, et le rapport le dit.
+
+**La paternité du contenu ne suit pas la copie.** `events.owner_hotel_id` et
+`useful_contacts.owner_hotel_id` disent qui a soumis la fiche, pas où elle s'affiche. Dupliquer
+la configuration d'un hôtel vers un autre le rattache au contenu partagé sans lui en attribuer
+la paternité.
+
+### Médias
+
+Sur la même installation, les fichiers sont laissés à leur place — y compris pour une
+duplication vers un autre établissement, où les réécrire ne ferait que dupliquer les photos
+des lieux partagés. Pour une archive venue d'une **autre** installation, les médias sont rangés
+dans `uploads/restored/<date>/` et les chemins en base réécrits : un fichier de même nom y
+appartient à quelqu'un d'autre, l'écraser détruirait une image en service.
+
+Les chemins sont réputés relatifs à `/uploads` et `/backups` (volumes montés) ; `UPLOADS_DIR`
+et `CONFIG_BACKUP_DIR` permettent de les déplacer. Toute entrée d'archive qui tenterait de
+sortir de `uploads/` est refusée.
+
+---
+
 ## Volumes Docker importants
 
 ```yaml
@@ -418,6 +581,9 @@ mysql_data:/var/lib/mysql
 
 # Backend — persistence des fichiers uploadés (logos, images POI, polices)
 ./uploads:/uploads
+
+# Backend — instantanés de configuration créés par le back-office
+./backups:/backups
 
 # Frontend — hot-reload du code source sans rebuild
 ./frontend/src:/app/src
@@ -488,6 +654,97 @@ Aucune clé n'est demandée. Ce mode est destiné au développement uniquement.
 |---|---|
 | `kiosks` | Bornes enregistrées (device_token, fingerprint, label, is_enabled, last_seen_at) |
 | `kiosk_keys` | Clés d'inscription générées (key_value, hotel_id, expires_at, used_at) |
+
+---
+
+## Accès client par code de séjour
+
+Le client retrouve **tout le menu de la borne sur son propre téléphone**, pendant la durée de
+son séjour, sans installer d'application et sans compte. La réception lui remet un code court
+à l'enregistrement.
+
+URL publique : `https://votre-domaine.com/<slug-hôtel>/visiteur` — le QR de la fiche imprimée
+porte directement le code (`?c=K7F2QM`), le client n'a donc rien à saisir.
+
+### Flux
+
+```
+Réception crée un code (à l'unité ou en lot) → fiche imprimable A5 : QR + code + URL
+    ↓
+Le client scanne le QR (ou saisit le code sur /<slug>/visiteur)
+    ↓
+POST /api/guest/redeem { hotel_slug, code, fingerprint }
+    ↓
+Backend vérifie la fenêtre [début, fin + marge de courtoisie] et le quota d'appareils
+    ↓
+guest_token (JWT expirant à la fin d'accès réelle) → tout le menu s'affiche
+    ↓
+Séjour terminé → écran de remerciement, pas un message d'erreur
+```
+
+Un rechargement de page depuis le même appareil **réutilise** sa session au lieu de consommer
+un second appareil du quota (index unique `(code_id, fingerprint)`).
+
+### Paramètres d'un code
+
+| Champ | Rôle |
+|---|---|
+| `code` | 6 caractères base32 Crockford, sans caractères ambigus (ni `O`/`0`, ni `I`/`1`/`L`) — unique par hôtel |
+| `room_number`, `guest_name` | Repères pour la réception ; le nom sert la bienvenue nominative |
+| `occupants` → `max_devices` | Nombre d'appareils autorisés, **plancher à 2** (un client seul a souvent téléphone + tablette) |
+| `valid_from` / `valid_until` | Fenêtre de séjour |
+| `grace_hours` | Marge après le départ (24 h par défaut, `GUEST_GRACE_HOURS`) |
+| `revoked_at` | Révocation immédiate depuis le back-office |
+
+Statuts affichés en back-office : **à venir**, **actif**, **courtoisie**, **expiré**, **révoqué**.
+
+### Ce que voit le client — et lui seul
+
+`GET /api/guest/me` (jeton requis) renvoie le **mot de passe Wi-Fi**, l'heure de départ et la
+bienvenue nominative. Ces informations ne partent plus dans la configuration publique du
+kiosque : `wifi_password` et `fullscreen_password` en ont été retirés.
+
+`POST /api/guest/qr`, qui alimente le QR affiché à la borne ou à la réception, valide le code
+**sans créer de session** — la borne n'entame pas le quota du client — et ne renvoie aucune
+donnée nominative : l'écran est visible de tout le hall.
+
+### Sécurité
+
+- **Le jeton n'est jamais stocké en clair** : la base ne garde que son SHA-256, qui sert de clé
+  de révocation. Un vol de base ne donne pas accès aux séjours en cours.
+- **Budget d'échecs** (`GUEST_FAILURE_BUDGET`, 20/min) plutôt qu'un limiteur de débit
+  classique : seules les saisies **fausses** le consomment, un code valide est toujours servi.
+  Face à ~729 millions de combinaisons, l'essai exhaustif est hors de portée.
+- **Verrouillage des routes de contenu** (`contentAuth`) : météo, vols, lieux, services… exigent
+  un porteur — jeton visiteur, jeton de borne ou jeton de QR mobile — et un jeton d'un hôtel ne
+  lit pas les données d'un autre. Voir la mise en service ci-dessous.
+- **Purge RGPD automatique** : `GUEST_RETENTION_DAYS` jours (30 par défaut) après la fin
+  d'accès, les appareils rattachés sont supprimés et le nom du client effacé
+  (`anonymized_at`). Les statistiques d'usage par chambre survivent, l'identité non.
+- **Hors de toute sauvegarde transportable** : `guest_codes` et `guest_sessions` sont exclues
+  du seed `data_live.sql` comme des archives du back-office. Un code de séjour est propre à une
+  installation et à un moment ; le dupliquer ailleurs transporterait des données personnelles et
+  pourrait ressusciter un code révoqué. Seul `scripts/db-backup.sh` les conserve — c'est son rôle.
+
+### Mise en service du verrouillage — dans cet ordre
+
+`CONTENT_AUTH_ENFORCE` gouverne la garde des routes de contenu, qui étaient jusqu'ici
+entièrement publiques :
+
+1. **`false` (défaut) — mode observation.** Les appels sans jeton passent mais sont journalisés.
+   Déployer d'abord ainsi et vérifier dans les journaux qu'aucun appel légitime ne tombe.
+2. **Recharger le front sur toutes les bornes en service** — une borne restée sur l'ancien
+   bundle n'envoie pas son jeton.
+3. **`true` — verrouillé.** Basculer seulement ensuite.
+
+Basculer avant que les bornes aient rechargé leur front les laisse écran blanc.
+
+### Tables DB
+
+| Table | Rôle |
+|---|---|
+| `guest_codes` | Codes de séjour (code, chambre, nom, occupants, max_devices, fenêtre, grace_hours, revoked_at, anonymized_at) |
+| `guest_sessions` | Appareils rattachés à un code (token_hash SHA-256, fingerprint, user-agent, IP, first/last_seen_at, revoked_at) |
 
 ---
 
@@ -610,3 +867,10 @@ git push origin feat/multi-hotel
 | Alertes backoffice borne hors ligne             | ✅ Complet  |
 | Gestion bornes super-admin (clés, toggle, suppression) | ✅ Complet |
 | Gestion bornes hotel-admin (vue + toggle)       | ✅ Complet  |
+| Sauvegarde & restauration back-office (.zip)    | ✅ Complet  |
+| Barre de section unique (SectionChrome)         | ✅ Complet  |
+| Sections activables par hôtel                   | ✅ Complet  |
+| Accès client par code de séjour (espace visiteur) | ✅ Complet |
+| Codes séjour back-office (création, lot, QR, révocation) | ✅ Complet |
+| Purge RGPD des sessions visiteurs               | ✅ Complet  |
+| Verrouillage des routes de contenu (contentAuth) | ⚠️ Livré en mode observation — bascule `CONTENT_AUTH_ENFORCE=true` après rechargement des bornes |

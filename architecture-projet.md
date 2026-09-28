@@ -67,6 +67,7 @@ HotelInteractivescreen/
 │           └── admin/
 │               ├── auth.js
 │               ├── myNotifications.js
+│               ├── backupRoutes.js Fabrique montée 2× (super + hotel)
 │               ├── super/          15 modules super-admin (dont kiosks)
 │               ├── hotel/          8 modules hotel-admin (dont kiosks)
 │               └── contributor/    3 modules contributeur
@@ -88,6 +89,7 @@ HotelInteractivescreen/
 │           ├── contexts/           AuthContext
 │           ├── styles/             CSS Modules partagés (Manager.module.css…)
 │           └── pages/
+│               ├── BackupManager.jsx  Page partagée super/hotel (prop `variant`)
 │               ├── super/          15 pages (dont KiosksManager)
 │               ├── hotel/          8 pages (dont KiosksManager)
 │               └── contributor/    4 pages
@@ -95,10 +97,15 @@ HotelInteractivescreen/
 │   ├── init.sql                    Schéma de base
 │   └── migrations/                 001 à 013 (appliquées au démarrage)
 ├── uploads/                        Logos, images, fonts (volume Docker monté)
+│   └── restored/                   Médias d'archives importées d'une autre instance
+├── backups/
+│   └── config/                     Instantanés du back-office (volume Docker monté)
 ├── docker-compose.yml
+├── docker-compose.dev.yml          Surcouche dev : frontend sur serveur Vite
 ├── .env.example
 └── scripts/
-    └── db-export.sh
+    ├── db-backup.sh                Dump complet (schéma + tout), hors git
+    └── db-export.sh                Contenu éditorial → data_live.sql, versionné
 ```
 
 **Rôle des dossiers clés** :
@@ -114,6 +121,7 @@ HotelInteractivescreen/
 | `frontend/src/admin/useAdminApi.js` | Client Axios admin + Bearer JWT auto |
 | `frontend/src/i18n/` | Traductions statiques (9 langues) |
 | `uploads/` | Fichiers uploadés (logos, images POI/events, fonts, bannières) |
+| `backups/config/` | Instantanés de configuration du back-office (20 derniers, hors git) |
 | `database/migrations/` | 13 migrations SQL idempotentes appliquées au boot |
 
 ---
@@ -125,11 +133,15 @@ HotelInteractivescreen/
 ### Routage racine (`App.jsx`)
 
 ```
-/                  → Landing page projet
-/mobile/:section   → MobileGate (validation token QR)
-/admin/*           → AdminApp (backoffice)
-/:hotelSlug/*      → KioskApp (kiosque de l'hôtel)
+/                        → Landing page projet
+/mobile/:section         → MobileGate (validation token QR)
+/admin/*                 → AdminApp (backoffice)
+/:hotelSlug/visiteur/*   → GuestApp (accès client par code de séjour)
+/:hotelSlug/*            → KioskApp (kiosque de l'hôtel)
 ```
+
+La route visiteur est déclarée **avant** la route kiosque : sans cela `/visiteur`
+serait avalé par `KioskApp` et soumis à l'inscription de borne.
 
 ### Kiosque — routes (`/:hotelSlug/`)
 
@@ -145,6 +157,21 @@ HotelInteractivescreen/
 | `/mobile` | MobileTransfer (générateur QR) |
 | `/feedback` | Feedback (formulaire multi-étapes) |
 | `/currency` | CurrencyConverter |
+
+### Visiteur — routes (`/:hotelSlug/visiteur/`)
+
+Le client saisit le code reçu à l'enregistrement et retrouve le menu sur son
+téléphone. Les composants de section sont **les mêmes** que ceux du kiosque : seul
+l'habillage change (menu en liste au lieu du menu radial, pas d'`IdleTimer`, pas
+d'`AttractScreen`, pas d'inscription d'appareil).
+
+| Route | Composant |
+|---|---|
+| `/` (ou `?c=CODE`) | GuestGate (saisie / fin de séjour) puis GuestHome |
+| `/weather` `/flights` `/map` `/events` `/wellness` `/info` `/currency` `/feedback` | mêmes composants que le kiosque |
+
+`MobileTransfer` est volontairement absent : son rôle est d'envoyer la borne vers
+un téléphone, ce qui n'a plus d'objet sur le téléphone du client.
 
 ### Stack de contexte — Kiosque
 
@@ -174,7 +201,7 @@ HotelInteractivescreen/
 ### Gestion d'état
 
 - **Pas de store global** (Redux/Zustand absent) : l'état est géré via React Context + hooks locaux.
-- `HotelContext` : config hôtel chargée une fois au boot, accessible dans tout le kiosque.
+- `HotelContext` : config hôtel chargée une fois au boot, accessible dans tout le kiosque **et dans l'espace visiteur**. Expose `isSectionEnabled(key)`, dérivé de `settings.enabled_sections` — c'est lui qui masque une section désactivée, menu et route comprises.
 - `LanguageContext` : locale courante + fonction `t('key')` avec interpolation `{{var}}`.
 - `ThemeContext` : injection dynamique de `--color-*` CSS custom properties depuis `theme_colors` JSON.
 - `AuthContext` : JWT admin lu depuis `sessionStorage` (pas `localStorage`).
@@ -249,7 +276,7 @@ Request
 |---|---|
 | `super_admin` | Toutes les ressources, tous les hôtels |
 | `hotel_admin` | Son hôtel uniquement |
-| `hotel_staff` | Sous-ensemble lecture/écriture de son hôtel |
+| `hotel_staff` | Réception — sous-ensemble lecture/écriture de son hôtel, dont les codes d'accès client |
 | `contributor` | Ses propres contenus (POI, events, info) soumis en workflow |
 
 ### Structure des routes
@@ -263,6 +290,10 @@ Request
     ├── POST register    Inscription borne (clé usage unique)
     ├── POST auth        Auth silencieuse au démarrage
     └── PUT  heartbeat   Signal de vie toutes les 5 min
+  guest/                 Accès client par code de séjour (public, débit limité 8/min)
+    ├── POST redeem      Échange code → guest_token (consomme un slot d'appareil)
+    ├── POST qr          Valide un code et rend l'URL à encoder, SANS session
+    └── GET  me          Wi-Fi, check-out, bienvenue nominative (guest_token requis)
   └── admin/
       ├── login
       ├── notifications/
@@ -271,11 +302,15 @@ Request
       │   │   info/, service-categories/, poi-categories/,
       │   │   event-categories/, info-categories/, weather/,
       │   │   tokens/, audit-log/
-      │   └── kiosks/    Liste bornes, clés d'inscription, toggle, suppression
+      │   ├── kiosks/    Liste bornes, clés d'inscription, toggle, suppression
+      │   └── backup/    Sauvegarde/restauration — tous périmètres
       ├── hotel/
       │   ├── settings/, banner-images/, services/, tips/,
       │   │   events/, feedbacks/, devise/
-      │   └── kiosks/    Liste bornes de l'hôtel, toggle actif/inactif
+      │   ├── kiosks/    Liste bornes de l'hôtel, toggle actif/inactif
+      │   ├── guest-codes/  Codes d'accès client : création (unitaire ou en lot),
+      │   │                 prolongation, révocation, appareils rattachés
+      │   └── backup/    Sauvegarde/restauration — son établissement (hotel_admin)
       └── contributor/
           ├── places/, events/, info/
 ```
@@ -295,6 +330,7 @@ Request
 | Archive | `services/archiveService.js` | Archivage auto des événements passés (minuit) |
 | Crédits | `services/creditTracker.js` | Compteur crédits FlightAPI dans `theme_config` |
 | **KioskMonitor** | `services/kioskMonitor.js` | Cron 5 min — détecte les bornes sans heartbeat > 10 min et insère une notification backoffice |
+| **configBackup** | `services/configBackup/` | Export/import de la configuration et du contenu en archive `.zip`. `schema.js` décrit déclarativement les 29 tables sauvegardées, `index.js` porte le moteur (export, essai à blanc, import transactionnel, instantanés serveur). Ajouter une table à la sauvegarde = ajouter un descripteur, sans toucher au moteur. |
 
 ### Sécurité
 
@@ -333,6 +369,8 @@ Request
 | `feedbacks` | Retours kiosque (catégories JSON, note globale, IP) |
 | `kiosks` | Bornes enregistrées (device_token, fingerprint, label, is_enabled, last_seen_at, offline_notified_at) |
 | `kiosk_keys` | Clés d'inscription générées (key_value, hotel_id, expires_at, used_at, created_by) |
+| `guest_codes` | Codes d'accès client par séjour (code, chambre, nom, occupants, max_devices, fenêtre de validité, grace_hours, revoked_at, anonymized_at) |
+| `guest_sessions` | Appareils rattachés à un code (token_hash SHA-256, fingerprint, first/last_seen_at, revoked_at) — index unique (code_id, fingerprint) |
 | `analytics_events` | Événements analytiques kiosque/mobile |
 | `qr_tokens` | Tokens UUID avec TTL (10 min) |
 | `hotel_banner_images` | Images bannière par hôtel (max 10) |
@@ -361,13 +399,40 @@ event_categories.hotel_id = NULL → catégorie globale
 
 ### Migrations
 
-15 migrations SQL idempotentes appliquées automatiquement à chaque démarrage du backend via `runMigrations.js` (contrôle via `information_schema.COLUMNS` et `information_schema.TABLES`). Les deux dernières (014, 015) créent les tables `kiosks` et `kiosk_keys`.
+Les migrations sont appliquées automatiquement à chaque démarrage du backend via `runMigrations.js`, toutes idempotentes (contrôle via `information_schema.COLUMNS` et `information_schema.TABLES`). Le tableau `MIGRATIONS` va de `003` à `019` ; les plus récentes créent les tables `guest_codes` / `guest_sessions` (`018`) et ajoutent `hotel_settings.enabled_sections` (`019`).
+
+> La numérotation du runner JS est **indépendante** de celle du dossier `database/migrations/` : `015_guest_codes.sql` correspond à `migration018()`, `016_enabled_sections.sql` à `migration019()`. Une migration déposée dans le dossier ne s'applique nulle part tant qu'elle n'a pas son pendant dans le runner — voir [`database/migrations/README.md`](database/migrations/README.md).
+
+### Catalogues partagés backend ↔ frontend
+
+Deux listes de référence ne vivent ni en base ni en double dans le frontend :
+
+| Fichier | Contenu | Servi par |
+|---|---|---|
+| `backend/src/data/currencies.json` | Catalogue des devises du convertisseur | `GET /api/currency/*` et le back-office Devises |
+| `backend/src/data/sections.json` | Catalogue des sections du kiosque (clé, libellés FR/EN, route, description) | `GET /api/admin/super/hotels/sections/catalog` |
+
+Le frontend ne code aucune de ces listes en dur : il les récupère par HTTP. Une section
+s'ajoute donc dans `sections.json`, et le sélecteur du back-office l'affiche sans autre
+changement. Côté hôtel, `hotel_settings.enabled_sections` (tableau JSON de clés, `NULL` =
+toutes) filtre ce que la borne et l'espace visiteur affichent —
+`normalizeEnabledSections()` / `parseEnabledSections()` en assurent la lecture et l'écriture
+(`backend/src/data/sections.js`).
 
 ### Stockage externe
 
 - **Redis** : cache météo (10 min + fallback 30j), vols (sans TTL), devises (1h), config kiosque (5 min).
-- **Filesystem `./uploads/`** : logos, backgrounds, fonts, images POI/events/services/bannières — monté comme volume Docker.
+- **Filesystem `./uploads/`** : logos, backgrounds, fonts, images POI/events/services/bannières — monté comme volume Docker. Résolu via `UPLOADS_DIR`, défaut `/uploads` en conteneur.
+- **Filesystem `./backups/config/`** : instantanés de configuration créés par le back-office (20 derniers, purge automatique). Résolu via `CONFIG_BACKUP_DIR`, défaut `/backups/config`. **Doit être un volume monté** — sinon les instantanés disparaissent à la recréation du conteneur.
 - **Pas de CDN ni stockage objet** (S3, etc.) — stockage local uniquement.
+
+### Identité d'instance
+
+La clé `instance_id` de `theme_config` porte un UUID généré au premier usage du module de
+sauvegarde. Elle est **exclue des exports** et protégée des purges : c'est elle qui permet de
+distinguer une restauration sur place (les médias restent à leur emplacement) d'un import venu
+d'une autre installation (les médias sont rangés dans `uploads/restored/<date>/`, pour ne pas
+écraser un fichier homonyme en service).
 
 ---
 
@@ -488,6 +553,59 @@ SELECT bornes is_enabled=1 AND last_seen_at < NOW() - 10min AND offline_notified
   → Pour chaque borne hors ligne :
       INSERT workflow_notifications (super_admin + hotel_admin de l'hôtel)
       UPDATE kiosks SET offline_notified_at = NOW()
+```
+
+### Flux 7 — Accès client par code de séjour
+
+```
+-- Création (réception / hotel_admin / super_admin) --
+
+POST /api/admin/hotel/guest-codes { room_number, guest_name, occupants, valid_from, valid_until }
+  → code 6 caractères base32 sans ambiguïté (ni 0/O ni 1/I/L), unique par hôtel
+  → INSERT guest_codes (grace_hours = 24 par défaut, max_devices = occupants, plancher 2)
+  → INSERT audit_log (entity_type = 'guest_code')
+  ← fiche imprimable A5 : QR + code + URL
+
+-- Échange du code (téléphone du client) --
+
+POST /api/guest/redeem { hotel_slug, code, fingerprint }
+  → fenêtre de validité = [valid_from, valid_until + grace_hours]
+  → même fingerprint déjà vu → réveil de la session (pas de second slot consommé)
+  → sinon quota max_devices vérifié DANS la transaction
+  → INSERT/UPDATE guest_sessions (token_hash = SHA-256, jamais le jeton en clair)
+  ← guest_token (JWT, exp = fin d'accès réelle)
+
+Causes de refus distinctes, pour que le front sache quoi afficher :
+  upcoming | expired | revoked | device_limit | rate_limited | invalid
+  expired/revoked → écran « Séjour terminé » avec remerciement, pas une erreur de saisie
+
+-- QR affiché à la borne ou à la réception --
+
+POST /api/guest/qr { hotel_slug, code }
+  → valide le code SANS créer de session : la borne n'entame pas le quota du client
+  ← { path: '/<slug>/visiteur?c=CODE' }  — aucune donnée nominative renvoyée :
+    l'écran est visible de tout le hall
+
+-- Garde des routes de contenu (contentAuth) --
+
+Porteurs acceptés : guest_token (JWT) | device_token de borne (96 hex) | qr_token (UUID)
+  + cloisonnement : un jeton d'un hôtel ne lit pas les données d'un autre,
+    même en changeant ?hotel_id
+  CONTENT_AUTH_ENFORCE=false → mode observation (appels sans jeton tolérés et
+    journalisés, une fois par minute et par chemin)
+
+-- Données réservées au client authentifié --
+
+GET /api/guest/me → Wi-Fi (nom + mot de passe), check-out, bienvenue nominative
+/api/kiosk/:slug/config reste public MAIS expurgé de wifi_password et
+fullscreen_password : ces deux secrets partaient auparavant à tout appelant
+
+-- Purge RGPD (archiveService, passage nocturne) --
+
+GUEST_RETENTION_DAYS (30) après la fin d'accès :
+  DELETE guest_sessions (empreinte, user-agent, IP)
+  UPDATE guest_codes SET guest_name = NULL, anonymized_at = NOW()
+  → les statistiques d'usage par chambre survivent, l'identité non
 ```
 
 ---

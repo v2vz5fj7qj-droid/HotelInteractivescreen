@@ -53,15 +53,33 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 > **Après toute modification du code source** (`.jsx`, `.js`), les fichiers sont rechargés à chaud grâce aux volumes Docker — aucun rebuild nécessaire. Cela vaut **uniquement en mode développement** : en production le frontend est compilé dans l'image, il faut `docker compose up -d --build frontend`.
 
-> **Après l'ajout ou la mise à jour d'une dépendance npm** (`package.json` modifié), il faut reconstruire le service concerné :
+> **Après l'ajout ou la mise à jour d'une dépendance npm** (`package.json` modifié), il faut
+> reconstruire le service concerné **et renouveler son volume de `node_modules`** :
 > ```bash
 > # Dépendance frontend ajoutée (ex. jspdf, leaflet…)
-> docker compose up --build frontend -d
+> docker compose up -d --build --renew-anon-volumes --no-deps frontend
 >
-> # Dépendance backend ajoutée (ex. express-rate-limit, helmet…)
-> docker compose up --build backend -d
+> # Dépendance backend ajoutée (ex. adm-zip, helmet…)
+> docker compose up -d --build --renew-anon-volumes --no-deps backend
 > ```
-> Les `node_modules` sont isolés dans l'image Docker et ne sont pas partagés avec le dossier local — `npm install` en local n'impacte pas le conteneur.
+> Les `node_modules` sont isolés dans l'image Docker et ne sont pas partagés avec le dossier
+> local — `npm install` en local n'impacte pas le conteneur.
+>
+> ⚠️ **`--renew-anon-volumes` n'est pas optionnel** pour le backend, ni pour le frontend en mode
+> dev. Ces deux services déclarent `/app/node_modules` comme volume **anonyme** (dans
+> `docker-compose.yml` pour le backend, dans `docker-compose.dev.yml` pour le frontend) afin que
+> les `node_modules` de l'hôte ne masquent pas ceux de l'image. Or un volume anonyme **survit à la
+> recréation du conteneur** : sans ce drapeau, l'image est bien reconstruite avec la nouvelle
+> dépendance, mais le conteneur remonte l'ancien volume par-dessus et le `require()` échoue.
+> Le symptôme est déroutant — le build réussit, le module reste introuvable.
+> Le frontend de **production** n'a pas ce volume : le drapeau y est simplement sans effet.
+>
+> ⚠️ **`--no-deps` évite un dégât collatéral.** `backend` dépend de `mysql`, `frontend` dépend de
+> `backend` : sans ce drapeau, Compose peut entraîner les services dont dépend celui que vous
+> reconstruisez. Combiné à `--force-recreate`, cela va jusqu'à recréer le conteneur MySQL — qui
+> peut échouer sur un conflit de nom et laisser la pile à l'arrêt. Les données survivent
+> (`mysql_data` est un volume **nommé**), mais le service tombe. N'utilisez jamais
+> `--force-recreate` sans `--no-deps`.
 
 | Service          | URL                          |
 |------------------|------------------------------|
@@ -153,9 +171,11 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 - **Tableau de bord** — vue globale, notifications de workflow (soumissions en attente)
 - **Hôtels** — CRUD des hôtels, bouton **Configurer** par hôtel
   - Onglet **Paramètres** : logo, image de fond, couleurs, messages d'accueil FR/EN, contacts, WiFi, check-in/check-out
+  - Onglet **Sections** : activer ou masquer chaque section du kiosque pour cet hôtel
   - Onglet **Météo** : affectation des localités météo (max 5), localité par défaut, refresh manuel
   - Onglet **Aéroports** : affectation/retrait des aéroports du système à l'hôtel
   - Onglet **Devises** : configuration du convertisseur de devises affiché sur la borne (même module que côté hotel-admin)
+  - Onglet **Codes séjour** : codes d'accès client de l'hôtel (même module que côté hotel-admin)
 - **Carte & Lieux** — validation des soumissions avec **vue détaillée** (coords GPS + lien OpenStreetMap) avant publication ou rejet motivé
 - **Agenda** — validation des soumissions avec **vue détaillée** (titre, description, dates, lieu, contributeur) avant publication ou rejet motivé
 - **Infos utiles** — validation des soumissions avec **vue détaillée** (contacts, description) avant publication ou rejet motivé
@@ -165,6 +185,7 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 - **Tokens FlightAPI** — suivi de consommation de crédits
 - **Audit log** — historique de toutes les actions
 - **Bornes kiosques** — liste de toutes les bornes enregistrées, statut temps réel (en ligne / hors ligne / désactivée / jamais vue), génération de clés d'inscription avec expiration configurable, copie de clé, toggle actif/inactif, suppression
+- **Sauvegarde & restauration** — export/import d'archives `.zip` sur trois périmètres (un établissement, catalogue partagé, instance complète), essai à blanc avant écriture, instantanés conservés sur le serveur avec restauration en un clic
 
 ### Hotel-admin — fonctionnalités
 
@@ -178,6 +199,8 @@ docker exec -i connectbe_mysql mysql -u connectbe_user -pchange_me_db connectbe_
 - **Devises** — convertisseur de devises affiché sur la borne : devise de base, devises cibles (max 10), tableau des taux (max 5), mise à jour automatique via [open.er-api.com](https://www.exchangerate-api.com/) (sans clé par défaut) ou manuelle
 - **Dashboard** — soumissions en attente de pré-validation
 - **Bornes kiosques** — liste des bornes de l'hôtel avec statut temps réel, toggle actif/inactif
+- **Codes d'accès client** — codes de séjour remis aux clients : création à l'unité ou en lot, fiche imprimable (QR + code), appareils rattachés, révocation
+- **Sauvegarde & restauration** — export/import de la configuration et du contenu de son établissement (réservé à `hotel_admin` — un compte `hotel_staff` n'y a pas accès)
 
 ### Contributeur — fonctionnalités
 
@@ -303,6 +326,11 @@ Utile pour vérifier le transfert mobile (QR code) ou l'affichage de la borne su
 2. Sur le téléphone, connecté au **même réseau Wi-Fi**, ouvrir `http://<IP>:5173`
    (par exemple `http://192.168.11.111:5173`).
 
+3. Pour l'**espace visiteur** (accès client par code de séjour), ouvrir
+   `http://<IP>:5173/<slug-hôtel>/visiteur` et saisir un code créé depuis
+   **Codes d'accès client** dans le back-office — ou scanner directement le QR de la fiche
+   imprimable, qui porte le code (`?c=…`).
+
 > **Erreur `CORS: origine non autorisée — http://192.168.x.x:5173` dans les logs backend ?**
 > Le navigateur envoie comme origine l'adresse tapée dans la barre d'URL : ce n'est plus
 > `localhost`, donc le backend la refuse si elle n'est pas autorisée.
@@ -349,12 +377,33 @@ avant, au lieu d'échouer sur des doublons de clé primaire.
 
 > `db-export.sh` écarte les tables propres à une instance ou purement techniques :
 > `audit_log`, `workflow_notifications`, `feedbacks`, `analytics_events`, `kiosks`,
-> `kiosk_keys`, `qr_tokens`. Pour tout conserver, utiliser `db-backup.sh`.
+> `kiosk_keys`, `qr_tokens`, `guest_codes`, `guest_sessions`. Pour tout conserver,
+> utiliser `db-backup.sh`.
 
 > ⚠️ **Ne jamais rejouer `data_live.sql` sur une production en service** — c'est un
 > `REPLACE INTO` global, il écrase les saisies du client. Mise à jour d'une production :
 > `./scripts/db-backup.sh` puis `git pull` puis `docker compose restart backend`.
 > Le code et le schéma passent, les contenus ne bougent pas.
+
+### Et pour que le client se débrouille seul
+
+Les deux scripts ci-dessus exigent un accès SSH au serveur. Le back-office expose un
+**troisième mécanisme**, utilisable par le client lui-même : **Sauvegarde & restauration**
+(`/admin/hotel/backup`, ou `/admin/super/backup` pour tous les périmètres).
+
+Il produit une archive `.zip` contenant configuration, contenu, traductions et médias — pas un
+dump SQL. Les identifiants sont reconstruits à l'import, ce qui permet de restaurer sur une
+**autre** installation ou de dupliquer un établissement, là où un `mysqldump` écraserait
+l'hôtel n°1 ou casserait les clés étrangères.
+
+| Besoin | Outil |
+|---|---|
+| Le serveur a brûlé | `scripts/db-backup.sh` |
+| Amorcer un serveur vierge | `database/seeds/data_live.sql` |
+| Le client veut sauvegarder son travail, dupliquer un hôtel, migrer | Back-office → Sauvegarde & restauration |
+
+Détail du périmètre, des exclusions et des garde-fous :
+[README — Sauvegarde & restauration de la configuration](README.md#sauvegarde--restauration-de-la-configuration-back-office).
 
 ---
 
@@ -381,6 +430,9 @@ Les valeurs à renseigner obligatoirement :
 | `ORS_API_KEY` | Itinéraires carte, proxifié côté backend (optionnel) |
 | `VITE_CARTO_API_KEY` | Fond de carte CARTO (optionnel — sans clé, le fond de carte affiche "API KEY REQUIRED") |
 | `CORS_ORIGINS` | Origines autorisées à appeler l'API, séparées par des virgules (optionnel — défaut `http://localhost:3000,http://localhost:5173`). En production, y mettre le domaine public ; en développement les IP du réseau local sont acceptées d'office, voir [Tester depuis un téléphone](#tester-depuis-un-téléphone) |
+| `TRUST_PROXY` | À définir dès qu'nginx ou Cloudflare est devant le backend (production) — sans elle, `req.ip` vaut l'adresse du proxy pour tous les clients, et les limitations de débit deviennent un compteur unique partagé |
+| `CONTENT_AUTH_ENFORCE` | Verrouillage des routes de contenu. Laisser `false` (mode observation journalisé) au premier déploiement, basculer à `true` **seulement après** que toutes les bornes en service ont rechargé le front — voir [README — mise en service du verrouillage](README.md#mise-en-service-du-verrouillage--dans-cet-ordre) |
+| `GUEST_GRACE_HOURS`, `GUEST_RETENTION_DAYS`, `GUEST_FAILURE_BUDGET` | Accès client par code de séjour : marge après le départ (24 h), purge RGPD (30 j), échecs de saisie tolérés par minute (20) — voir [README — accès client](README.md#accès-client-par-code-de-séjour) |
 
 > Pour transférer le `.env` entre machines sans le commiter, utiliser `scp` ou un gestionnaire de secrets (Bitwarden, 1Password, etc.).
 > ```bash
