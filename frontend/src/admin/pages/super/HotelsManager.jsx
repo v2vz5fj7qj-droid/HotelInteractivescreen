@@ -20,6 +20,11 @@ export default function HotelsManager() {
   const [saving,   setSaving]   = useState(false);
   const [toast,    setToast]    = useState('');
   const [confirm,  setConfirm]  = useState(null); // { hotel, action:'toggle'|'delete' }
+  // Catalogue des sections kiosque (backend/src/data/sections.json) : proposé à
+  // la création, tout activé par défaut. Les modifications ultérieures passent
+  // par l'onglet « Sections » de la configuration de l'hôtel.
+  const [catalog,  setCatalog]  = useState([]);
+  const [sections, setSections] = useState([]);
 
   const load = useCallback(async (p = 1, q = search) => {
     setLoading(true);
@@ -35,6 +40,12 @@ export default function HotelsManager() {
 
   useEffect(() => { load(1); }, []); // eslint-disable-line
 
+  useEffect(() => {
+    api.get('/super/hotels/sections/catalog')
+      .then(({ data }) => setCatalog(data || []))
+      .catch(() => {});
+  }, []);
+
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000); };
   const totalPages = Math.ceil(total / PER_PAGE);
 
@@ -43,7 +54,11 @@ export default function HotelsManager() {
     load(1, search);
   };
 
-  const openCreate = () => { setForm(EMPTY); setModal('create'); };
+  const openCreate = () => {
+    setForm(EMPTY);
+    setSections(catalog.map(s => s.key));
+    setModal('create');
+  };
   const openEdit   = h => {
     setForm({ nom: h.nom, slug: h.slug });
     setModal(h);
@@ -53,7 +68,9 @@ export default function HotelsManager() {
     setSaving(true);
     try {
       if (modal === 'create') {
-        await api.post('/super/hotels', form);
+        // enabled_sections n'est envoyé que si le catalogue a pu être chargé,
+        // sinon le backend retombe sur « toutes les sections activées ».
+        await api.post('/super/hotels', catalog.length ? { ...form, enabled_sections: sections } : form);
         showToast('Hôtel créé');
       } else {
         await api.put(`/super/hotels/${modal.id}`, form);
@@ -169,6 +186,37 @@ export default function HotelsManager() {
                   onChange={e => setForm(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
                   placeholder="ex: hotel-du-lac" required />
               </div>
+
+              {modal === 'create' && catalog.length > 0 && (
+                <div className={styles.field}>
+                  <label className={styles.label}>
+                    Sections du kiosque <span style={{ color: '#9CA3AF', fontSize: '0.78rem' }}>
+                      ({sections.length}/{catalog.length} — modifiable ensuite dans « Configurer »)
+                    </span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 8 }}>
+                    {catalog.map(section => {
+                      const on = sections.includes(section.key);
+                      return (
+                        <label key={section.key}
+                          title={section.description_fr}
+                          style={{
+                            display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer',
+                            border: `1px solid ${on ? '#C2782A' : '#E5E7EB'}`,
+                            background: on ? '#FDF6EC' : '#fff',
+                            borderRadius: 8, padding: '8px 10px', fontSize: '0.85rem',
+                          }}>
+                          <input type="checkbox" checked={on} style={{ accentColor: '#C2782A' }}
+                            onChange={() => setSections(prev => prev.includes(section.key)
+                              ? prev.filter(k => k !== section.key)
+                              : [...prev, section.key])} />
+                          {section.label_fr}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnSecondary} onClick={() => setModal(null)}>Annuler</button>

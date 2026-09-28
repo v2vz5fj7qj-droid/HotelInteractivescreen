@@ -8,12 +8,117 @@
   padding: 0 var(--page-pad-x) clamp(24px, 4vh, 48px);
 }
 
+/* ── En-tête de la section ────────────────── */
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: clamp(10px, 1.6vh, 20px);
+}
+
+.introText {
+  font-size: clamp(0.85rem, 1.4vh, 1.05rem);
+  color: var(--c-text-muted);
+  line-height: 1.45;
+  max-width: 62ch;
+}
+
+/* Les deux voies du transfert. `overflow-y: auto` est une sécurité, pas la
+   disposition attendue : chaque carte est dimensionnée pour tenir dans la
+   hauteur. Sans lui, le contenu qui dépasse d'une cellule de grille sort de
+   l'écran sans recours, body étant en overflow:hidden. */
 .content {
   flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(32px, 6vw, 80px);
+  /* auto-fit : si l'hôtel n'a aucune rubrique transférable, la carte du séjour
+     occupe seule toute la largeur au lieu de laisser une colonne vide. */
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: clamp(20px, 3vw, 44px);
+  align-items: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ── Cartes ───────────────────────────────── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.8vh, 20px);
+  padding: clamp(18px, 2.4vh, 30px) clamp(18px, 2vw, 32px);
+  border-radius: var(--radius-xl);
+}
+
+/* Voie principale : le séjour. Encadrée et posée sur la surface pleine —
+   c'est ce que le client vient chercher. */
+.stayCard {
+  background: var(--c-surface);
+  border: 2px solid var(--c-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Voie secondaire : une rubrique, quelques minutes. */
+.quickCard {
+  background: color-mix(in srgb, var(--c-surface) 55%, transparent);
+  border: 1px solid var(--c-border);
+}
+
+.cardHead {
+  display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.cardIcon      { color: var(--c-primary); flex-shrink: 0; }
+.cardIconMuted { color: var(--c-text-muted); flex-shrink: 0; }
+
+.eyebrow {
+  font-size: clamp(0.68rem, 1vh, 0.82rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+.badge {
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid var(--c-primary);
+  border-radius: var(--radius-full);
+  font-size: clamp(0.66rem, 0.95vh, 0.78rem);
+  font-weight: 600;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.cardTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.05rem, 2.1vh, 1.55rem);
+  line-height: 1.2;
+  color: var(--c-text);
+}
+
+.quickBody {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(16px, 2vw, 32px);
+  flex-wrap: wrap;
+}
+
+.quickSide {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.6vh, 18px);
+}
+
+.footNote {
+  padding-top: clamp(8px, 1.4vh, 16px);
+  text-align: center;
+  font-size: clamp(0.75rem, 1.2vh, 0.9rem);
+  color: var(--c-text-muted);
 }
 
 /* ── QR Code ──────────────────────────────── */
@@ -21,7 +126,7 @@
   /* Taille du QR : suit la plus contraignante des deux dimensions de
      l'écran, pour rester généreux sur une borne 55" verticale sans
      déborder en paysage. */
-  --qr-size: clamp(220px, min(46vw, 30vh), 640px);
+  --qr-size: clamp(150px, min(26vw, 20vh), 340px);
 
   display: flex;
   flex-direction: column;
@@ -89,13 +194,6 @@
 
 .retryBtn:active { transform: scale(0.95); }
 
-.scanInstruction {
-  font-size: clamp(0.85rem, 1.4vh, 1rem);
-  color: var(--c-text-muted);
-  text-align: center;
-  max-width: 320px;
-}
-
 /* ── Compte à rebours de validité du QR ───── */
 .countdown {
   display: inline-flex;
@@ -111,7 +209,6 @@
               color        var(--duration-base) var(--ease-smooth);
 }
 
-.countdownIcon  { font-size: 1.05em; line-height: 1; }
 .countdownLabel { font-weight: 500; }
 
 .countdownTime {
@@ -136,14 +233,9 @@
   50%      { opacity: 0.62; }
 }
 
-/* ── Panel sections ───────────────────────── */
-.sectionPanel {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(14px, 2vh, 22px);
-}
-
+/* ── Rubriques transférables ───────────────── */
 .title {
+  margin: 0;
   font-family: var(--font-display);
   font-size: clamp(1.4rem, 3vh, 2.2rem);
   color: var(--c-primary);
@@ -156,8 +248,8 @@
 }
 
 .sectionGrid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: clamp(8px, 1.2vh, 12px);
 }
 
@@ -189,7 +281,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.sectionIcon  { font-size: clamp(1.2rem, 2vh, 1.6rem); }
+.sectionIcon  { color: var(--c-primary); flex-shrink: 0; }
 .sectionLabel { font-weight: 600; }
 
 @keyframes breathe {
@@ -198,41 +290,34 @@
 }
 
 /* ─── Borne verticale (portrait) ────────────────────────
-   Deux colonnes côte à côte écrasent le QR sur une borne
-   verticale : on empile QR puis choix de section. */
+   Deux colonnes côte à côte écrasent les deux cartes : on empile
+   « Mon séjour » puis le transfert d'une rubrique. */
 @media (orientation: portrait) {
   .content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
-    align-content: center;
-    justify-items: center;
-    gap: clamp(20px, 3vh, 40px);
-    /* Sécurité sur une tablette portrait peu haute */
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding-block: clamp(8px, 1.5vh, 20px);
+    align-content: start;
+    gap: clamp(16px, 2.4vh, 32px);
+    padding-block: clamp(4px, 1vh, 12px);
   }
 
   .qrFrame { padding: clamp(14px, 2.5vw, 24px); }
 
-  .sectionPanel {
-    width: 100%;
-    max-width: 640px;
-    align-items: center;
-    text-align: center;
-  }
+  .quickBody { align-items: center; }
 
-  /* Les sections passent en grille 2 colonnes : moins de hauteur consommée */
-  .sectionGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
+  /* Deux colonnes de rubriques : moins de hauteur consommée */
+  .sectionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .sectionBtn { justify-content: center; text-align: center; }
-
-  /* Nombre impair de rubriques : la dernière occupe toute la ligne
-     au lieu de laisser un trou à droite. */
-  .sectionBtn:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .sectionBtn { justify-content: flex-start; }
   .sectionBtn:hover { transform: translateY(-3px); }
+}
+
+/* ─── Écran large et bas (borne paysage, tablette) ──────
+   Le cas qui coupait le bouton du code de séjour : les deux voies sont
+   côte à côte, chacune dimensionnée pour tenir dans la hauteur. */
+@media (orientation: landscape) and (max-height: 900px) {
+  .intro { padding-bottom: clamp(6px, 1vh, 12px); }
+  .introText { display: none; }   /* le titre suffit quand la hauteur manque */
+  .quickBody { flex-wrap: nowrap; }
+  .sectionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

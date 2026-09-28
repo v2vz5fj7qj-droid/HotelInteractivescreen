@@ -1,16 +1,15 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useLanguage }  from '../../contexts/LanguageContext';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import ThemeToggle      from '../ThemeToggle/ThemeToggle';
-import WeatherBadge     from '../WeatherBadge/WeatherBadge';
 import styles           from './SectionChrome.module.css';
 
 /**
  * Barre de navigation commune à toutes les sections.
  *
- * Elle remplace les anciens boutons flottants (retour, langue, thème, météo)
- * qui étaient positionnés en absolu par chaque page et finissaient par
+ * Elle remplace les anciens boutons flottants (retour, langue, thème) qui
+ * étaient positionnés en absolu par chaque page et finissaient par
  * chevaucher le contenu. Ici la barre est un vrai élément de flux
  * (sticky en haut), donc elle réserve toujours sa place.
  *
@@ -19,7 +18,6 @@ import styles           from './SectionChrome.module.css';
  *  - backTo    : route de retour explicite (défaut : accueil de l'hôtel)
  *  - backLabel : libellé du bouton retour
  *  - center    : contenu optionnel au centre (filtres, titre…)
- *  - weather   : afficher la pastille météo (défaut : oui)
  *  - theme     : afficher le bouton thème (défaut : oui)
  */
 export default function SectionChrome({
@@ -27,16 +25,22 @@ export default function SectionChrome({
   backTo,
   backLabel,
   center    = null,
-  weather   = true,
   theme     = true,
   className = '',
 }) {
   const navigate      = useNavigate();
   const { t }         = useLanguage();
   const { hotelSlug } = useParams();
+  const { pathname }  = useLocation();
+
+  // En mode visiteur (téléphone du client), le retour mène au menu visiteur et
+  // non à l'accueil de la borne — qui exigerait une inscription d'appareil.
+  const isGuest = pathname.includes('/visiteur');
 
   // Hors kiosque (vue mobile QR) il n'y a pas de menu où revenir
-  const home      = backTo ?? (hotelSlug ? `/${hotelSlug}` : null);
+  const home = backTo ?? (hotelSlug
+    ? `/${hotelSlug}${isGuest ? '/visiteur' : ''}`
+    : null);
   const canGoBack = Boolean(onBack || home);
 
   const handleBack = () => {
@@ -67,7 +71,6 @@ export default function SectionChrome({
       <div className={styles.slotCenter}>{center}</div>
 
       <div className={styles.slotEnd}>
-        {weather && hotelSlug && <WeatherBadge />}
         <LanguageSwitcher />
         {theme && <ThemeToggle />}
       </div>

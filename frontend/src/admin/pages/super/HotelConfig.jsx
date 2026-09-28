@@ -1,5 +1,5 @@
 // Super-admin — Configuration complète d'un hôtel
-// Onglets : Paramètres | Bon à savoir | Météo | Aéroports | Devises
+// Onglets : Paramètres | Sections | Bon à savoir | Météo | Aéroports | Devises | Codes séjour
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../useAdminApi';
@@ -9,6 +9,7 @@ import { useToast } from '../../hooks/useToast';
 import styles from '../../Admin.module.css';
 import localesMeta from '../../../i18n/locales.json';
 import DeviseManager from '../hotel/DeviseManager';
+import GuestCodes    from '../hotel/GuestCodes';
 
 const ALL_LOCALES  = Object.keys(localesMeta);
 const TIPS_TRANS_FIELDS = ['titre', 'contenu'];
@@ -16,10 +17,12 @@ const EXTRA_LOCALES = ALL_LOCALES.filter(l => l !== 'fr' && l !== 'en');
 
 const TABS = [
   { key: 'settings', label: 'Paramètres'   },
+  { key: 'sections', label: 'Sections'     },
   { key: 'tips',     label: 'Bon à savoir' },
   { key: 'weather',  label: 'Météo'        },
   { key: 'airports', label: 'Aéroports'   },
   { key: 'devise',   label: 'Devises'      },
+  { key: 'codes',    label: 'Codes séjour' },
 ];
 
 // ── Onglet Paramètres ────────────────────────────────────────────
@@ -822,6 +825,119 @@ function TabAirports({ hotelId, hotelNom }) {
   );
 }
 
+// ── Onglet Sections ──────────────────────────────────────────────
+// Choix des sections du kiosque dont bénéficie l'hôtel. Le catalogue vient du
+// backend (backend/src/data/sections.json) : aucune liste n'est codée ici.
+function TabSections({ hotelId }) {
+  const [catalog,  setCatalog]  = useState([]);
+  const [enabled,  setEnabled]  = useState([]);
+  const [initial,  setInitial]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [error,    setError]    = useState('');
+  const [toast,    setToast]    = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([
+      api.get('/super/hotels/sections/catalog'),
+      api.get('/hotel/settings', { params: { hotel_id: hotelId } }),
+    ])
+      .then(([cat, settings]) => {
+        if (!alive) return;
+        const keys = Array.isArray(settings.data.enabled_sections)
+          ? settings.data.enabled_sections
+          : (cat.data || []).map(s => s.key);
+        setCatalog(cat.data || []);
+        setEnabled(keys);
+        setInitial(keys);
+      })
+      .catch(() => { if (alive) setError('Impossible de charger les sections.'); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [hotelId]);
+
+  const toggle = key => setEnabled(prev =>
+    prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+  );
+
+  const dirty = enabled.length !== initial.length
+    || enabled.some(k => !initial.includes(k));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      // On envoie les clés dans l'ordre du catalogue ; le backend revalide.
+      const payload = catalog.filter(s => enabled.includes(s.key)).map(s => s.key);
+      await api.put('/hotel/settings', { enabled_sections: payload }, { params: { hotel_id: hotelId } });
+      setInitial(payload);
+      setEnabled(payload);
+      setToast('Sections enregistrées');
+      setTimeout(() => setToast(''), 3000);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Erreur');
+    } finally { setSaving(false); }
+  };
+
+  if (loading) return <div style={{ padding: '2rem', color: '#9CA3AF' }}>Chargement…</div>;
+  if (error)   return <div style={{ padding: '2rem', color: '#EF4444' }}>{error}</div>;
+
+  return (
+    <div>
+      {toast && <div className={styles.toast}>{toast}</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={styles.btnSecondary} onClick={() => setEnabled(catalog.map(s => s.key))}>
+            Tout activer
+          </button>
+          <button className={styles.btnSecondary} onClick={() => setEnabled([])}>
+            Tout désactiver
+          </button>
+        </div>
+        <button className={styles.btnPrimary} onClick={save} disabled={saving || !dirty}>
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+
+      <Section title={`Sections du kiosque — ${enabled.length}/${catalog.length} activée(s)`}>
+        <p style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: 0, marginBottom: 16 }}>
+          Une section désactivée disparaît du menu, de l'écran d'attente et de la
+          navigation : son URL directe renvoie une page introuvable. Les données
+          déjà saisies pour cette section sont conservées.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+          {catalog.map(section => {
+            const on = enabled.includes(section.key);
+            return (
+              <label key={section.key}
+                style={{
+                  display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer',
+                  border: `1px solid ${on ? '#C2782A' : '#E5E7EB'}`,
+                  background: on ? '#FDF6EC' : '#fff',
+                  borderRadius: 10, padding: '12px 14px', transition: 'border-color .15s, background .15s',
+                }}>
+                <input type="checkbox" checked={on} onChange={() => toggle(section.key)}
+                  style={{ marginTop: 3, accentColor: '#C2782A' }} />
+                <span>
+                  <span style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem' }}>{section.label_fr}</span>
+                  <span style={{ display: 'block', fontSize: '0.76rem', color: '#6B7280', marginTop: 2 }}>
+                    {section.description_fr}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        {enabled.length === 0 && (
+          <p style={{ fontSize: '0.8rem', color: '#B45309', marginTop: 16, marginBottom: 0 }}>
+            Aucune section activée : le kiosque n'affichera que la page d'accueil.
+          </p>
+        )}
+      </Section>
+    </div>
+  );
+}
+
 // ── Composant Section ─────────────────────────────────────────────
 function Section({ title, children }) {
   return (
@@ -903,10 +1019,12 @@ export default function HotelConfig() {
 
       {/* Contenu onglet */}
       {tab === 'settings' && <TabSettings hotelId={id} />}
+      {tab === 'sections' && <TabSections hotelId={id} />}
       {tab === 'tips'     && <TabTips     hotelId={id} />}
       {tab === 'weather'  && <TabWeather  hotelId={id} hotelNom={hotel.nom} />}
       {tab === 'airports' && <TabAirports hotelId={id} hotelNom={hotel.nom} />}
       {tab === 'devise'   && <DeviseManager hotelId={parseInt(id)} />}
+      {tab === 'codes'    && <GuestCodes hotelId={parseInt(id)} slug={hotel.slug} />}
     </div>
   );
 }

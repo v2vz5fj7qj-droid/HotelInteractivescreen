@@ -160,21 +160,27 @@ async function refreshFlights(airportCode) {
       const raw = response.data?.[0]?.airport?.pluginData?.schedule?.[type]?.data || [];
       const key = `flights:${airport}:${type}`;
 
-      // FlightAPI renvoie par intermittence un 200 vide : ne pas effacer un cache déjà rempli
+      // FlightAPI renvoie par intermittence un 200 vide : ne pas effacer un cache déjà rempli.
+      // L'appel a bien abouti, donc la date de rafraîchissement est mise à jour malgré tout —
+      // sinon le kiosque affiche indéfiniment « horaires datant de X min ». Les anciens vols
+      // sont conservés et marqués `retained` : le kiosque n'affichera que ceux dont l'horaire
+      // n'est pas encore passé, et « aucun vol disponible » une fois tous écoulés.
+      let previousFlights = null;
       if (raw.length === 0) {
         const previous = await cache.get(key);
-        if (previous && JSON.parse(previous).flights?.length > 0) {
-          console.warn(`[Flight Refresh] ${type} vide (${airport}) — anciennes données conservées`);
-          errors.push(`${type} : réponse vide de FlightAPI — anciennes données conservées`);
-          continue;
+        const parsed = previous ? JSON.parse(previous) : null;
+        if (parsed?.flights?.length > 0) {
+          previousFlights = parsed.flights;
+          console.warn(`[Flight Refresh] ${type} vide (${airport}) — anciennes données conservées, date mise à jour`);
         }
       }
 
       const payload = {
         airport, type,
-        flights:      raw.map(normalizeFlightData),
+        flights:      previousFlights || raw.map(normalizeFlightData),
         refreshed_at: Date.now(),
         stale:        false,
+        retained:     previousFlights !== null,
       };
       // Stockage sans TTL : les données persistent même si le réseau tombe.
       // Redis injoignable = données payées mais jamais servies au kiosque : on le

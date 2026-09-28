@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 import { setHotelId } from '../services/hotelStore';
@@ -41,8 +41,24 @@ export function HotelProvider({ children, slug }) {
     return () => { setHotelId(null); };
   }, [hotelSlug]);
 
+  // Sections activées pour cet hôtel, telles que renvoyées par /kiosk/:slug/config.
+  // Tant que la config n'est pas chargée — ou si le backend ne renvoie pas le
+  // champ — on ne masque rien : l'absence d'information ne doit pas priver un
+  // hôtel de ses sections.
+  const enabledSections = Array.isArray(settings?.enabled_sections)
+    ? settings.enabled_sections
+    : null;
+
+  const isSectionEnabled = useCallback(
+    section => !enabledSections || enabledSections.includes(section),
+    [enabledSections]
+  );
+
   return (
-    <HotelContext.Provider value={{ hotel, settings, airports, bannerImages, loading, notFound }}>
+    <HotelContext.Provider value={{
+      hotel, settings, airports, bannerImages, loading, notFound,
+      enabledSections, isSectionEnabled,
+    }}>
       {children}
     </HotelContext.Provider>
   );

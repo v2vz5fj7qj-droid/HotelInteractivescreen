@@ -321,6 +321,72 @@ async function migration017() {
   }
 }
 
+// Pendant JS de database/migrations/015_guest_codes.sql.
+// Codes d'accès client par séjour + sessions visiteurs rattachées.
+async function migration018() {
+  if (!(await tableExists('guest_codes'))) {
+    await db.query(`
+      CREATE TABLE guest_codes (
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        hotel_id       INT NOT NULL,
+        code           VARCHAR(12) NOT NULL,
+        room_number    VARCHAR(20)  NULL,
+        guest_name     VARCHAR(120) NULL,
+        occupants      TINYINT UNSIGNED NOT NULL DEFAULT 1,
+        max_devices    TINYINT UNSIGNED NOT NULL DEFAULT 2,
+        valid_from     DATETIME NOT NULL,
+        valid_until    DATETIME NOT NULL,
+        grace_hours    SMALLINT UNSIGNED NOT NULL DEFAULT 24,
+        revoked_at     DATETIME NULL,
+        anonymized_at  DATETIME NULL,
+        created_by     INT NULL,
+        created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_guest_code_hotel (hotel_id, code),
+        INDEX idx_guest_codes_hotel    (hotel_id),
+        INDEX idx_guest_codes_until    (valid_until),
+        CONSTRAINT fk_guest_codes_hotel   FOREIGN KEY (hotel_id)   REFERENCES hotels(id)      ON DELETE CASCADE,
+        CONSTRAINT fk_guest_codes_creator FOREIGN KEY (created_by) REFERENCES admin_users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('[migration018] table guest_codes créée');
+  }
+
+  if (!(await tableExists('guest_sessions'))) {
+    await db.query(`
+      CREATE TABLE guest_sessions (
+        id             INT AUTO_INCREMENT PRIMARY KEY,
+        code_id        INT NOT NULL,
+        token_hash     CHAR(64) NOT NULL,
+        fingerprint    VARCHAR(64)  NULL,
+        user_agent     VARCHAR(255) NULL,
+        ip_first       VARCHAR(45)  NULL,
+        revoked_at     DATETIME NULL,
+        first_seen_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_seen_at   DATETIME NULL,
+        UNIQUE KEY uq_guest_session_token (token_hash),
+        UNIQUE KEY uq_guest_session_fp    (code_id, fingerprint),
+        INDEX idx_guest_sessions_code     (code_id),
+        CONSTRAINT fk_guest_sessions_code FOREIGN KEY (code_id) REFERENCES guest_codes(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log('[migration018] table guest_sessions créée');
+  }
+}
+
+// Pendant JS de database/migrations/016_enabled_sections.sql.
+// Sections kiosque activables par hôtel. NULL = toutes les sections actives,
+// afin qu'un hôtel créé avant cette colonne ne perde rien.
+async function migration019() {
+  if (!(await columnExists('hotel_settings', 'enabled_sections'))) {
+    await db.query(
+      `ALTER TABLE hotel_settings
+         ADD COLUMN enabled_sections JSON NULL DEFAULT NULL
+         COMMENT 'Clés des sections kiosque activées ; NULL = toutes'`
+    );
+    console.log('[migration019] hotel_settings : colonne enabled_sections ajoutée');
+  }
+}
+
 // Chaque migration est isolée : une erreur sur l'une n'empêche pas les
 // suivantes de s'appliquer. Un try/catch global masquait les migrations
 // postérieures au premier échec, laissant un schéma incomplet en silence.
@@ -338,6 +404,8 @@ const MIGRATIONS = [
   ['015 kiosk_keys',               migration015],
   ['016 mot de passe super-admin', migration016],
   ['017 qr_tokens.hotel_id',       migration017],
+  ['018 guest_codes',              migration018],
+  ['019 enabled_sections',         migration019],
 ];
 
 async function runMigrations() {

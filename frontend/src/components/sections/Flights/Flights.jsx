@@ -13,6 +13,9 @@ const POLL_INTERVAL_MS = 2 * 60 * 1000;  // re-fetch toutes les 2 min pour capte
 const SUGGEST_DEBOUNCE_MS = 300;
 const SUGGEST_MIN_CHARS   = 2;
 const SUGGEST_MAX_ITEMS   = 6;
+// Marge de tolérance avant de retirer un vol conservé : un vol reste affiché un peu
+// après son horaire, le temps que l'atterrissage/décollage soit constaté sur place.
+const RETAINED_GRACE_MS   = 30 * 60 * 1000;
 
 const PLANE_PATH =
   'M12 2.5c.7 0 1.2.6 1.2 1.3v5.6l7.3 4.3v2.1l-7.3-2.2v4.5l2.2 1.6v1.8L12 20.8l-3.4 1.7v-1.8l2.2-1.6v-4.5L3.5 16.8v-2.1l7.3-4.3V3.8c0-.7.5-1.3 1.2-1.3z';
@@ -37,6 +40,25 @@ function placeName(airport, iata) {
 }
 
 const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+function sideTime(side) {
+  const iso = side?.actual || side?.estimated || side?.scheduled;
+  if (!iso) return null;
+  const ts = new Date(iso).getTime();
+  return Number.isFinite(ts) ? ts : null;
+}
+
+// Liste conservée faute de réponse de FlightAPI : la source ne dira plus que le vol a atterri
+// ou décollé. On le déduit de l'horaire dépassé plutôt que d'afficher « Prévu » pour un vol
+// déjà arrivé. Un vol annulé, dérouté ou déjà marqué atterri garde son statut d'origine.
+const KEEPS_OWN_STATUS = new Set(['landed', 'cancelled', 'diverted']);
+
+function retainedStatus(flight, isArrival, now) {
+  if (KEEPS_OWN_STATUS.has(flight.status)) return null;
+  const ts = sideTime(isArrival ? flight.arrival : flight.departure);
+  if (ts === null || ts > now) return null;
+  return isArrival ? 'landed' : 'active';
+}
 
 export default function Flights() {
   const { t, locale }                         = useLanguage();
@@ -95,6 +117,7 @@ export default function Flights() {
   }, [suggestOpen]);
 
   const isPending   = !isSearch && data?._pending;
+  const isRetained  = !isSearch && data?.retained === true;
   const refreshedAt = data?.refreshed_at ?? null;
   const ageMs       = refreshedAt ? now - refreshedAt : null;
   const ageMin      = ageMs !== null ? Math.floor(ageMs / 60_000) : null;
@@ -113,8 +136,21 @@ export default function Flights() {
     return () => clearInterval(timer);
   }, []);
 
-  const flights     = data?.flights ?? [];
   const isArrival   = !isSearch && tab === 'arrivals';
+
+  // Quand FlightAPI renvoie une réponse vide, le backend conserve la liste précédente
+  // (`retained`) en actualisant la date. Un vol dont l'horaire est dépassé reste affiché
+  // le temps de la marge, en « atterri » / « en vol » (voir retainedStatus), puis sort de
+  // la liste ; une fois tous écoulés, l'écran affiche « aucun vol disponible » plutôt que
+  // des horaires périmés.
+  const flights = useMemo(() => {
+    const list = data?.flights ?? [];
+    if (isSearch || data?.retained !== true) return list;
+    return list.filter(f => {
+      const ts = sideTime(isArrival ? f.arrival : f.departure);
+      return ts !== null && ts + RETAINED_GRACE_MS > now;
+    });
+  }, [data, isSearch, isArrival, now]);
   const currentAp   = airports?.find(a => a.code === selectedAirport);
   const airportName = currentAp?.label ?? t('flights.airport');
 
@@ -336,6 +372,7 @@ export default function Flights() {
           <span>{t('flights.time')}</span>
           <span>{t('flights.flight')}</span>
           <span>{isArrival ? t('flights.origin') : t('flights.destination')}</span>
+          <span>{t('flights.terminal_gate')}</span>
           <span className={styles.colStatus}>{t('flights.status_col')}</span>
         </div>
       )}
@@ -348,7 +385,9 @@ export default function Flights() {
         )}
 
         {!loading && !isPending && !error && rows.length === 0 && (
-          <div className={styles.empty}>{t('flights.no_results')}</div>
+          <div className={styles.empty}>
+            {isSearch ? t('flights.no_results') : t('flights.no_flights')}
+          </div>
         )}
 
         {!loading && !error && rows.map(row =>
@@ -371,6 +410,7 @@ export default function Flights() {
               key={row.id}
               flight={row.flight}
               isArrival={isArrival}
+              derivedStatus={isRetained ? retainedStatus(row.flight, isArrival, now) : null}
               fmtTime={fmtTime}
               t={t}
             />
@@ -410,13 +450,17 @@ function StatusPill({ status, t }) {
   );
 }
 
-function FlightRow({ flight, isArrival, fmtTime, t }) {
-  // La source ne renseigne jamais le côté de l'aéroport interrogé :
-  // on n'affiche donc que l'autre extrémité du trajet.
+function FlightRow({ flight, isArrival, derivedStatus, fmtTime, t }) {
+  // FlightAPI ne nomme pas le côté de l'aéroport interrogé (ni code ni nom), mais il
+  // renseigne bien son terminal et sa porte sous airport.<side>.info : ces deux champs
+  // sont les seuls du côté « ici » et méritent leur propre colonne. La méta de la colonne
+  // provenance/destination ne décrit donc que l'autre extrémité, sans mélanger les côtés.
   const side  = isArrival ? flight.arrival  : flight.departure;
   const other = isArrival ? flight.departure : flight.arrival;
   const delay = side?.delay || 0;
-  const status = delay > 0 ? 'delayed' : flight.status;
+  // Un vol dont l'horaire est dépassé est arrivé/parti : ce constat prime sur le retard,
+  // qui reste signalé par son badge.
+  const status = derivedStatus || (delay > 0 ? 'delayed' : flight.status);
 
   const scheduled = fmtTime(side?.scheduled);
   const revised   = side?.actual || side?.estimated;
@@ -425,8 +469,16 @@ function FlightRow({ flight, isArrival, fmtTime, t }) {
   const meta = [
     other?.iata,
     other?.terminal && `${t('flights.terminal')} ${other.terminal}`,
-    side?.gate      && `${t('flights.gate')} ${side.gate}`,
+    other?.gate     && `${t('flights.gate')} ${other.gate}`,
   ].filter(Boolean).join(' · ');
+
+  // Terminal et porte de l'aéroport de référence : souvent absents de la source. En
+  // colonnes on garde alors la cellule avec un tiret pour ne pas désaligner la grille ;
+  // en affichage empilé (portrait étroit) le CSS masque la rangée devenue inutile.
+  const here = [
+    side?.terminal && { label: t('flights.terminal'), value: side.terminal },
+    side?.gate     && { label: t('flights.gate'),     value: side.gate },
+  ].filter(Boolean);
 
   return (
     <article className={styles.flightRow} role="listitem">
@@ -455,6 +507,17 @@ function FlightRow({ flight, isArrival, fmtTime, t }) {
       <div className={styles.cellPlace}>
         <span className={styles.place}>{placeName(other?.airport, other?.iata)}</span>
         {meta && <span className={styles.placeMeta}>{meta}</span>}
+      </div>
+
+      <div className={styles.cellHere}>
+        {here.length === 0 ? (
+          <span className={styles.hereEmpty} aria-hidden="true">—</span>
+        ) : here.map(({ label, value }) => (
+          <span key={label} className={styles.hereItem}>
+            <span className={styles.hereLabel}>{label}</span>
+            <span className={styles.hereValue}>{value}</span>
+          </span>
+        ))}
       </div>
 
       <div className={styles.cellStatus}>
@@ -487,10 +550,11 @@ function RouteCard({ flight, fallbackCode, fallbackName, fmtTime, t }) {
   const delay  = Math.max(flight.departure?.delay || 0, flight.arrival?.delay || 0);
   const status = delay > 0 ? 'delayed' : flight.status;
 
-  const detail = [
-    flight.airline,
-    dep.gate      && `${t('flights.gate')} ${dep.gate}`,
-    arr.terminal  && `${t('flights.terminal')} ${arr.terminal}`,
+  // Terminal et porte sont propres à chaque extrémité : on les affiche sous le côté
+  // concerné au lieu de les réunir dans une ligne où l'on ne sait plus lequel est lequel.
+  const sideMeta = (s) => [
+    s.terminal && `${t('flights.terminal')} ${s.terminal}`,
+    s.gate     && `${t('flights.gate')} ${s.gate}`,
   ].filter(Boolean).join(' · ');
 
   return (
@@ -507,6 +571,7 @@ function RouteCard({ flight, fallbackCode, fallbackName, fmtTime, t }) {
           <span className={styles.routeIata}>{dep.iata}</span>
           <span className={styles.routeTime}>{fmtTime(dep.time)}</span>
           <span className={styles.routePlace}>{placeName(dep.airport, dep.iata)}</span>
+          {sideMeta(dep) && <span className={styles.routeMeta}>{sideMeta(dep)}</span>}
         </div>
 
         <div className={styles.routeLink} aria-hidden="true">
@@ -521,10 +586,11 @@ function RouteCard({ flight, fallbackCode, fallbackName, fmtTime, t }) {
           <span className={styles.routeIata}>{arr.iata}</span>
           <span className={styles.routeTime}>{fmtTime(arr.time)}</span>
           <span className={styles.routePlace}>{placeName(arr.airport, arr.iata)}</span>
+          {sideMeta(arr) && <span className={styles.routeMeta}>{sideMeta(arr)}</span>}
         </div>
       </div>
 
-      {detail && <p className={styles.routeDetail}>{detail}</p>}
+      <p className={styles.routeDetail}>{flight.airline}</p>
     </article>
   );
 }

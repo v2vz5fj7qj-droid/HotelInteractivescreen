@@ -12,6 +12,7 @@ const cookieParser = require('cookie-parser');
 const adminAuth  = require('./middleware/adminAuth');
 const hotelCtx   = require('./middleware/hotelContext');
 const requireRole = require('./middleware/requireRole');
+const contentAuth = require('./middleware/contentAuth');
 
 // ── Routes publiques (borne kiosque) ─────────────────────────────
 const weatherRoutes      = require('./routes/weather');
@@ -51,6 +52,7 @@ const superInfoCatRoutes       = require('./routes/admin/super/infoCategories');
 const superWeatherRoutes       = require('./routes/admin/super/weather');
 const superTokensRoutes     = require('./routes/admin/super/tokens');
 const superKiosksRoutes     = require('./routes/admin/super/kiosks');
+const buildBackupRouter     = require('./routes/admin/backupRoutes');
 
 // Hotel-admin
 const hotelSettingsRoutes       = require('./routes/admin/hotel/settings');
@@ -60,9 +62,11 @@ const hotelEventsRoutes         = require('./routes/admin/hotel/events');
 const hotelFeedbacksRoutes      = require('./routes/admin/hotel/feedbacks');
 const hotelDeviseRoutes         = require('./routes/admin/hotel/devise');
 const hotelKiosksRoutes         = require('./routes/admin/hotel/kiosks');
+const hotelGuestCodesRoutes     = require('./routes/admin/hotel/guestCodes');
 
 // Kiosk device (public)
 const kioskDeviceRoutes         = require('./routes/kioskDevice');
+const guestRoutes               = require('./routes/guest');
 
 // Contributeur
 const contribPlacesRoutes = require('./routes/admin/contributor/places');
@@ -131,24 +135,42 @@ app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 app.use(rateLimit({ windowMs: 60_000, max: 200 }));
 
-// ── Routes publiques ─────────────────────────────────────────────
-app.use('/api/weather',       weatherRoutes);
-app.use('/api/events',        eventsRoutes);
-app.use('/api/flights',       flightRoutes);
-app.use('/api/wellness',      wellnessRoutes);
-app.use('/api/poi',           poiRoutes);
-app.use('/api/info',          infoRoutes);
-app.use('/api/analytics',     analyticsRoutes);
+// ── Accès visiteur (code de séjour) ──────────────────────────────
+// La protection contre la force brute sur le code à 6 caractères N'EST PAS un
+// limiteur de requêtes placé ici, mais un budget d'échecs appliqué dans la route
+// après validation du code (voir routes/guest.js).
+//
+// Pourquoi : un limiteur en amont refuse la requête avant de savoir si le code est
+// bon. Le compteur étant partagé par tous les clients — TRUST_PROXY absent fait
+// voir à req.ip l'adresse de nginx pour tout le monde, et même défini, les clients
+// d'un hôtel sortent sur une seule IP publique — une poignée de saisies erronées
+// bloquait alors les clients dont le code était valide. `skipSuccessfulRequests`
+// ne corrige pas cela : il évite de compter les succès, pas de les refuser.
+//
+// Le plafond de volume reste assuré par le limiteur global de 200 req/min.
+app.use('/api/guest',        guestRoutes);
+
+// ── Routes de contenu — réservées borne / visiteur / QR mobile ───
+// contentAuth accepte un device_token de borne, un guest_token de client ou un
+// qr_token de transfert mobile. Tant que CONTENT_AUTH_ENFORCE ≠ 'true', les
+// appels sans jeton passent mais sont journalisés (bascule progressive).
+app.use('/api/weather',       contentAuth, weatherRoutes);
+app.use('/api/events',        contentAuth, eventsRoutes);
+app.use('/api/flights',       contentAuth, flightRoutes);
+app.use('/api/wellness',      contentAuth, wellnessRoutes);
+app.use('/api/poi',           contentAuth, poiRoutes);
+app.use('/api/info',          contentAuth, infoRoutes);
+app.use('/api/analytics',     contentAuth, analyticsRoutes);
 app.use('/api/qr',            qrRoutes);
 app.use('/api/theme',         themeRoutes);
 app.use('/api/translate',     translateRoutes);
 app.use('/api/kiosk',         kioskRoutes);
 app.use('/api/hotels',        kioskRoutes);   // /api/hotels/public
-app.use('/api/services',      servicesRoutes);
-app.use('/api/tips',          tipsRoutes);
-app.use('/api/feedback',      feedbackRoutes);
-app.use('/api/currency',      currencyRoutes);
-app.use('/api/directions',    directionsRoutes);
+app.use('/api/services',      contentAuth, servicesRoutes);
+app.use('/api/tips',          contentAuth, tipsRoutes);
+app.use('/api/feedback',      contentAuth, feedbackRoutes);
+app.use('/api/currency',      contentAuth, currencyRoutes);
+app.use('/api/directions',    contentAuth, directionsRoutes);
 app.use('/api/kiosk-device',  kioskDeviceRoutes);
 
 // ── Auth (public — pas de middleware auth) ────────────────────────
@@ -172,6 +194,7 @@ adminV2.use('/super/info-categories',   requireRole('super_admin'), superInfoCat
 adminV2.use('/super/weather',           requireRole('super_admin'), superWeatherRoutes);
 adminV2.use('/super/tokens',            requireRole('super_admin'), superTokensRoutes);
 adminV2.use('/super/kiosks',            requireRole('super_admin'), superKiosksRoutes);
+adminV2.use('/super/backup',            requireRole('super_admin'), buildBackupRouter({ variant: 'super' }));
 
 // Hotel-admin (+ super-admin peut tout faire)
 adminV2.use('/hotel/settings',          requireRole('super_admin','hotel_admin'), hotelSettingsRoutes);
@@ -182,6 +205,10 @@ adminV2.use('/hotel/events',            requireRole('super_admin','hotel_admin',
 adminV2.use('/hotel/feedbacks',         requireRole('super_admin','hotel_admin','hotel_staff'), hotelFeedbacksRoutes);
 adminV2.use('/hotel/devise',            requireRole('super_admin','hotel_admin'), hotelDeviseRoutes);
 adminV2.use('/hotel/kiosks',            requireRole('super_admin','hotel_admin'), hotelKiosksRoutes);
+adminV2.use('/hotel/guest-codes',       requireRole('super_admin','hotel_admin','hotel_staff'), hotelGuestCodesRoutes);
+// Sauvegarde/restauration : réservée à l'admin de l'hôtel — un membre du staff
+// ne doit pas pouvoir remplacer la configuration de l'établissement.
+adminV2.use('/hotel/backup',            requireRole('super_admin','hotel_admin'), buildBackupRouter({ variant: 'hotel' }));
 
 // Contributeur
 adminV2.use('/contributor/places', requireRole('contributor'), contribPlacesRoutes);

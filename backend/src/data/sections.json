@@ -1,0 +1,11 @@
+[
+  { "key": "weather",  "label_fr": "Météo",                  "label_en": "Weather",          "route": "/weather",  "description_fr": "Prévisions des localités affectées à l'hôtel." },
+  { "key": "flights",  "label_fr": "Vols",                   "label_en": "Flights",          "route": "/flights",  "description_fr": "Départs et arrivées des aéroports affectés à l'hôtel." },
+  { "key": "wellness", "label_fr": "Bien-être",              "label_en": "Wellness",         "route": "/wellness", "description_fr": "Spa, massages et services de bien-être." },
+  { "key": "events",   "label_fr": "Événements",             "label_en": "Events",           "route": "/events",   "description_fr": "Agenda culturel et événements locaux." },
+  { "key": "map",      "label_fr": "Carte & lieux",          "label_en": "Map & places",     "route": "/map",      "description_fr": "Carte interactive et points d'intérêt." },
+  { "key": "info",     "label_fr": "Infos utiles",           "label_en": "Useful info",      "route": "/info",     "description_fr": "Numéros utiles, santé, transports, administrations." },
+  { "key": "mobile",   "label_fr": "Transfert mobile",       "label_en": "Mobile transfer",  "route": "/mobile",   "description_fr": "QR code qui poursuit la consultation sur le téléphone du client." },
+  { "key": "feedback", "label_fr": "Avis clients",           "label_en": "Guest feedback",   "route": "/feedback", "description_fr": "Formulaire de notation et commentaires des clients." },
+  { "key": "currency", "label_fr": "Convertisseur de devises", "label_en": "Currency",       "route": "/currency", "description_fr": "Taux de change et conversion." }
+]

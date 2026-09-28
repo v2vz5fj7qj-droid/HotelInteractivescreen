@@ -243,7 +243,6 @@ export default function MapSection() {
       {/* ── Barre de navigation (hors canvas carte) ── */}
       <SectionChrome
         className={styles.chrome}
-        weather={false}
         center={(
           <div className={styles.categories} role="toolbar" aria-label="Filtres catégories">
             {categories.map(cat => (

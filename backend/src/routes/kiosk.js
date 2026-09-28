@@ -4,7 +4,38 @@
 const express = require('express');
 const db      = require('../services/db');
 const cache   = require('../services/cacheService');
+const { identify } = require('../middleware/contentAuth');
+const { extractBearer } = require('../middleware/guestAuth');
+const { normalizeEnabledSections } = require('../data/sections');
 const router  = express.Router();
+
+// Champs qui ne doivent jamais partir vers un appelant non identifié : le mot de
+// passe Wi-Fi de l'hôtel et celui qui déverrouille le mode plein écran de la
+// borne. La configuration reste publique pour tout le reste (thème, logo, polices),
+// car elle est nécessaire à l'affichage AVANT qu'un client n'ait saisi son code.
+// La borne les obtient grâce à son device_token, le client via /api/guest/me.
+const SECRET_SETTINGS = ['wifi_password', 'fullscreen_password'];
+
+// Retire les secrets d'une charge utile mise en cache, sans la modifier en place :
+// le cache Redis conserve la version complète, commune à tous les appelants.
+function withoutSecrets(payload) {
+  const settings = { ...payload.settings };
+  for (const key of SECRET_SETTINGS) delete settings[key];
+  return { ...payload, settings, _restricted: true };
+}
+
+// Un appelant porteur d'un jeton de borne, de visiteur ou de QR reçoit la
+// configuration complète ; les autres reçoivent la version expurgée.
+async function isTrusted(req) {
+  const token = extractBearer(req);
+  if (!token) return false;
+  try {
+    const access = await identify(token);
+    return !!access;
+  } catch {
+    return false;
+  }
+}
 
 // GET /api/kiosk/:slug/config
 // Retourne tout ce dont le kiosque a besoin au démarrage
@@ -14,7 +45,10 @@ router.get('/:slug/config', async (req, res) => {
 
   try {
     const cached = await cache.get(cacheKey);
-    if (cached) return res.json(JSON.parse(cached));
+    if (cached) {
+      const payload = JSON.parse(cached);
+      return res.json((await isTrusted(req)) ? payload : withoutSecrets(payload));
+    }
 
     const [rows] = await db.query(
       `SELECT
@@ -28,7 +62,8 @@ router.get('/:slug/config', async (req, res) => {
          hs.checkin_time, hs.checkout_time,
          hs.welcome_message_fr, hs.welcome_message_en, hs.welcome_message_de,
          hs.welcome_message_es, hs.welcome_message_pt, hs.welcome_message_ar,
-         hs.welcome_message_zh, hs.welcome_message_ja, hs.welcome_message_ru
+         hs.welcome_message_zh, hs.welcome_message_ja, hs.welcome_message_ru,
+         hs.enabled_sections
        FROM hotels h
        JOIN hotel_settings hs ON hs.hotel_id = h.id
        WHERE h.slug = ? AND h.is_active = 1
@@ -93,11 +128,14 @@ router.get('/:slug/config', async (req, res) => {
         welcome_message_zh:  row.welcome_message_zh ?? null,
         welcome_message_ja:  row.welcome_message_ja ?? null,
         welcome_message_ru:  row.welcome_message_ru ?? null,
+        // Sections visibles sur ce kiosque. Toujours un tableau : NULL en base
+        // (hôtel antérieur à la migration) est résolu en « toutes les sections ».
+        enabled_sections:    normalizeEnabledSections(row.enabled_sections),
       },
     };
 
     await cache.set(cacheKey, JSON.stringify(payload), 300); // 5 min
-    res.json(payload);
+    res.json((await isTrusted(req)) ? payload : withoutSecrets(payload));
   } catch (err) {
     console.error('[kiosk/config]', err.message);
     res.status(500).json({ error: 'Erreur chargement configuration hôtel' });

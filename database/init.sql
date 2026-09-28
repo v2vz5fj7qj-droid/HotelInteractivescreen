@@ -267,6 +267,61 @@ CREATE TABLE IF NOT EXISTS `feedbacks` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `guest_codes`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `guest_codes` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `hotel_id` int NOT NULL,
+  `code` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `room_number` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `guest_name` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `occupants` tinyint unsigned NOT NULL DEFAULT '1',
+  `max_devices` tinyint unsigned NOT NULL DEFAULT '2',
+  `valid_from` datetime NOT NULL,
+  `valid_until` datetime NOT NULL,
+  `grace_hours` smallint unsigned NOT NULL DEFAULT '24',
+  `revoked_at` datetime DEFAULT NULL,
+  `anonymized_at` datetime DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_guest_code_hotel` (`hotel_id`,`code`),
+  KEY `idx_guest_codes_hotel` (`hotel_id`),
+  KEY `idx_guest_codes_until` (`valid_until`),
+  KEY `fk_guest_codes_creator` (`created_by`),
+  CONSTRAINT `fk_guest_codes_creator` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_guest_codes_hotel` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `guest_sessions`
+--
+
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `guest_sessions` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code_id` int NOT NULL,
+  `token_hash` char(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fingerprint` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ip_first` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `revoked_at` datetime DEFAULT NULL,
+  `first_seen_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_guest_session_token` (`token_hash`),
+  UNIQUE KEY `uq_guest_session_fp` (`code_id`,`fingerprint`),
+  KEY `idx_guest_sessions_code` (`code_id`),
+  CONSTRAINT `fk_guest_sessions_code` FOREIGN KEY (`code_id`) REFERENCES `guest_codes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `hotel_airports`
 --
 

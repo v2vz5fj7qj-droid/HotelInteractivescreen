@@ -277,8 +277,10 @@
   animation: marquee 28s linear infinite;
 }
 
-/* Pause au survol/touch pour les grands écrans */
-.teaser:hover .teaserTrack {
+/* Pause au survol / à l'appui : la puce reste atteignable le temps de la viser */
+.teaser:hover .teaserTrack,
+.teaserTrack:has(.teaserChip:active),
+.teaserTrack:has(.teaserChip:focus-visible) {
   animation-play-state: paused;
 }
 
@@ -296,6 +298,27 @@
   white-space: nowrap;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  /* Puce cliquable : reset du style bouton natif */
+  font-family: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.teaserChip:hover,
+.teaserChip:focus-visible {
+  background: rgba(255, 255, 255, 0.20);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: #fff;
+}
+
+.teaserChip:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
+.teaserChip:active {
+  transform: scale(0.95);
 }
 
 @keyframes marquee {

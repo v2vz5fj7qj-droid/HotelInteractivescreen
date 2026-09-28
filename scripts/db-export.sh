@@ -21,6 +21,8 @@
 # script sur le serveur, pas en local, pour rapatrier l'état réel dans git.
 #
 # Pour une sauvegarde complète et restaurable : scripts/db-backup.sh
+# Pour permettre au client de sauvegarder et rétablir sa configuration lui-même :
+# back-office → Sauvegarde & restauration (voir README).
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -63,6 +65,8 @@ EXCLUDE_TABLES=(
   kiosks                  # bornes enregistrées : device_token propre à chaque machine
   kiosk_keys              # clés d'activation à usage unique
   qr_tokens               # tokens de transfert mobile, durée de vie 10 minutes
+  guest_codes             # codes de séjour : noms, chambres — données personnelles
+  guest_sessions          # appareils rattachés : empreinte, user-agent, IP
 )
 
 IGNORE_ARGS=()

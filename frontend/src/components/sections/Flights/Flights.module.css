@@ -6,6 +6,7 @@
 .page {
   --col-time:   clamp(70px, 7vw, 152px);
   --col-flight: clamp(104px, 13vw, 236px);
+  --col-here:   clamp(70px, 7.5vw, 160px);
   --col-status: clamp(92px, 11vw, 192px);
   --row-gap:    clamp(10px, 1.6vw, 22px);
 
@@ -343,7 +344,7 @@
 /* ─── En-tête de colonnes ──────────────────────────────── */
 .columns {
   display: grid;
-  grid-template-columns: var(--col-time) var(--col-flight) 1fr var(--col-status);
+  grid-template-columns: var(--col-time) var(--col-flight) 1fr var(--col-here) var(--col-status);
   gap: var(--row-gap);
   padding-inline: clamp(12px, 1.6vw, 28px);
   margin-top: clamp(4px, 0.8vh, 14px);
@@ -392,7 +393,7 @@
 /* ─── Ligne de vol ─────────────────────────────────────── */
 .flightRow {
   display: grid;
-  grid-template-columns: var(--col-time) var(--col-flight) 1fr var(--col-status);
+  grid-template-columns: var(--col-time) var(--col-flight) 1fr var(--col-here) var(--col-status);
   align-items: center;
   gap: var(--row-gap);
   min-height: clamp(58px, 6.1vh, 132px);
@@ -475,6 +476,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Terminal / porte de l'aéroport de référence */
+.cellHere { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.hereItem { display: flex; align-items: baseline; gap: clamp(3px, 0.4vw, 7px); min-width: 0; }
+
+.hereLabel {
+  font-size: clamp(0.55rem, 0.9vh, 1.05rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+.hereValue {
+  font-size: clamp(0.85rem, 1.55vh, 1.9rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.hereEmpty {
+  font-size: clamp(0.85rem, 1.55vh, 1.9rem);
+  color: var(--c-text-muted);
 }
 
 .cellStatus {
@@ -595,6 +622,12 @@
   flex-shrink: 0;
 }
 
+.routeMeta {
+  font-size: clamp(0.62rem, 1.05vh, 1.25rem);
+  letter-spacing: 0.04em;
+  color: var(--c-text-muted);
+}
+
 .routeDetail {
   margin: clamp(12px, 1.8vh, 30px) 0 0;
   padding-top: clamp(10px, 1.4vh, 24px);
@@ -656,15 +689,19 @@
 
   .flightRow {
     grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     column-gap: clamp(10px, 2.5vw, 20px);
     row-gap: 2px;
   }
 
-  .cellTime   { grid-column: 1; grid-row: 1 / span 2; justify-content: center; }
+  .cellTime   { grid-column: 1; grid-row: 1 / span 3; justify-content: center; }
   .cellFlight { grid-column: 2; grid-row: 1; }
   .cellPlace  { grid-column: 2; grid-row: 2; }
-  .cellStatus { grid-column: 3; grid-row: 1 / span 2; justify-content: center; }
+  .cellHere   { grid-column: 2; grid-row: 3; flex-direction: row; gap: clamp(8px, 2vw, 16px); }
+  .cellStatus { grid-column: 3; grid-row: 1 / span 3; justify-content: center; }
+
+  /* Rien à afficher : ne pas réserver une rangée vide */
+  .cellHere:has(.hereEmpty) { display: none; }
 
   .routeBody { flex-direction: column; align-items: stretch; }
   .routeSideEnd { align-items: flex-start; text-align: start; }
@@ -678,15 +715,17 @@
 
   .flightRow {
     grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
     column-gap: 12px;
     row-gap: 2px;
     min-height: 0;
   }
 
-  .cellTime   { grid-column: 1; grid-row: 1 / span 2; justify-content: center; }
+  .cellTime   { grid-column: 1; grid-row: 1 / span 3; justify-content: center; }
   .cellFlight { grid-column: 2; grid-row: 1; }
   .cellPlace  { grid-column: 2; grid-row: 2; }
+  .cellHere   { grid-column: 2; grid-row: 3; flex-direction: row; gap: 10px; }
+  .cellHere:has(.hereEmpty) { display: none; }
   .cellStatus { grid-column: 3; grid-row: 1 / span 2; justify-content: center; }
 
   .header { align-items: flex-start; }

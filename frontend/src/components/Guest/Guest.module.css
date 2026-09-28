@@ -1,0 +1,434 @@
+/* ════════════════════════════════════════════════════════
+   Espace visiteur — téléphone d'abord.
+
+   Contrairement au reste du front-office, calibré pour une borne portrait de
+   55 à 65 pouces, cet espace vit sur l'écran du client. Les valeurs de clamp()
+   partent donc du petit écran (320 px) et plafonnent bas : la tablette et le
+   grand écran héritent d'une colonne centrée, jamais d'une typographie de borne.
+   ════════════════════════════════════════════════════════ */
+
+.guestRoot {
+  min-height: 100vh;
+  min-height: 100dvh;      /* dvh : la barre d'adresse mobile ne rogne pas la page */
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.fullscreenCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--c-bg);
+}
+
+/* ── Écran de saisie du code / fin de séjour ─────────────── */
+.gatePage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 16px;           /* gouttière minimale garantie sur petit écran */
+  background: var(--c-bg);
+}
+
+.gateCard {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(22px, 6vw, 34px);
+  border-radius: 20px;
+  background: var(--c-surface);
+  border: 1px solid color-mix(in srgb, var(--c-primary) 18%, transparent);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 18%);
+  text-align: center;
+}
+
+.gateHotel {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+
+.gateTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 6vw, 1.9rem);
+  line-height: 1.2;
+  color: var(--c-text);
+}
+
+.gateText {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  opacity: 0.78;
+}
+
+.gateIcon { font-size: 2.6rem; }
+
+.gateLabel {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.codeInput {
+  width: 100%;
+  padding: 14px 12px;
+  /* Espacement des lettres : un code se relit caractère par caractère. */
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: clamp(1.5rem, 8vw, 2rem);
+  letter-spacing: 0.32em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+  border: 2px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+  border-radius: 14px;
+}
+
+.codeInput:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-primary) 20%, transparent);
+}
+
+.gateError {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #FF9E86;          /* thème sombre : 4.5:1 sur la surface */
+}
+
+/* Le rouge clair devient illisible sur le fond crème : on l'assombrit. */
+[data-theme="light"] .gateError { color: #A8380F; }
+
+.primaryBtn {
+  /* 48 px minimum : cible tactile confortable, y compris pour un pouce. */
+  min-height: 48px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-bg);
+  background: var(--c-primary);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.primaryBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.primaryBtn:active:not(:disabled) { transform: scale(0.98); }
+
+/* ── Accueil visiteur ────────────────────────────────────── */
+.homePage {
+  max-width: 560px;        /* au-delà, une colonne centrée vaut mieux qu'un étirement */
+  margin-inline: auto;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.homeHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.homeHeaderText { min-width: 0; }
+
+.homeHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.homeHotel {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+
+.homeWelcome {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 5.5vw, 1.6rem);
+  line-height: 1.25;
+  /* Un nom long ne doit ni déborder ni pousser les contrôles hors de l'écran. */
+  overflow-wrap: anywhere;
+}
+
+/* ── Carte « Mon séjour » ────────────────────────────────── */
+.stayCard {
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--c-surface);
+  border: 1px solid color-mix(in srgb, var(--c-primary) 16%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stayTitle {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.stayWelcome {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.stayGrid {
+  margin: 0;
+  display: grid;
+  /* auto-fit : 1 colonne sur un petit téléphone, 3 dès que la place existe. */
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.stayItem { min-width: 0; }
+
+.stayItem dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.stayItem dd {
+  margin: 3px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.wifiBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+}
+
+.wifiText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wifiLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.wifiName { font-size: 0.95rem; font-weight: 600; }
+
+.wifiPass {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.wifiCopy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-primary);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--c-primary) 45%, transparent);
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── Liste des sections ──────────────────────────────────── */
+.menuTitle {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.menuList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 1px solid color-mix(in srgb, var(--c-primary) 14%, transparent);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.menuItem svg { color: var(--c-primary); flex-shrink: 0; }
+.menuItem:active { transform: scale(0.98); }
+
+@media (hover: hover) {
+  .menuItem:hover { border-color: var(--c-primary); }
+}
+
+.logoutBtn {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: 0.88rem;
+  color: var(--c-text);
+  background: transparent;
+  border: none;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+/* ── Saisie du code sur la borne (mode QR) ───────────────── */
+/* Ici on est de retour sur un écran de 55 pouces : les valeurs remontent. */
+.kioskBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 2vh, 24px);
+  width: 100%;
+}
+
+.kioskLabel {
+  font-size: clamp(0.8rem, 1.2vh, 0.95rem);
+  font-weight: 600;
+  color: var(--c-primary);
+  align-self: flex-start;
+}
+
+.kioskHint {
+  margin: 0;
+  font-size: clamp(0.72rem, 1.05vh, 0.85rem);
+  line-height: 1.4;
+  color: var(--c-text-muted);
+}
+
+/* Dans la carte « Mon séjour », le champ et le bouton occupent la largeur :
+   la cible tactile d'une borne ne se cherche pas. */
+.kioskBox .primaryBtn {
+  width: 100%;
+  min-height: clamp(56px, 7vh, 88px);
+  font-size: clamp(1rem, 1.6vh, 1.35rem);
+}
+
+.kioskInput {
+  width: min(100%, 420px);
+  padding: clamp(14px, 2vh, 20px);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--c-text);
+  background: color-mix(in srgb, var(--c-bg) 60%, transparent);
+  border: 2px solid color-mix(in srgb, var(--c-primary) 35%, transparent);
+  border-radius: 16px;
+}
+
+/* ── Adresse à saisir au clavier (borne) ─────────────────── */
+/* Un QR code ne sert à rien devant un ordinateur : le client qui veut consulter
+   depuis son PC a besoin de lire l'adresse, pas de la scanner. Elle reste donc
+   affichée en permanence, avant comme après la saisie du code. */
+.kioskUrl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 0.8vh, 10px);
+  margin: 0;
+  padding: clamp(10px, 1.6vh, 18px) clamp(14px, 2vw, 24px);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--c-primary) 10%, transparent);
+  text-align: center;
+}
+
+.kioskUrlLabel {
+  font-size: clamp(0.85rem, 1.1vw, 1.05rem);
+  opacity: 0.8;
+}
+
+.kioskUrlValue {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Une adresse lue à distance sur une borne : elle doit rester déchiffrable
+     à deux mètres, d'où une taille supérieure au texte courant. */
+  font-size: clamp(1.05rem, 1.8vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--c-primary);
+  /* Une adresse longue se coupe plutôt que de déborder de la borne. */
+  overflow-wrap: anywhere;
+}
+
+.kioskQr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.6vh, 18px);
+  padding: clamp(16px, 2.4vh, 28px);
+  border-radius: 20px;
+  background: #fff;        /* fond clair imposé : un QR sur fond sombre ne scanne pas */
+}
+
+/* qrcode.react écrit width/height sur le <svg> : on les reprend en CSS pour
+   que le code suive la largeur de la carte sans la faire déborder. */
+.kioskQr svg {
+  display: block;
+  width: min(320px, 100%);
+  height: auto;
+}
+
+.kioskQrCaption {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.2vw, 1.15rem);
+  color: #1a1208;
+  text-align: center;
+}

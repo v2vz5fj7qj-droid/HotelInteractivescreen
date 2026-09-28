@@ -186,6 +186,22 @@
   border-color: #3b82f6;
 }
 
+/* Champ de saisie standard. Plusieurs pages référençaient déjà styles.input
+   sans qu'il existe : leurs champs s'affichaient donc sans style. */
+.input {
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: #fff;
+  color: #1e293b;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
 .inlineInput {
   padding: 0.3rem 0.6rem;
   border: 1.5px solid #3b82f6;

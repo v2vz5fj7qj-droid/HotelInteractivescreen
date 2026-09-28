@@ -1,5 +1,6 @@
 // Super-admin — Gestion des hôtels
 // GET    /api/admin/super/hotels          ?search=&page=&per_page=
+// GET    /api/admin/super/hotels/sections/catalog
 // GET    /api/admin/super/hotels/:id
 // POST   /api/admin/super/hotels
 // PUT    /api/admin/super/hotels/:id
@@ -7,6 +8,7 @@
 const express = require('express');
 const router  = express.Router();
 const db      = require('../../../services/db');
+const { SECTIONS, SECTION_KEYS, parseEnabledSections } = require('../../../data/sections');
 
 async function auditLog(userId, action, entityId, oldValue, newValue) {
   await db.query(
@@ -56,6 +58,12 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Catalogue des sections kiosque activables — déclaré AVANT /:id, sinon
+// « sections » serait capté comme un identifiant d'hôtel.
+router.get('/sections/catalog', (_req, res) => {
+  res.json(SECTIONS);
+});
+
 // Détail d'un hôtel
 router.get('/:id', async (req, res) => {
   try {
@@ -79,21 +87,31 @@ router.post('/', async (req, res) => {
     const { slug, nom } = req.body;
     if (!slug || !nom) return res.status(400).json({ error: 'slug et nom requis' });
 
+    // Sections activées à la création. Absent du corps = toutes les sections
+    // (NULL en base), pour que la création reste un formulaire à deux champs.
+    let enabledSections = null;
+    if (req.body.enabled_sections !== undefined) {
+      const parsed = parseEnabledSections(req.body.enabled_sections);
+      if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+      enabledSections = parsed.value;
+    }
+
     const [result] = await db.query('INSERT INTO hotels (slug, nom) VALUES (?, ?)', [slug, nom]);
     const id = result.insertId;
 
     await db.query(
-      `INSERT INTO hotel_settings (hotel_id, nom, theme_colors) VALUES (?, ?, ?)`,
+      `INSERT INTO hotel_settings (hotel_id, nom, theme_colors, enabled_sections) VALUES (?, ?, ?, ?)`,
       [id, nom, JSON.stringify({
         primary: '#C2782A', primary_dark: '#8B4F12',
         secondary: '#D4A843', accent: '#E8521A',
         bg_dark: '#1A1208', bg_light: '#FDF6EC',
         surface_dark: '#2C1E0A', surface_light: '#FFFFFF',
         text_dark: '#F5E6C8', text_light: '#2C1A06',
-      })]
+      }),
+      enabledSections ? JSON.stringify(enabledSections) : null]
     );
 
-    await auditLog(req.user.id, 'create', id, null, { slug, nom });
+    await auditLog(req.user.id, 'create', id, null, { slug, nom, enabled_sections: enabledSections ?? SECTION_KEYS });
     const [rows] = await db.query('SELECT * FROM hotels WHERE id = ?', [id]);
     res.status(201).json(rows[0]);
   } catch (err) {

@@ -90,8 +90,14 @@ export default function RadialMenu() {
   const { hotelSlug }     = useParams();
   const { t, locale, setLocale, supportedLocales, localesMeta } = useLanguage();
   const { config }        = useTheme();
-  const { bannerImages }  = useHotel();
+  const { bannerImages, isSectionEnabled } = useHotel();
   const [activeNav,    setActiveNav]    = useState(null);
+
+  // Ne proposer que les sections activées pour cet hôtel (super-admin)
+  const navItems     = NAV_ITEMS.filter(i => isSectionEnabled(i.section));
+  const serviceCards = SERVICE_CARDS.filter(c => isSectionEnabled(c.section));
+  const weatherOn    = isSectionEnabled('weather');
+
   const [notifIndex,   setNotifIndex]   = useState(0);
   const [notifs,       setNotifs]       = useState([]);
   const [localities,   setLocalities]   = useState([]);
@@ -296,6 +302,7 @@ export default function RadialMenu() {
             )}
 
             {/* Widget météo rapide dans la bannière */}
+            {weatherOn && (
             <div className={styles.bannerWeatherCard} onClick={() => go('weather', 'weather')}>
               <CloudSun size={28} className={styles.bannerWeatherIcon} />
               <div>
@@ -304,12 +311,13 @@ export default function RadialMenu() {
               </div>
               <ChevronRight size={20} className={styles.bannerChevron} />
             </div>
+            )}
           </div>
         </section>
 
         {/* B — Cartes de services */}
         <section className={styles.serviceCol} aria-label={t('menu.services')}>
-          {SERVICE_CARDS.map(card => (
+          {serviceCards.map(card => (
             <ServiceCard
               key={card.id}
               card={card}
@@ -366,6 +374,7 @@ export default function RadialMenu() {
         </div>
 
         {/* D — Widget météo (swipeable) */}
+        {weatherOn && (
         <div
           className={styles.weatherCard}
           role="button"
@@ -415,6 +424,7 @@ export default function RadialMenu() {
             </div>
           )}
         </div>
+        )}
 
       </div>
 
@@ -429,7 +439,7 @@ export default function RadialMenu() {
         <div className={styles.navDivider} aria-hidden="true" />
 
         {/* Sections principales */}
-        {NAV_ITEMS.slice(0, 7).map(item => (
+        {navItems.slice(0, 7).map(item => (
           <button
             key={item.id}
             className={`${styles.navBtn} ${activeNav === item.id ? styles.navBtnPressing : ''}`}

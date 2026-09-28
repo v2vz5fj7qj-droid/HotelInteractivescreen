@@ -9,6 +9,18 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const db      = require('../../../services/db');
+const cache   = require('../../../services/cacheService');
+const { normalizeEnabledSections, parseEnabledSections } = require('../../../data/sections');
+
+// La configuration kiosque est mise en cache 5 min sous kiosk:config:<slug> :
+// sans invalidation, une modification de paramètres (dont les sections actives)
+// resterait invisible sur la borne jusqu'à expiration.
+async function invalidateKioskCache(hotelId) {
+  try {
+    const [[h]] = await db.query('SELECT slug FROM hotels WHERE id = ?', [hotelId]);
+    if (h) await cache.del(`kiosk:config:${h.slug}`);
+  } catch {}
+}
 
 // Super-admin peut passer ?hotel_id=X pour gérer n'importe quel hôtel
 function resolveHotelId(req) {
@@ -72,7 +84,9 @@ router.get('/', async (req, res) => {
       'SELECT * FROM hotel_settings WHERE hotel_id = ?', [hotelId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Paramètres introuvables pour cet hôtel' });
-    res.json(rows[0]);
+    // enabled_sections est renvoyé résolu (NULL en base → toutes les sections),
+    // pour que le back-office n'ait pas à réinterpréter le NULL.
+    res.json({ ...rows[0], enabled_sections: normalizeEnabledSections(rows[0].enabled_sections) });
   } catch (err) {
     console.error('[hotel/settings GET]', err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -92,7 +106,20 @@ router.put('/', async (req, res) => {
       'welcome_message_fr', 'welcome_message_en', 'welcome_message_de',
       'welcome_message_es', 'welcome_message_pt', 'welcome_message_ar',
       'welcome_message_zh', 'welcome_message_ja', 'welcome_message_ru',
+      'enabled_sections',
     ];
+
+    if (req.body.enabled_sections !== undefined) {
+      // Réservé au super-admin : les sections dont bénéficie un hôtel relèvent de
+      // son périmètre commercial, un hotel_admin ne doit pas s'en rouvrir une.
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Seul un super-admin peut modifier les sections activées' });
+      }
+      const parsed = parseEnabledSections(req.body.enabled_sections);
+      if (!parsed.ok) return res.status(400).json({ error: parsed.error });
+      req.body.enabled_sections = parsed.value === null ? null : JSON.stringify(parsed.value);
+    }
+
     const fields = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
@@ -106,8 +133,9 @@ router.put('/', async (req, res) => {
     const setClauses = Object.keys(fields).map(col => `${col} = ?`);
     const setParams  = Object.values(fields);
     await db.query(`UPDATE hotel_settings SET ${setClauses.join(', ')} WHERE hotel_id = ?`, [...setParams, hotelId]);
+    await invalidateKioskCache(hotelId);
     const [rows] = await db.query('SELECT * FROM hotel_settings WHERE hotel_id = ?', [hotelId]);
-    res.json(rows[0]);
+    res.json({ ...rows[0], enabled_sections: normalizeEnabledSections(rows[0].enabled_sections) });
   } catch (err) {
     console.error('[hotel/settings PUT]', err);
     res.status(500).json({ error: 'Erreur serveur' });

@@ -23,6 +23,7 @@ import AuditLog               from './pages/super/AuditLog';
 import HotelConfig            from './pages/super/HotelConfig';
 import SuperKiosksManager     from './pages/super/KiosksManager';
 import SuperDevisesManager    from './pages/super/DevisesManager';
+import BackupManager          from './pages/BackupManager';
 
 // Pages hotel-admin
 import HotelDashboard       from './pages/hotel/Dashboard';
@@ -33,6 +34,7 @@ import HotelEventsManager   from './pages/hotel/EventsManager';
 import FeedbackManager      from './pages/hotel/FeedbackManager';
 import DeviseManager        from './pages/hotel/DeviseManager';
 import HotelKiosksManager  from './pages/hotel/KiosksManager';
+import GuestCodes          from './pages/hotel/GuestCodes';
 
 // Pages contributeur
 import ContribDashboard from './pages/contributor/Dashboard';
@@ -58,6 +60,16 @@ function RequireRole({ roles, children }) {
   const { user, hydrated } = useAuth();
   if (!hydrated) return null;
   if (!user || !roles.includes(user.role)) return <Navigate to="/admin/login" replace />;
+  return children;
+}
+
+// OnlyRoles — pour une page interdite à un rôle par ailleurs légitime dans la
+// section. Contrairement à RequireRole, ne déconnecte pas : ramène à l'accueil
+// de la section.
+function OnlyRoles({ roles, fallback, children }) {
+  const { user, hydrated } = useAuth();
+  if (!hydrated) return null;
+  if (!user || !roles.includes(user.role)) return <Navigate to={fallback} replace />;
   return children;
 }
 
@@ -114,6 +126,7 @@ export default function AdminApp() {
           <Route path="tokens"          element={<TokensManager />} />
           <Route path="audit-log"       element={<AuditLog />} />
           <Route path="kiosks"          element={<SuperKiosksManager />} />
+          <Route path="backup"          element={<BackupManager variant="super" />} />
           <Route path="*"               element={<Navigate to="/admin/super" replace />} />
         </Route>
 
@@ -134,6 +147,15 @@ export default function AdminApp() {
           <Route path="feedbacks"       element={<FeedbackManager />} />
           <Route path="devise"          element={<DeviseManager />} />
           <Route path="kiosks"          element={<HotelKiosksManager />} />
+          <Route path="guest-codes"     element={<GuestCodes />} />
+          <Route
+            path="backup"
+            element={
+              <OnlyRoles roles={['super_admin', 'hotel_admin']} fallback="/admin/hotel">
+                <BackupManager variant="hotel" />
+              </OnlyRoles>
+            }
+          />
           <Route path="*"               element={<Navigate to="/admin/hotel" replace />} />
         </Route>
 

@@ -14,6 +14,9 @@ const AdminApp   = lazy(() => import('./admin/AdminApp'));
 // ── Mobile QR ─────────────────────────────────────────────────
 const MobileGate = lazy(() => import('./components/MobileGate/MobileGate'));
 
+// ── Espace visiteur (accès client par code de séjour) ─────────
+const GuestApp   = lazy(() => import('./GuestApp'));
+
 export default function App() {
   return (
     <LanguageProvider>
@@ -28,6 +31,11 @@ export default function App() {
 
             {/* ── Backoffice admin ── */}
             <Route path="/admin/*" element={<AdminApp />} />
+
+            {/* ── Espace visiteur par hôtel ──
+                Déclaré AVANT la route kiosque : sans quoi /visiteur serait
+                avalé par KioskApp, donc soumis à l'inscription de borne. */}
+            <Route path="/:hotelSlug/visiteur/*" element={<GuestApp />} />
 
             {/* ── Kiosque par hôtel ── */}
             <Route path="/:hotelSlug/*" element={<KioskApp />} />

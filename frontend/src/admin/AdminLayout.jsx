@@ -30,6 +30,7 @@ const NAV_SUPER = [
   { to: '/admin/super/tokens',             icon: '🔑', label: 'Tokens API'                 },
   { to: '/admin/super/audit-log',          icon: '📋', label: "Journal d'activité"          },
   { to: '/admin/super/kiosks',             icon: '🖥️', label: 'Bornes kiosques'             },
+  { to: '/admin/super/backup',             icon: '💾', label: 'Sauvegarde & restauration'    },
 ];
 
 const NAV_HOTEL = [
@@ -41,6 +42,12 @@ const NAV_HOTEL = [
   { to: '/admin/hotel/feedbacks',     icon: '⭐', label: 'Évaluations clients'           },
   { to: '/admin/hotel/devise',        icon: '💱', label: 'Convertisseur devises'          },
   { to: '/admin/hotel/kiosks',        icon: '🖥️', label: 'Bornes kiosques'                },
+  // Accessible à la réception (hotel_staff) : c'est elle qui remet les codes aux
+  // clients à l'enregistrement.
+  { to: '/admin/hotel/guest-codes',   icon: '🎟️', label: 'Codes client'                   },
+  // Réservée à l'admin de l'hôtel : le staff n'a pas le droit de remplacer la
+  // configuration de l'établissement (l'API le refuserait de toute façon).
+  { to: '/admin/hotel/backup',        icon: '💾', label: 'Sauvegarde & restauration', roles: ['super_admin', 'hotel_admin'] },
 ];
 
 const NAV_CONTRIBUTOR = [
@@ -53,15 +60,21 @@ const NAV_CONTRIBUTOR = [
 const ROLE_LABELS = {
   super_admin:  { label: 'Super Admin',   color: '#8B5CF6' },
   hotel_admin:  { label: 'Admin Hôtel',   color: '#C2782A' },
-  hotel_staff:  { label: 'Staff',         color: '#3B82F6' },
+  hotel_staff:  { label: 'Réception',     color: '#3B82F6' },
   contributor:  { label: 'Contributeur',  color: '#10B981' },
 };
 
-function navBySection(section) {
-  if (section === 'super')       return NAV_SUPER;
-  if (section === 'hotel')       return NAV_HOTEL;
-  if (section === 'contributor') return NAV_CONTRIBUTOR;
-  return [];
+function navBySection(section, role) {
+  const nav = section === 'super' ? NAV_SUPER
+    : section === 'hotel' ? NAV_HOTEL
+    : section === 'contributor' ? NAV_CONTRIBUTOR
+    : [];
+  // Une entrée peut restreindre sa visibilité à certains rôles.
+  const visible = item => !item.roles || item.roles.includes(role);
+  return nav
+    .filter(visible)
+    .map(item => item.children ? { ...item, children: item.children.filter(visible) } : item)
+    .filter(item => !item.children || item.children.length);
 }
 
 function flatItems(nav) {
@@ -98,7 +111,7 @@ export default function AdminLayout({ section }) {
   const [collapsed, setCollapsed]  = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const nav        = navBySection(section);
+  const nav        = navBySection(section, user?.role);
   const pageTitle  = usePageTitle(nav);
   const roleInfo   = ROLE_LABELS[user?.role] || { label: user?.role, color: '#6B7280' };
   const hotelSlug  = useHotelSlug(user);

@@ -8,6 +8,7 @@ import IdleTimer          from './components/IdleTimer/IdleTimer';
 import KioskLayout        from './components/KioskLayout';
 import KioskRegistration  from './components/KioskRegistration/KioskRegistration';
 import { warmupCache }    from './services/cacheWarmup';
+import { setAccessToken } from './services/accessStore';
 
 const RadialMenu        = lazy(() => import('./components/RadialMenu/RadialMenu'));
 const Weather           = lazy(() => import('./components/sections/Weather/Weather'));
@@ -42,6 +43,15 @@ function KioskDisabled() {
   );
 }
 
+// ── Garde de section ───────────────────────────────────────────────
+// Une section désactivée pour l'hôtel ne doit pas rester atteignable par URL
+// directe : la masquer dans le menu ne suffit pas.
+function SectionRoute({ section, children }) {
+  const { isSectionEnabled } = useHotel();
+  if (!isSectionEnabled(section)) return <KioskNotFound />;
+  return children;
+}
+
 // ── Routes kiosque (affiché une fois auth OK) ──────────────────────
 function KioskRoutes() {
   const { loading, notFound, hotel } = useHotel();
@@ -68,15 +78,15 @@ function KioskRoutes() {
       <IdleTimer />
       <Routes>
         <Route path="/"         element={<KioskLayout><RadialMenu /></KioskLayout>} />
-        <Route path="/weather"  element={<KioskLayout><Weather /></KioskLayout>} />
-        <Route path="/flights"  element={<KioskLayout><Flights /></KioskLayout>} />
-        <Route path="/map"      element={<KioskLayout><MapSection /></KioskLayout>} />
-        <Route path="/events"   element={<KioskLayout><Events /></KioskLayout>} />
-        <Route path="/wellness" element={<KioskLayout><Wellness /></KioskLayout>} />
-        <Route path="/info"     element={<KioskLayout><UsefulInfo /></KioskLayout>} />
-        <Route path="/mobile"   element={<KioskLayout><MobileTransfer /></KioskLayout>} />
-        <Route path="/feedback" element={<KioskLayout><Feedback /></KioskLayout>} />
-        <Route path="/currency" element={<KioskLayout><CurrencyConverter /></KioskLayout>} />
+        <Route path="/weather"  element={<SectionRoute section="weather"><KioskLayout><Weather /></KioskLayout></SectionRoute>} />
+        <Route path="/flights"  element={<SectionRoute section="flights"><KioskLayout><Flights /></KioskLayout></SectionRoute>} />
+        <Route path="/map"      element={<SectionRoute section="map"><KioskLayout><MapSection /></KioskLayout></SectionRoute>} />
+        <Route path="/events"   element={<SectionRoute section="events"><KioskLayout><Events /></KioskLayout></SectionRoute>} />
+        <Route path="/wellness" element={<SectionRoute section="wellness"><KioskLayout><Wellness /></KioskLayout></SectionRoute>} />
+        <Route path="/info"     element={<SectionRoute section="info"><KioskLayout><UsefulInfo /></KioskLayout></SectionRoute>} />
+        <Route path="/mobile"   element={<SectionRoute section="mobile"><KioskLayout><MobileTransfer /></KioskLayout></SectionRoute>} />
+        <Route path="/feedback" element={<SectionRoute section="feedback"><KioskLayout><Feedback /></KioskLayout></SectionRoute>} />
+        <Route path="/currency" element={<SectionRoute section="currency"><KioskLayout><CurrencyConverter /></KioskLayout></SectionRoute>} />
         <Route path="*"         element={<KioskNotFound />} />
       </Routes>
     </>
@@ -148,11 +158,17 @@ function KioskDeviceGate({ children }) {
           setAuthState('disabled');
           return;
         }
+        // La borne porte désormais son jeton sur les appels de contenu :
+        // contentAuth le réclame côté serveur.
+        setAccessToken(token, 'kiosk');
         setAuthState('ready');
         startHeartbeat(token);
       })
       .catch(() => {
-        // Serveur injoignable au démarrage : on laisse passer (mode offline)
+        // Serveur injoignable au démarrage : on laisse passer (mode offline).
+        // Le jeton local est tout de même armé, pour les appels qui aboutiront
+        // au retour du réseau.
+        setAccessToken(token, 'kiosk');
         setAuthState('ready');
       });
 
@@ -162,6 +178,7 @@ function KioskDeviceGate({ children }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRegistered({ deviceToken }) {
+    setAccessToken(deviceToken, 'kiosk');
     startHeartbeat(deviceToken);
     setAuthState('ready');
   }

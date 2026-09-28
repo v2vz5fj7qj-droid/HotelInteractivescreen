@@ -48,8 +48,7 @@ export default function Weather() {
 
   return (
     <div className={styles.page}>
-      {/* Pas de pastille météo ici : on y est déjà */}
-      <SectionChrome weather={false} />
+      <SectionChrome />
 
       {offline && (
         <div className={styles.offlineTag} role="status">

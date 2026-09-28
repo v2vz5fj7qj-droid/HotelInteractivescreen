@@ -10,6 +10,17 @@ const router  = express.Router();
 
 const DEF_AIRPORT = process.env.HOTEL_AIRPORT_IATA || 'OUA';
 
+// Marge de tolérance identique au kiosque avant de retirer un vol conservé
+const RETAINED_GRACE_MS = 30 * 60 * 1000;
+
+function isUpcoming(f) {
+  const iso = f.arrival?.actual   || f.arrival?.estimated   || f.arrival?.scheduled ||
+              f.departure?.actual || f.departure?.estimated || f.departure?.scheduled;
+  if (!iso) return false;
+  const ts = new Date(iso).getTime();
+  return Number.isFinite(ts) && ts + RETAINED_GRACE_MS > Date.now();
+}
+
 // GET /api/flights?airport=OUA&type=arrivals|departures
 // Sert uniquement les données en cache (alimentées par le scheduler admin)
 router.get('/', async (req, res) => {
@@ -54,8 +65,10 @@ router.get('/search', async (req, res) => {
     for (const type of ['arrivals', 'departures']) {
       const cached = await cache.get(`flights:${airport}:${type}`);
       if (!cached) continue;
-      const { flights } = JSON.parse(cached);
+      const { flights, retained } = JSON.parse(cached);
+      // Liste conservée faute de réponse de FlightAPI : on ne ressort que les vols à venir
       (flights || [])
+        .filter(f => !retained || isUpcoming(f))
         .filter(f =>
           norm(f.flight_number).includes(flightNum) ||
           normText(f.airline).includes(queryText) ||

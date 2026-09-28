@@ -9,7 +9,7 @@ const EMPTY = { email: '', password: '', role: 'hotel_admin', hotel_id: '',
 
 const ROLE_LABELS = {
   super_admin: 'Super Admin', hotel_admin: 'Admin Hôtel',
-  hotel_staff: 'Staff Hôtel', contributor: 'Contributeur',
+  hotel_staff: 'Réception', contributor: 'Contributeur',
 };
 
 const PER_PAGE = 25;

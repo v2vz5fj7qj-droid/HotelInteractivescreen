@@ -1,6 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { setAccessToken } from '../../services/accessStore';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useHotel, HotelProvider } from '../../contexts/HotelContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -39,6 +40,9 @@ export default function MobileGate() {
     api.get(`/qr/validate/${token}`)
       .then(({ data }) => {
         if (data.valid) {
+          // Le jeton QR devient le porteur d'accès au contenu pour ce téléphone :
+          // sans lui, contentAuth refuse les données de section.
+          setAccessToken(token, 'qr');
           setValidSection(data.section);
           setHotelSlug(data.hotel_slug);
           setStatus('valid');
@@ -123,7 +127,7 @@ export default function MobileGate() {
   return (
     <HotelProvider slug={hotelSlug}>
       <ThemeProvider>
-        <HotelGate isFr={isFr}>
+        <HotelGate isFr={isFr} section={validSection}>
           <Suspense fallback={<div className={styles.page}><div className="spinner" /></div>}>
             <SectionComponent />
           </Suspense>
@@ -136,8 +140,8 @@ export default function MobileGate() {
 // Attend que la config hôtel soit chargée avant de monter la section : sinon
 // les premiers appels API partent sans hotel_id (injecté par l'intercepteur
 // Axios depuis le singleton alimenté par HotelProvider).
-function HotelGate({ children, isFr }) {
-  const { loading, notFound } = useHotel();
+function HotelGate({ children, isFr, section }) {
+  const { loading, notFound, isSectionEnabled } = useHotel();
 
   if (loading) {
     return (
@@ -155,6 +159,26 @@ function HotelGate({ children, isFr }) {
           <h1 className={styles.title}>
             {isFr ? 'Hôtel introuvable' : 'Hotel not found'}
           </h1>
+        </div>
+      </div>
+    );
+  }
+
+  // Section désactivée pour cet hôtel depuis la borne : un ancien QR code ne
+  // doit pas rouvrir sur le téléphone ce qui a été retiré du kiosque.
+  if (!isSectionEnabled(section)) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.card}>
+          <span className={styles.bigIcon}>🚫</span>
+          <h1 className={styles.title}>
+            {isFr ? 'Section indisponible' : 'Section unavailable'}
+          </h1>
+          <p className={styles.message}>
+            {isFr
+              ? 'Cette section n\'est pas proposée par cet établissement.'
+              : 'This section is not offered by this property.'}
+          </p>
         </div>
       </div>
     );

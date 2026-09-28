@@ -270,7 +270,6 @@ export default function Feedback() {
     <div className={styles.shell} onPointerDown={resetIdle}>
       <SectionChrome
         className={styles.chrome}
-        weather={false}
         center={step > 0 && step < 3 ? (
           <div className={styles.progress}>
             <span className={styles.stepLabel}>

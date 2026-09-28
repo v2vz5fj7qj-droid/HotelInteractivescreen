@@ -11,6 +11,11 @@
 # Ne pas confondre avec db-export.sh :
 #   db-backup.sh → tout, y compris logs, analytics, feedbacks, bornes.
 #                  Destination : backups/ (hors git). Sert à restaurer.
+#
+#   À ne pas confondre avec le module « Sauvegarde & restauration » du
+#   back-office, qui exporte la configuration et le contenu en .zip (sans le
+#   schéma) et sait les réimporter sur une autre installation. Ce script-ci
+#   reste le filet pour un sinistre serveur.
 #   db-export.sh → contenu éditorial seul, destination database/seeds/data_live.sql
 #                  (versionné). Sert à amorcer un nouveau déploiement.
 # ─────────────────────────────────────────────────────────────────────────────

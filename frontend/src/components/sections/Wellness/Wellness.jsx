@@ -14,8 +14,18 @@ export default function Wellness() {
 
   useEffect(() => { trackEvent('wellness', 'open'); }, []);
 
-  if (loading) return <div className={styles.center}><div className="spinner" /></div>;
-  if (error)   return <div className={styles.center}><p style={{color:'var(--c-accent)'}}>⚠️ {t('common.error')}</p></div>;
+  // La barre reste montée dans ces deux états : sans elle, un chargement lent
+  // ou une erreur API laissait l'écran sans aucun bouton retour.
+  if (loading || error) return (
+    <div className={styles.page}>
+      <SectionChrome />
+      <div className={styles.center}>
+        {loading
+          ? <div className="spinner" />
+          : <p style={{ color: 'var(--c-accent)' }}>⚠️ {t('common.error')}</p>}
+      </div>
+    </div>
+  );
 
   if (selected) {
     return <ServiceDetail service={selected} t={t} onBack={() => setSelected(null)} />;

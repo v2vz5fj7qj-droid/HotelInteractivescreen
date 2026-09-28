@@ -73,6 +73,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./uploads:/uploads          # fichiers uploadés (logos, images POI…)
+      - ./backups:/backups          # sauvegardes de configuration du back-office
       - /app/node_modules
     dns:
       - 8.8.8.8

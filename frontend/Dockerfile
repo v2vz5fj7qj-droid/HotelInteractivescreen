@@ -41,5 +41,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget -qO- http://localhost/healthz || exit 1
+  # 127.0.0.1 et non localhost : nginx n'écoute qu'en IPv4 (`listen 80`), alors que
+  # localhost résout d'abord vers ::1 dans le conteneur — busybox wget échouait donc
+  # avec « Connection refused » et marquait le conteneur unhealthy en permanence,
+  # alors que la page était parfaitement servie.
+  CMD wget -qO- http://127.0.0.1/healthz || exit 1
 CMD ["nginx", "-g", "daemon off;"]
